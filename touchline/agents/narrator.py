@@ -92,6 +92,10 @@ class Narrator:
             texts = [data["title"]] + list(data.get("lines", []))
             issues = self.checker.check_text(ins, texts)
             if not issues:
+                from touchline.safety import safety
+
+                if not (await safety.moderate(" ".join(texts)))["ok"]:
+                    return None  # unsafe wording: the verified phrase-bank copy stays on air
                 self.llm_ok += 1
                 lines = [{"text": t, "ev": base["lines"][i]["ev"] if i < len(base["lines"]) else ins["event_ids"],
                           "k": base["lines"][i]["k"] if i < len(base["lines"]) else "llm"}

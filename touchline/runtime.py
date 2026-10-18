@@ -74,6 +74,7 @@ class MatchSession:
         self.pipeline = MomentPipeline(self.deps)
         self.deps.on_fault = self._on_fault
         self.drills: list[dict] = []
+        self.actions: list[dict] = []  # producer actions, with who did them (audit)
         self._storm_left = 0
         self.subscribers: set[asyncio.Queue] = set()
         self.recent_events: deque = deque(maxlen=40)
@@ -371,6 +372,8 @@ class MatchSession:
     def audit(self) -> dict:
         return {"session": self.id, "match_id": self.meta.match_id, "synthetic": True, "seed": self.seed,
                 "ops": self.ops(), "quarantine": self.guard.quarantine[-20:], "spans": list(self.trace.spans)[-200:],
+                "producer_actions": self.actions[-200:], "drills": [self._public_drill(d) for d in self.drills],
+                "editorial_decisions": list(self.producer.rundown),
                 "insights": [{"id": i["id"], "kind": i["kind"], "minute": i["minute"], "verification": i["verification"],
                               "evidence": i["event_ids"], "latency_ms": i["latency_ms"],
                               "cue": i["cue"]["approval"] if i.get("cue") else None} for i in self.insights]}

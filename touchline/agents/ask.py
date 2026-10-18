@@ -116,7 +116,9 @@ class AskTheAnalyst:
             if text:
                 corpus = " ".join(self._tool_log)
                 bad = [n for n in NUM_RE.findall(text) if n not in corpus and n not in question]
-                if not bad:
+                from touchline.safety import safety
+
+                if not bad and (await safety.moderate(text))["ok"]:
                     return {"answer": text, "citations": re.findall(r"E\d{5}", text), "source": f"llm:{self.llm.backend}"}
         return self.route(question)
 

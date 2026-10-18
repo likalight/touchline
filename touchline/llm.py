@@ -123,7 +123,8 @@ class LLM:
             from touchline.foundry_agents import hosted_agent
 
             hosted = hosted_agent(name, tools) if self.backend == "foundry" else None
-            self._agents[name] = hosted or Agent(self.client, instructions, name=name, tools=tools or None)
+            self._agents[name] = hosted or Agent(self.client, instructions, name=name, tools=tools or None,
+                                                 middleware=purview_middleware() or None)
             self.hosted[name] = hosted is not None
         return self._agents[name]
 
@@ -171,6 +172,20 @@ class LLM:
 
 
 _LLM: Optional[LLM] = None
+
+
+def purview_middleware() -> list:
+    """Microsoft Purview data-security policies on agent prompts and responses (TOUCHLINE_PURVIEW=on)."""
+    if os.getenv("TOUCHLINE_PURVIEW", "").lower() != "on":
+        return []
+    try:
+        from agent_framework.microsoft import PurviewPolicyMiddleware, PurviewSettings
+        from azure.identity import DefaultAzureCredential
+
+        return [PurviewPolicyMiddleware(DefaultAzureCredential(), PurviewSettings(app_name="Touchline"))]
+    except Exception as exc:  # pragma: no cover - depends on tenant setup
+        log.warning("Purview middleware unavailable: %s", exc)
+        return []
 
 
 def get_llm() -> LLM:

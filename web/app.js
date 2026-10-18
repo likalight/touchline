@@ -60,6 +60,7 @@ async function boot() {
   } catch { S.i18n = { languages: { en: "English" }, banks: { en: {} } }; }
   buildLangSelect();
   bindControls();
+  loadMe();
   applyPrefs();
   applyView();
   addEventListener("resize", resizeCanvas);
@@ -991,7 +992,23 @@ function applyPrefs() {
 }
 
 async function control(action, value) {
-  return fetch(`/api/matches/${S.sid}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, value }) }).then((r) => r.json());
+  const r = await fetch(`/api/matches/${S.sid}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, value }) });
+  if (r.status === 401 || r.status === 403) { needProducer(r.status); return { ok: false, reason: "auth" }; }
+  return r.json();
+}
+function needProducer(status) {
+  toast(status === 401 ? "Producer tools need a Microsoft sign-in." : "Your account doesn't have the producer role.");
+  $("#who").innerHTML = status === 401 ? `<a class="btn small" href="/.auth/login/aad?post_login_redirect_uri=/">Sign in with Microsoft</a>` : $("#who").innerHTML;
+}
+async function loadMe() {
+  try {
+    const me = await fetch("/api/me").then((r) => r.json());
+    S.me = me;
+    $("#who").innerHTML = me.signed_in
+      ? `Signed in as <b>${esc(me.name || "you")}</b>${me.roles.length ? ` (${me.roles.map((r) => esc(r.replace("Touchline.", ""))).join(", ")})` : ""}. <a href="${me.logout}">Sign out</a>`
+      : me.auth_mode === "entra" ? `<a class="btn small" href="${me.login}?post_login_redirect_uri=/">Sign in with Microsoft</a> to approve graphics and run drills.`
+      : "Open demo: anyone can try the producer tools. In production they sit behind Microsoft sign-in with a Producer role, and every action is audited.";
+  } catch (e) { /* offline */ }
 }
 
 function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; }
@@ -1068,7 +1085,8 @@ function bindControls() {
 }
 
 async function decide(cueId, approve) {
-  await fetch(`/api/matches/${S.sid}/cues/${encodeURIComponent(cueId)}/decision`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ approve }) });
+  const r = await fetch(`/api/matches/${S.sid}/cues/${encodeURIComponent(cueId)}/decision`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ approve }) });
+  if (r.status === 401 || r.status === 403) needProducer(r.status);
 }
 
 function toast(msg) {

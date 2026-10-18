@@ -11,6 +11,9 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Request
+
+from touchline.auth import actor, can_produce, principal, require_producer
+from touchline.auth import mode as auth_mode
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -151,9 +154,11 @@ async def overlay():
 
 @app.get("/api/health")
 async def health():
+    from touchline.safety import safety
     from touchline.speech import speech
 
-    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status()}
+    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status(),
+            "content_safety": safety.status(), "auth": auth_mode()}
 
 
 @app.get("/api/i18n")
@@ -210,9 +215,24 @@ async def stream(sid: str, request: Request):
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+PRODUCER_ACTIONS = {"mode", "drill"}            # always producer tools
+SHARED_ACTIONS = {"pause", "resume", "speed", "jump"}  # producer tools on the shared broadcast; free on a fan's own match
+
+
+@app.get("/api/me")
+async def me(request: Request):
+    """Who is signed in (Microsoft Entra ID via Container Apps authentication) and what they may do."""
+    p = principal(request)
+    return {**p, "can_produce": can_produce(p), "login": "/.auth/login/aad", "logout": "/.auth/logout"}
+
+
 @app.post("/api/matches/{sid}/control")
-async def control(sid: str, body: Control):
-    return get(sid).control(body.action, body.value)
+async def control(sid: str, body: Control, request: Request):
+    s = get(sid)
+    if body.action in PRODUCER_ACTIONS or (sid == DEMO and body.action in SHARED_ACTIONS):
+        p = require_producer(request)
+        s.actions.append({"at": time.time(), "minute": s.state.minute, "actor": actor(p), "action": body.action, "value": body.value})
+    return s.control(body.action, body.value)
 
 
 @app.get("/api/matches/{sid}/insights")
@@ -235,8 +255,11 @@ async def cues(sid: str):
 
 
 @app.post("/api/matches/{sid}/cues/{cue_id}/decision")
-async def decide(sid: str, cue_id: str, body: Decision):
-    cue = get(sid).decide_cue(cue_id, body.approve)
+async def decide(sid: str, cue_id: str, body: Decision, request: Request):
+    p = require_producer(request)
+    s = get(sid)
+    s.actions.append({"at": time.time(), "minute": s.state.minute, "actor": actor(p), "action": "approve" if body.approve else "drop", "value": cue_id})
+    cue = s.decide_cue(cue_id, body.approve)
     if not cue:
         raise HTTPException(404, "cue not pending")
     return cue
@@ -258,8 +281,16 @@ async def recap(sid: str, persona: str = "casual", lang: str = "en"):
 
 @app.post("/api/matches/{sid}/ask")
 async def ask(sid: str, body: Ask):
+    from touchline.safety import safety
+
     s = get(sid)
     t0 = time.perf_counter()
+    refused = await safety.screen_question(body.question)
+    if refused:
+        ms = round((time.perf_counter() - t0) * 1000, 1)
+        s.trace.record("ContentSafety", "qa", ms, "blocked", f"{refused}: question refused before any agent saw it")
+        return {"answer": "I can only help with questions about this match.", "citations": [], "source": "content_safety",
+                "refused": refused, "ms": ms}
     res = await s.ask_agent.ask(body.question, body.lang)
     res["ms"] = round((time.perf_counter() - t0) * 1000, 1)
     s.trace.record("AskTheAnalyst", "qa", res["ms"], note=f"{res['source']}: {body.question[:60]}")

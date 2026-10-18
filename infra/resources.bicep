@@ -6,6 +6,10 @@ param modelVersion string
 param modelCapacity int
 param enableEventHubs bool
 param principalId string = ''
+@description('Entra ID app (client) ID for Microsoft sign-in on producer tools; empty keeps the open demo')
+param authClientId string = ''
+@secure()
+param authClientSecret string = ''
 
 var token = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var roles = {
@@ -15,6 +19,7 @@ var roles = {
   eventHubsReceiver: 'a638d3c7-ab3a-418d-83e6-5f17a39d4fde'
   eventHubsSender: '2b629674-e913-4c01-ae53-ef4638d8f975'
   speechUser: 'f2dc8367-1007-4938-bd23-fe263f013447'
+  cognitiveServicesUser: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Azure AI Content Safety data plane
 }
 
 // ---------------------------------------------------------------- identity & observability
@@ -162,6 +167,16 @@ resource speechUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
+resource safetyUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundry.id, identity.id, roles.cognitiveServicesUser)
+  scope: foundry
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.cognitiveServicesUser)
+  }
+}
+
 // ---------------------------------------------------------------- Event Hubs (event-driven ingestion)
 resource hubs 'Microsoft.EventHub/namespaces@2024-01-01' = if (enableEventHubs) {
   name: 'evh-touchline-${token}'
@@ -231,7 +246,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
-  dependsOn: [acrPull, openAiUser, aiUser, speechUser]
+  dependsOn: [acrPull, openAiUser, aiUser, speechUser, safetyUser]
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -246,6 +261,9 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
           server: registry.properties.loginServer
           identity: identity.id
         }
+      ]
+      secrets: empty(authClientSecret) ? [] : [
+        { name: 'microsoft-provider-authentication-secret', value: authClientSecret }
       ]
     }
     template: {
@@ -269,6 +287,8 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }
             { name: 'AZURE_SPEECH_REGION', value: location }
             { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
+            { name: 'AZURE_CONTENT_SAFETY_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.cognitiveservices.azure.com' }
+            { name: 'TOUCHLINE_AUTH', value: empty(authClientId) ? 'open' : 'entra' }
           ]
           probes: [
             {
@@ -293,6 +313,28 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             http: { metadata: { concurrentRequests: '200' } }
           }
         ]
+      }
+    }
+  }
+}
+
+// Microsoft Entra ID sign-in (Container Apps built-in authentication). Fans stay anonymous;
+// the app enforces the Touchline.Producer / Touchline.Admin roles on producer tools.
+resource auth 'Microsoft.App/containerApps/authConfigs@2024-03-01' = if (!empty(authClientId)) {
+  parent: web
+  name: 'current'
+  properties: {
+    platform: { enabled: true }
+    globalValidation: { unauthenticatedClientAction: 'AllowAnonymous' }
+    identityProviders: {
+      azureActiveDirectory: {
+        enabled: true
+        registration: {
+          clientId: authClientId
+          clientSecretSettingName: 'microsoft-provider-authentication-secret'
+          openIdIssuer: '${environment().authentication.loginEndpoint}${tenant().tenantId}/v2.0'
+        }
+        validation: { allowedAudiences: [ 'api://${authClientId}' ] }
       }
     }
   }

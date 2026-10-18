@@ -18,6 +18,11 @@ param modelCapacity int = 50
 @description('Object ID of the person running azd (set automatically); lets the postprovision hook publish agents to Foundry')
 param principalId string = ''
 
+@description('Optional Microsoft Entra ID sign-in for producer tools (set by scripts/setup_entra.sh)')
+param authClientId string = ''
+@secure()
+param authClientSecret string = ''
+
 @description('Provision Azure Event Hubs for event-driven match ingestion')
 param enableEventHubs bool = true
 
@@ -41,6 +46,8 @@ module resources 'resources.bicep' = {
     modelCapacity: modelCapacity
     enableEventHubs: enableEventHubs
     principalId: principalId
+    authClientId: authClientId
+    authClientSecret: authClientSecret
   }
 }
 
