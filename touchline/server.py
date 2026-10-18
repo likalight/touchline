@@ -399,7 +399,7 @@ async def reel_file(rid: str):
 
 
 @app.get("/api/speak")
-async def speak(text: str, lang: str = "en"):
+async def speak(text: str, lang: str = "en", voice: str = "lead"):
     """Neural voice for audio description and commentary (Azure AI Speech). 503 when not configured."""
     from fastapi.responses import Response
 
@@ -407,7 +407,7 @@ async def speak(text: str, lang: str = "en"):
 
     if not speech.available or len(text) > 600:
         raise HTTPException(503, "speech not configured")
-    audio = await speech.synthesize(text, lang)
+    audio = await speech.synthesize(text, lang, "analyst" if voice == "analyst" else "lead")
     if not audio:
         raise HTTPException(503, "speech unavailable")
     return Response(audio, media_type="audio/mpeg")

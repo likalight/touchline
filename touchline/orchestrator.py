@@ -80,6 +80,7 @@ class Deps:
     now_t: Callable[[], float] = lambda: 0.0
     storyline: object = None
     late: Optional[Callable] = None  # schedules slow renders off the hot path
+    booth: object = None             # CommentaryBooth: two-voice commentary on each moment
 
 
 class AnalystExecutor(Executor):
@@ -190,6 +191,8 @@ class ProducerExecutor(Executor):
         ins = results[0].insight
         ins["renders"] = {r.persona: r.renders for r in results if r.renders}
         cue = self.d.producer.schedule(ins, self.d.now_t())
+        if self.d.booth is not None:
+            ins["commentary"] = self.d.booth.exchange(ins)
         ins["cue"] = cue
         ins["latency_ms"] = round((time.perf_counter() - ins.pop("_t0", t0)) * 1000, 2)
         dec = (cue or {}).get("decision") or {}

@@ -25,6 +25,14 @@ VOICES = {
 }
 
 
+# the co-commentator: a second, contrasting voice per language
+VOICES_ANALYST = {
+    "en": "en-GB-SoniaNeural", "es": "es-ES-ElviraNeural", "fr": "fr-FR-DeniseNeural", "pt": "pt-PT-RaquelNeural",
+    "de": "de-DE-KatjaNeural", "ja": "ja-JP-NanamiNeural", "hi": "hi-IN-SwaraNeural", "ar": "ar-SA-ZariyahNeural",
+    "zh": "zh-CN-XiaoxiaoNeural", "ta": "ta-IN-PallaviNeural", "sw": "sw-KE-ZuriNeural",
+}
+
+
 class Speech:
     def __init__(self) -> None:
         self.region = os.getenv("AZURE_SPEECH_REGION")
@@ -54,15 +62,18 @@ class Speech:
         return {"Authorization": f"Bearer aad#{self.resource_id}#{self._token[0]}"}
 
     @staticmethod
-    def ssml(text: str, lang: str) -> str:
+    def ssml(text: str, lang: str, who: str = "lead") -> str:
         locale, voice = VOICES.get(lang, VOICES["en"])
+        if who == "analyst":
+            voice = VOICES_ANALYST.get(lang, VOICES_ANALYST["en"]) if lang in VOICES else VOICES_ANALYST["en"]
+        rate = "+12%" if who == "lead" else "+2%"
         return (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="{locale}">'
-                f'<voice name="{voice}"><prosody rate="+6%">{escape(text)}</prosody></voice></speak>')
+                f'<voice name="{voice}"><prosody rate="{rate}">{escape(text)}</prosody></voice></speak>')
 
-    async def synthesize(self, text: str, lang: str = "en") -> Optional[bytes]:
+    async def synthesize(self, text: str, lang: str = "en", who: str = "lead") -> Optional[bytes]:
         if not self.available or not text.strip():
             return None
-        key = (lang, text)
+        key = (lang, who, text)
         if key in self.cache:
             self.cache.move_to_end(key)
             return self.cache[key]
@@ -75,7 +86,7 @@ class Speech:
                                       headers={**self._auth(), "Content-Type": "application/ssml+xml",
                                                "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
                                                "User-Agent": "touchline"},
-                                      content=self.ssml(text, lang).encode())
+                                      content=self.ssml(text, lang, who).encode())
                 r.raise_for_status()
                 audio = r.content
         except Exception as exc:

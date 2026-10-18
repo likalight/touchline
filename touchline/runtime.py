@@ -13,6 +13,7 @@ from touchline.agents.analyst import TacticalAnalyst
 from touchline.agents.ingest import FaultInjector, IngestGuard
 from touchline.agents.narrator import Narrator
 from touchline.agents.producer import Producer
+from touchline.agents.booth import CommentaryBooth
 from touchline.agents.recap import RecapWriter
 from touchline.agents.scout import MomentScout
 from touchline.agents.storyline import StorylineKeeper
@@ -68,7 +69,8 @@ class MatchSession:
         self.ask_agent = AskTheAnalyst(self.state, lambda: self.insights)
         self.extra_langs = set(extra_langs or [])
         self.deps = Deps(self.analyst, self.checker, self.narrator, self.producer, self.trace, self.extra_langs,
-                         now_t=lambda: self.state.t, storyline=self.storyline, late=self._late_render)
+                         now_t=lambda: self.state.t, storyline=self.storyline, late=self._late_render,
+                         booth=CommentaryBooth(self.state.players, {"home": self.meta.home.name, "away": self.meta.away.name}))
         self.pipeline = MomentPipeline(self.deps)
         self.subscribers: set[asyncio.Queue] = set()
         self.recent_events: deque = deque(maxlen=40)
