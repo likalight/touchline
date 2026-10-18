@@ -256,7 +256,8 @@ function init() {
       sh.vertexShader = "attribute float region; varying float vRegion;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\n vRegion = region;");
       sh.fragmentShader = "uniform vec3 uShirt, uShorts, uSocks, uSkin; uniform float uHi; varying float vRegion;\n" + sh.fragmentShader.replace("#include <color_fragment>",
         `#include <color_fragment>
-         vec3 kc = vRegion < 0.5 ? uSkin : vRegion < 1.5 ? uShirt : vRegion < 2.5 ? uShorts : vRegion < 3.5 ? uSocks : vec3(0.06);
+         float rg = floor(vRegion + 0.5);
+         vec3 kc = rg < 0.5 ? uSkin : rg < 1.5 ? uShirt : rg < 2.5 ? uShorts : rg < 3.5 ? uSocks : vec3(0.06);
          diffuseColor.rgb = kc;`).replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\n totalEmissiveRadiance += uHi * vec3(0.35, 0.27, 0.08);");
     };
     m.customProgramCacheKey = () => "touchline-kit";
@@ -271,15 +272,27 @@ function init() {
       c.tracks = c.tracks.filter((t) => !/^root\.position$/.test(t.name)); // keep players on their tracked spot
       clips[c.name] = c;
     }
-    // per-vertex kit region from the dominant bone
+    // per-vertex kit region: arms by bone (short sleeves), body by height in the bind pose (clean waistband and sock lines)
+    proto.updateMatrixWorld(true);
     proto.traverse((o) => {
       if (!o.isSkinnedMesh) return;
-      const gm = o.geometry, si = gm.attributes.skinIndex, sw = gm.attributes.skinWeight, n = si.count, reg = new Float32Array(n);
+      const gm = o.geometry, si = gm.attributes.skinIndex, sw = gm.attributes.skinWeight, pos = gm.attributes.position, n = si.count, reg = new Float32Array(n);
       const names = o.skeleton.bones.map((b) => b.name);
+      const v = new THREE.Vector3(), ys = new Float32Array(n);
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < n; i++) { v.fromBufferAttribute(pos, i).applyMatrix4(o.matrixWorld); ys[i] = v.y; lo = Math.min(lo, v.y); hi = Math.max(hi, v.y); }
       for (let i = 0; i < n; i++) {
         let best = 0, bw = -1;
         for (let k = 0; k < 4; k++) { const w = sw.getComponent(i, k); if (w > bw) { bw = w; best = si.getComponent(i, k); } }
-        reg[i] = regionOf(names[best] || "");
+        const bone = names[best] || "", h = (ys[i] - lo) / (hi - lo);
+        if (/hand|index|middle|pinky|ring|thumb|lowerarm/.test(bone)) reg[i] = REGION.skin;
+        else if (/upperarm|clavicle/.test(bone)) reg[i] = REGION.shirt;
+        else if (h < 0.055) reg[i] = REGION.boots;
+        else if (h < 0.29) reg[i] = REGION.socks;
+        else if (h < 0.335) reg[i] = REGION.skin;
+        else if (h < 0.52) reg[i] = REGION.shorts;
+        else if (h < 0.825) reg[i] = REGION.shirt;
+        else reg[i] = REGION.skin;
       }
       gm.setAttribute("region", new THREE.BufferAttribute(reg, 1));
       o.castShadow = true; o.frustumCulled = false;
@@ -299,12 +312,6 @@ function init() {
     const mat = kitMaterial(kitFor(pl), SKIN[(pl.number * 7 + (pl.team === "home" ? 1 : 3)) % SKIN.length]);
     body.traverse((o) => { if (o.isSkinnedMesh) { o.material = mat; o.castShadow = true; } });
     root.add(body);
-    // number on the back
-    const nc = document.createElement("canvas"); nc.width = nc.height = 64;
-    const n2 = nc.getContext("2d"); n2.fillStyle = "#fff"; n2.font = "700 46px 'Barlow Condensed', sans-serif"; n2.textAlign = "center"; n2.textBaseline = "middle"; n2.fillText(String(pl.number), 32, 36);
-    const num = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(nc), transparent: true, depthWrite: false }));
-    let spine = null; body.traverse((o) => { if (o.isBone && o.name === "spine_03") spine = o; });
-    if (spine) { spine.add(num); num.position.set(0, 0.05, -0.13 / proto.userData.scale); num.scale.setScalar(1 / proto.userData.scale); num.rotation.y = Math.PI; }
     // focus / favourite ring
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.68, 40), new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }));
     ring.rotation.x = -Math.PI / 2; ring.position.y = 0.03; root.add(ring);
@@ -411,10 +418,18 @@ function init() {
   new ResizeObserver(resize).observe(box); resize();
 
   /* ---------- per frame */
+  const q = { avg: 1 / 60, at: performance.now(), level: 0 };
   let lastNow = performance.now(), ballRoll = 0, lastBall = null, excite = 0;
   api.render = (now) => {
     const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
     if (!api.ready) return;
+    // adaptive quality: if frames run slow for two seconds, step down resolution, then bloom
+    q.avg = q.avg * 0.95 + dt * 0.05;
+    if (q.avg > 0.045 && now - q.at > 2000 && q.level < 2) {
+      q.level++; q.at = now;
+      if (q.level === 1) { renderer.setPixelRatio(1); resize(); }
+      if (q.level === 2) { bloom.enabled = false; renderer.shadowMap.enabled = false; }
+    }
     crowdU.uT.value = now / 1000;
     excite = Math.max(0, excite - dt * 0.18); crowdU.uJump.value = Math.min(1, excite);
     // players
@@ -462,6 +477,7 @@ function init() {
     for (const d of S.draws || []) { const gq = vizFor(d); live.add(gq); const life = (d.until - now) / 1000; gq.traverse((o) => { if (o.material) o.material.opacity = Math.max(0, Math.min(0.8, life / 1.5)); }); }
     for (const gq of [...vizGroup.children]) if (!live.has(gq)) { vizGroup.remove(gq); gq.traverse((o) => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose(); }); }
     aim(now, dt);
+    api.frames = (api.frames || 0) + 1; api.lastNow = Math.round(now);
     composer.render(dt);
   };
 
@@ -481,7 +497,8 @@ function init() {
     if (ev.etype === "goal") {
       excite = 1.6;
       const scorer = P || nearestToBall();
-      if (scorer && !(S.dur < 250)) { // no replay while fast-forwarding
+      const fast = Number((document.getElementById("speed") || {}).value || 10) > 20 || S.jumping;
+      if (scorer && !fast) { // no replay while fast-forwarding
         oneShot(scorer, "Victory Fist Pump", 4.5);
         for (const q of Object.values(players)) if (q !== scorer && q.pl.team === scorer.pl.team && q.root.position.distanceTo(scorer.root.position) < 22) oneShot(q, Math.random() < 0.5 ? "Victory" : "Victory Fist Pump", 3.5 + Math.random());
         // replay-style orbit around the scorer, then back to the main camera
@@ -494,7 +511,7 @@ function init() {
     }
     if (ev.etype === "card" && P) oneShot(P, "Idle_Subtle", 2.2);
   };
-  api.debug = () => ({ cam: camera.position.toArray().map((v) => +v.toFixed(1)), mode: cam.mode, look: cam.look && cam.look.toArray().map((v) => +v.toFixed(1)), fov: camera.fov, n: Object.keys(players).length, focus: S.prefs.focus, camMode: S.camMode, sample: Object.values(players).slice(0, 2).map((P) => [P.pid, P.root.position.toArray().map((v) => +v.toFixed(1)), +P.yaw.toFixed(2), +P.speed.toFixed(1)]) });
+  api.debug = () => ({ frames: api.frames, until: Math.round(cam.until), cam: camera.position.toArray().map((v) => +v.toFixed(1)), mode: cam.mode, look: cam.look && cam.look.toArray().map((v) => +v.toFixed(1)), fov: camera.fov, n: Object.keys(players).length, focus: S.prefs.focus, camMode: S.camMode, sample: Object.values(players).slice(0, 2).map((P) => [P.pid, P.root.position.toArray().map((v) => +v.toFixed(1)), +P.yaw.toFixed(2), +P.speed.toFixed(1)]) });
   api.board = (text, accent) => { ledText = text; drawLed(text.toUpperCase(), accent); };
   api.reset = () => { for (const P of Object.values(players)) { scene.remove(P.root); } for (const k in players) delete players[k]; excite = 0; cam.mode = "main"; };
   api.teams = (meta) => {

@@ -967,7 +967,7 @@ function bindControls() {
   $("#speak").addEventListener("change", (e) => { S.prefs.speak = e.target.checked; savePrefs(); if (!e.target.checked && "speechSynthesis" in window) { speechSynthesis.cancel(); S.speechQ = []; } });
   $("#pauseBtn").addEventListener("click", () => control(S.paused ? "resume" : "pause"));
   $("#speed").addEventListener("change", (e) => control("speed", Number(e.target.value)));
-  $("#jump").addEventListener("change", (e) => { if (e.target.value) control("jump", Number(e.target.value)); e.target.value = ""; });
+  $("#jump").addEventListener("change", (e) => { if (e.target.value) { S.jumping = true; setTimeout(() => { S.jumping = false; }, 4000); control("jump", Number(e.target.value)); } e.target.value = ""; });
 
   document.addEventListener("click", (e) => {
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
