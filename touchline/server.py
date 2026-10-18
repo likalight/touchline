@@ -1,0 +1,274 @@
+"""FastAPI service: live match sessions, SSE stream, overlay cues, recaps, Q&A, audit, A2A."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
+
+from touchline.a2a import mount_a2a
+from touchline.i18n import BANKS, LANGS
+from touchline.llm import get_llm
+from touchline.runtime import MatchSession
+from touchline.telemetry import setup_telemetry
+
+log = logging.getLogger("touchline")
+WEB = Path(__file__).resolve().parents[1] / "web"
+MAX_SESSIONS = int(os.getenv("TOUCHLINE_MAX_SESSIONS", "12"))
+DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", "7"))
+DEMO_SPEED = float(os.getenv("TOUCHLINE_DEMO_SPEED", "10"))
+
+sessions: dict[str, MatchSession] = {}
+DEMO = "demo"
+
+
+def new_demo() -> MatchSession:
+    s = MatchSession(seed=DEMO_SEED, speed=DEMO_SPEED, match_id=DEMO)
+    sessions[DEMO] = s
+    s.start()
+    return s
+
+
+async def demo_keeper():
+    """Keep a live demo match running 24/7 (restart a fresh one a minute after full-time)."""
+    while True:
+        s = sessions.get(DEMO)
+        if s is None or (s.done and time.time() - s.created > 60):
+            if s is not None and s.done:
+                await asyncio.sleep(60)
+            new_demo()
+        await asyncio.sleep(5)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_telemetry()
+    task = asyncio.create_task(demo_keeper())
+    yield
+    task.cancel()
+
+
+app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
+app.mount("/static", StaticFiles(directory=WEB), name="static")
+mount_a2a(app, lambda: sessions.get(DEMO), os.getenv("TOUCHLINE_PUBLIC_URL", "http://localhost:8000"))
+
+
+def get(sid: str) -> MatchSession:
+    s = sessions.get(sid)
+    if not s:
+        raise HTTPException(404, "unknown session")
+    return s
+
+
+class NewMatch(BaseModel):
+    seed: int = Field(7, ge=0, le=10_000_000)
+    speed: float = Field(10, ge=0.5, le=240)
+    chaos: float = Field(0.0, ge=0, le=0.3)
+    mode: str = "auto"
+    langs: list[str] = []
+
+
+class Control(BaseModel):
+    action: str
+    value: Optional[object] = None
+
+
+class Ask(BaseModel):
+    question: str = Field(..., max_length=500)
+    lang: str = "en"
+
+
+class Decision(BaseModel):
+    approve: bool
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    return FileResponse(WEB / "index.html")
+
+
+@app.get("/overlay", include_in_schema=False)
+async def overlay():
+    return FileResponse(WEB / "overlay.html")
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status()}
+
+
+@app.get("/api/i18n")
+async def i18n():
+    return {"languages": LANGS, "banks": BANKS}
+
+
+@app.post("/api/matches")
+async def create_match(body: NewMatch):
+    done = [k for k, v in sessions.items() if v.done and k != DEMO]
+    for k in done:
+        sessions.pop(k, None)
+    if len(sessions) >= MAX_SESSIONS:
+        raise HTTPException(429, "too many live sessions")
+    s = MatchSession(seed=body.seed, speed=body.speed, chaos=body.chaos, mode=body.mode, extra_langs=set(body.langs))
+    sessions[s.id] = s
+    s.start()
+    return {"session_id": s.id, **{k: v for k, v in s.describe().items() if k != "match"}}
+
+
+@app.get("/api/matches")
+async def list_matches():
+    return [{"session_id": k, "match_id": v.meta.match_id, "seed": v.seed, "minute": v.state.minute, "score": v.state.score,
+             "done": v.done} for k, v in sessions.items()]
+
+
+@app.get("/api/matches/{sid}")
+async def match(sid: str):
+    s = get(sid)
+    return {**s.describe(), "state": s.snapshot()}
+
+
+@app.get("/api/matches/{sid}/stream")
+async def stream(sid: str, request: Request):
+    s = get(sid)
+    q = s.subscribe()
+
+    async def gen():
+        try:
+            yield "retry: 2000\n\n"
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    msg = await asyncio.wait_for(q.get(), timeout=15)
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+                    continue
+                yield f"event: {msg['type']}\ndata: {json.dumps(msg, separators=(',', ':'), default=str)}\n\n"
+        finally:
+            s.unsubscribe(q)
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.post("/api/matches/{sid}/control")
+async def control(sid: str, body: Control):
+    return get(sid).control(body.action, body.value)
+
+
+@app.get("/api/matches/{sid}/insights")
+async def insights(sid: str, persona: Optional[str] = None, lang: str = "en", since: int = 0):
+    s = get(sid)
+    out = []
+    for ins in s.insights[since:]:
+        if persona:
+            r = ins.get("renders", {}).get(persona, {}).get(lang)
+            out.append({k: ins[k] for k in ("id", "kind", "minute", "t", "team", "salience", "event_ids")} | {"render": r})
+        else:
+            out.append(ins)
+    return out
+
+
+@app.get("/api/matches/{sid}/cues")
+async def cues(sid: str):
+    s = get(sid)
+    return [i["cue"] for i in s.insights if i.get("cue")]
+
+
+@app.post("/api/matches/{sid}/cues/{cue_id}/decision")
+async def decide(sid: str, cue_id: str, body: Decision):
+    cue = get(sid).decide_cue(cue_id, body.approve)
+    if not cue:
+        raise HTTPException(404, "cue not pending")
+    return cue
+
+
+@app.get("/api/matches/{sid}/recap")
+async def recap(sid: str, persona: str = "casual", lang: str = "en"):
+    s = get(sid)
+    if lang not in BANKS:
+        r = s.get_recap(persona, "en")
+        if get_llm().available:
+            rc = s.recap.frames()
+            alt = await s.narrator.render_llm(rc, persona, lang)
+            if alt:
+                return {**r, **alt}
+        return {**r, "note": f"'{lang}' needs an LLM backend; showing English"}
+    return s.get_recap(persona, lang)
+
+
+@app.post("/api/matches/{sid}/ask")
+async def ask(sid: str, body: Ask):
+    s = get(sid)
+    t0 = time.perf_counter()
+    res = await s.ask_agent.ask(body.question, body.lang)
+    res["ms"] = round((time.perf_counter() - t0) * 1000, 1)
+    s.trace.record("AskTheAnalyst", "qa", res["ms"], note=f"{res['source']}: {body.question[:60]}")
+    return res
+
+
+@app.get("/api/matches/{sid}/players")
+async def players(sid: str):
+    s = get(sid)
+    return [{**s.state.player_summary(pid), "rating": s.state.player_rating(pid)} for pid in s.state.players]
+
+
+@app.get("/api/matches/{sid}/players/{pid}")
+async def player(sid: str, pid: str):
+    s = get(sid)
+    if pid not in s.state.players:
+        raise HTTPException(404, "unknown player")
+    return {**s.state.player_summary(pid), "rating": s.state.player_rating(pid), "heatmap": s.state.heat[pid]}
+
+
+@app.get("/api/matches/{sid}/events/{eid}")
+async def event(sid: str, eid: str):
+    s = get(sid)
+    en = s.state.enriched.get(eid)
+    if not en:
+        raise HTTPException(404, "unknown or future event")
+    out = {"facts": en.facts(), "event": en.ev.model_dump()}
+    if en.ev.frame:
+        from touchline.analytics.state import pitch_control
+        out["pitch_control"] = pitch_control(en.ev.frame, s.state.pace)
+    if en.xg_features:
+        out["xg_explain"] = s.state.models.xg.explain(en.xg_features, s.state.models.shot_baseline)
+    if en.pass_features:
+        out["pass_explain"] = s.state.models.pass_.explain(en.pass_features, s.state.models.pass_baseline)
+    return out
+
+
+@app.get("/api/matches/{sid}/audit")
+async def audit(sid: str):
+    return get(sid).audit()
+
+
+@app.get("/api/matches/{sid}/dataset.jsonl", response_class=PlainTextResponse)
+async def dataset(sid: str):
+    """The full synthetic event dataset for this match (data innovation: re-usable, seeded, schema-validated)."""
+    s = get(sid)
+    head = json.dumps({"meta": s.meta.model_dump()})
+    return head + "\n" + "\n".join(e.model_dump_json() for e in s.events)
+
+
+@app.get("/api/models")
+async def models():
+    from touchline.analytics.models import get_models
+    p = get_models().params
+    return {k: p[k] for k in ("version", "trained_on", "league")} | {
+        "xg_eval": p["xg"]["eval"], "pass_eval": p["pass"]["eval"], "xt": p["xt"]}
+
+
+@app.exception_handler(Exception)
+async def on_error(request: Request, exc: Exception):  # pragma: no cover
+    log.exception("unhandled error")
+    return JSONResponse({"error": "internal error"}, status_code=500)

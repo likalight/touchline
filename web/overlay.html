@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touchline overlay output</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Source+Serif+4:opsz,wght@8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+<style>
+  /* Key-able output: transparent by default, ?bg=green for a chroma field, ?bg=pitch to preview */
+  html, body { background: transparent; height: 100%; overflow: hidden; }
+  body.green { background: #00b140; }
+  body.pitch { background: repeating-linear-gradient(90deg, #1d5a3c 0 9.52%, #1a5236 9.52% 19.04%); }
+  .frame { position: relative; width: 100vw; height: 56.25vw; max-height: 100vh; }
+  .help { position: fixed; right: 12px; bottom: 10px; font: 500 12px Barlow, sans-serif; color: rgba(255,255,255,.7); }
+</style>
+</head>
+<body>
+<div class="frame"><div class="overlay-layer" id="overlay"></div></div>
+<div class="help" id="help"></div>
+<script>
+"use strict";
+const qs = new URLSearchParams(location.search);
+const sid = qs.get("session") || "demo", lang = qs.get("lang") || "en", persona = qs.get("persona") || "studio";
+document.body.className = qs.get("bg") || "";
+document.getElementById("help").textContent = qs.has("clean") ? "" : `Overlay output: session ${sid}, ${persona}, ${lang}. Add ?bg=pitch to preview or ?clean to hide this note.`;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const layers = {};
+function show(ins) {
+  const cue = ins.cue, by = (ins.renders || {})[persona] || {}, r = by[lang] || by.en;
+  if (!cue || !r || !["auto", "approved"].includes(cue.approval) || cue.layer === "player_tag") return;
+  const name = cue.layer, prev = layers[name];
+  if (prev) prev.remove();
+  const el = document.createElement("div");
+  el.className = name === "lower_third" ? "lower-third" + (cue.template === "full_banner" ? " banner" : "")
+    : name === "side_panel" ? "side-panel" : "full-screen";
+  el.innerHTML = name === "lower_third"
+    ? `<div class="bar"></div><div class="body"><div class="ttl">${esc(r.title)}</div>${r.lines[0] ? `<div class="ln">${esc(r.lines[0].text)}</div>` : ""}</div>`
+    : `<div class="ttl">${esc(r.title)}</div>${r.lines.slice(0, name === "full_screen" ? 6 : 2).map((l) => `<div class="ln">${esc(l.text)}</div>`).join("")}`;
+  document.getElementById("overlay").appendChild(el);
+  layers[name] = el;
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 320); }, Math.max(4.5, Math.min(cue.duration_s, 10)) * 1000);
+}
+const es = new EventSource(`/api/matches/${sid}/stream`);
+const seen = new Map();
+es.addEventListener("insight", (e) => { const m = JSON.parse(e.data); seen.set(m.insight.id, m.insight); if (seen.size > 200) seen.delete(seen.keys().next().value); if (!m.replayed) show(m.insight); });
+es.addEventListener("cue_update", (e) => {
+  const cue = JSON.parse(e.data).cue, ins = seen.get(cue.insight_id);
+  if (ins && cue.approval === "approved") show({ ...ins, cue });
+});
+</script>
+</body>
+</html>

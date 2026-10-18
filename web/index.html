@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touchline</title>
+<meta name="description" content="Explainable match intelligence for a live synthetic football match: verified insights, personalised for every fan.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#184232"/><path d="M4 26h24M16 6v20" stroke="#eef0e8" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="#f2c14e" stroke-width="2.5"/></svg>
+    <div>Touchline <small id="matchLabel">Connecting to the live match…</small></div>
+  </div>
+  <div class="meters">
+    <div class="scorebug" aria-live="polite">
+      <div class="club" id="homeBug"><i id="homeSwatch"></i><span id="homeShort">HOM</span></div>
+      <div class="score" id="score">0–0</div>
+      <div class="club" id="awayBug"><span id="awayShort">AWY</span><i id="awaySwatch"></i></div>
+      <div class="clock" id="clock">0'</div>
+    </div>
+    <div class="meter">
+      <label>Win probability</label>
+      <div class="wpbar"><span id="wpH" style="background:var(--home);width:40%"></span><span id="wpD" style="background:var(--chalk-faint);width:25%"></span><span id="wpA" style="background:var(--away);width:35%"></span></div>
+      <div class="wplabels"><span id="wpHl">40%</span><span id="wpDl">25%</span><span id="wpAl">35%</span></div>
+    </div>
+    <div class="meter" style="min-width:150px">
+      <label>Right now</label>
+      <div class="phase" id="phase">Balanced<small id="phaseSub">Waiting for kick-off</small></div>
+    </div>
+    <div class="meter" id="metricBox" hidden style="min-width:150px">
+      <label id="metricLabel">Metric</label>
+      <div class="metric-chip" id="metricVal">–<small id="metricSub"></small></div>
+    </div>
+  </div>
+
+  <div class="prefs" role="group" aria-label="Personalise">
+    <div class="seg" role="group" aria-label="Viewing mode" id="personaSeg">
+      <button data-persona="casual" aria-pressed="true">Fan</button>
+      <button data-persona="analyst" aria-pressed="false">Analyst</button>
+      <button data-persona="studio" aria-pressed="false">Studio</button>
+      <button data-persona="access" aria-pressed="false">Audio description</button>
+    </div>
+    <label class="field">Language <select id="lang"></select></label>
+    <label class="field">My club <select id="club"><option value="">None</option></select></label>
+    <label class="field">Follow player <select id="focus"><option value="">Nobody</option></select></label>
+    <label class="field">One metric <select id="metric">
+      <option value="">Off</option><option value="wp">Win probability</option><option value="xg">xG race</option>
+      <option value="difficulty">Last pass difficulty</option><option value="speed">Top speed</option>
+      <option value="press">Pressing intensity</option><option value="possession">Possession</option>
+    </select></label>
+    <label class="field"><input type="checkbox" id="speak"> Read aloud</label>
+    <span class="spacer"></span>
+    <div class="ctl">
+      <span class="status-dot" id="liveDot" title="Stream status"></span>
+      <button class="btn small" id="pauseBtn">Pause</button>
+      <label class="field">Speed <select id="speed"><option>4</option><option selected>10</option><option>20</option><option>40</option></select>×</label>
+      <label class="field">Jump to <select id="jump"><option value="">–</option><option>30</option><option>45</option><option>60</option><option>75</option><option>89</option></select>'</label>
+    </div>
+  </div>
+</header>
+
+<main class="stage">
+  <section class="pitch-wrap" aria-label="Live pitch">
+    <div class="pitch-box" id="pitchBox">
+      <canvas id="pitch"></canvas>
+      <div class="overlay-layer" id="overlay" aria-live="polite"></div>
+    </div>
+    <div class="under">
+      <div class="chart-title"><span>Win probability and momentum</span>
+        <span class="legend"><span style="color:var(--home)" id="lgHome">Home</span><span style="color:var(--away)" id="lgAway">Away</span><span style="color:var(--sodium)">Momentum</span></span></div>
+      <svg class="timeline" id="timeline" viewBox="0 0 960 120" preserveAspectRatio="none" role="img" aria-label="Win probability and momentum over the match"></svg>
+    </div>
+  </section>
+
+  <aside class="feed" aria-label="Insights">
+    <div class="feed-head"><h2>Why it matters</h2><span id="feedCount"></span></div>
+    <div class="cards" id="cards"><p class="empty">Moments appear here as they happen, each one checked against the match data before it's shown.</p></div>
+  </aside>
+</main>
+
+<section class="tabs-wrap">
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="ask">Ask the analyst</button>
+    <button role="tab" aria-selected="false" data-tab="recap">Recap</button>
+    <button role="tab" aria-selected="false" data-tab="players">Players</button>
+    <button role="tab" aria-selected="false" data-tab="producer">Producer console</button>
+    <button role="tab" aria-selected="false" data-tab="ops">Agents at work</button>
+    <button role="tab" aria-selected="false" data-tab="about">How it works</button>
+  </div>
+
+  <div class="tabpanel" id="tab-ask" role="tabpanel">
+    <form class="ask-form" id="askForm"><input id="askInput" placeholder="Ask about this match: “Why did they score?”, “How is the number 9 playing?”" autocomplete="off" maxlength="300"><button class="btn primary">Ask</button></form>
+    <div class="suggest" id="suggest"></div>
+    <div class="qa" id="qa"></div>
+  </div>
+
+  <div class="tabpanel" id="tab-recap" role="tabpanel" hidden>
+    <div class="box">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h3 id="recapTitle">Recap</h3><button class="btn small" id="recapBtn">Write recap now</button></div>
+      <ul class="prose" id="recapLines" style="padding-left:18px"></ul>
+      <p class="muted" id="recapNote">Written automatically at half-time and full-time, or whenever you ask. It follows your viewing mode and language.</p>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-players" role="tabpanel" hidden>
+    <table class="data" id="playersTable"><thead></thead><tbody></tbody></table>
+  </div>
+
+  <div class="tabpanel" id="tab-producer" role="tabpanel" hidden>
+    <div class="two">
+      <div class="box">
+        <h3>Approval</h3>
+        <p class="muted">In review mode, graphics wait here for a producer. Goals, red cards and full-time always air. Unapproved graphics expire after 25 seconds.</p>
+        <div class="seg" id="modeSeg"><button data-mode="auto" aria-pressed="true">Auto-air</button><button data-mode="review" aria-pressed="false">Review first</button></div>
+        <div id="pending" style="margin-top:10px"></div>
+        <h3 style="margin-top:16px">On air</h3>
+        <div id="aired"></div>
+      </div>
+      <div class="box">
+        <h3>Overlay cue</h3>
+        <p class="muted">Every graphic is a timed, machine-readable cue keyed to the match clock, so any rendering partner can play it in sync. <a href="/overlay" target="_blank" rel="noopener">Open the clean overlay output</a>.</p>
+        <pre class="json" id="cueJson">Waiting for the first cue…</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-ops" role="tabpanel" hidden>
+    <div class="kv" id="opsKv"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="box"><h3>Agent pipeline</h3><svg id="topology" viewBox="0 0 560 300" style="width:100%" role="img" aria-label="Agent pipeline"></svg>
+        <p class="muted">Each moment runs through a Microsoft Agent Framework workflow. The four narrators work in parallel. Nothing airs unless the FactChecker can re-derive every number from the match data.</p></div>
+      <div class="box"><h3>Live handoffs</h3><div class="trace" id="trace"></div>
+        <p class="muted" style="margin-top:8px"><a id="auditLink" href="#" target="_blank" rel="noopener">Download the full audit trail</a></p><p class="muted"><a id="datasetLink" href="#" target="_blank" rel="noopener">Download this match's synthetic dataset</a></p></div>
+    </div>
+    <div class="box" style="margin-top:16px">
+      <h3>Stress test</h3>
+      <p class="muted">Start a fresh match with a faulty feed: corrupt, duplicated and out-of-order events. Watch the IngestGuard repair it.</p>
+      <div class="ctl"><label class="field">Seed <input id="seed" type="number" value="42" min="0" style="width:90px"></label>
+        <label class="field">Fault rate <select id="chaos"><option value="0">0%</option><option value="0.05" selected>5%</option><option value="0.15">15%</option></select></label>
+        <button class="btn" id="newMatch">Start new match</button><button class="btn ghost" id="backDemo" hidden>Back to the live demo</button></div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-about" role="tabpanel" hidden>
+    <div class="two">
+      <div class="box prose">
+        <h3>What you're watching</h3>
+        <p>A fully synthetic match between two fictional clubs, generated by our own football simulator. No real league data is used. Every pass, carry, shot and tackle arrives as a live event with a tracking snapshot of all 22 players.</p>
+        <p>Agents turn that feed into explained moments. They don't just say a goal happened: they say how likely it was, what made it likely, what would have changed it, and how much it moved the result. Every claim links to the events it came from.</p>
+        <p>The same moment is written four ways: for a casual fan, an analyst, a studio lower-third, and an audio description for blind and low-vision fans. You can pick a club, follow a player or track a single number.</p>
+      </div>
+      <div class="box">
+        <h3>Models</h3>
+        <div id="modelInfo" class="muted">Loading…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<aside class="drawer" id="drawer" hidden aria-label="Evidence">
+  <button class="btn small close" id="drawerClose">Close</button>
+  <div id="drawerBody"></div>
+</aside>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
