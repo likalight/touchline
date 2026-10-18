@@ -53,12 +53,12 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
 async function boot() {
   try {
     const [i18n, health] = await Promise.all([fetch("/api/i18n").then((r) => r.json()), fetch("/api/health").then((r) => r.json())]);
-    S.i18n = i18n; S.llm = health.llm;
+    S.i18n = i18n; S.llm = health.llm; S.speechNeural = !!(health.speech && health.speech.available);
   } catch { S.i18n = { languages: { en: "English" }, banks: { en: {} } }; }
   buildLangSelect();
   bindControls();
   applyPrefs();
-  resizeCanvas();
+  applyView();
   addEventListener("resize", resizeCanvas);
   requestAnimationFrame(frame);
   connect();
@@ -173,6 +173,7 @@ function onEvent(ev) {
   S.t0 = now;
   S.dur = Math.min(Math.max((gap / speed) * 1000, 120), 1600);
   if (ev.x != null) {
+    S.ballEv = ev;
     S.ballFrom = [...S.ball];
     S.ballMid = [ev.x, ev.y];
     S.ballTo = ev.end_x != null ? [ev.end_x, ev.end_y] : [ev.x, ev.y];
@@ -226,6 +227,7 @@ function onInsight(ins, replayed) {
   if (!replayed && (S.prefs.speak || S.prefs.persona === "access")) queueSpeech(ins);
   if (!$("#tab-producer").hidden) renderProducer();
   if (ins.kind === "half_time" || ins.kind === "full_time") loadRecap();
+  if (!replayed && ins.kind === "goal" && !$("#tab-mine").hidden) loadReelPlan();
 }
 
 function clubFlag(ins) {
@@ -390,16 +392,9 @@ function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 function frame(now) {
   requestAnimationFrame(frame);
   ctx.clearRect(0, 0, cv.width, cv.height);
+  if (S.view === "tv") { stepScene(now); drawTV(now); return; }
   pitchLines();
-  const t = Math.min(1, (now - S.t0) / S.dur);
-  const e = ease(t);
-  for (const pid of Object.keys(S.to)) {
-    const f = S.from[pid] || S.to[pid], to = S.to[pid];
-    S.pos[pid] = [lerp(f[0], to[0], e), lerp(f[1], to[1], e)];
-  }
-  // ball: to the event origin quickly, then along the action
-  if (t < 0.25) { const k = ease(t / 0.25); S.ball = [lerp(S.ballFrom[0], S.ballMid[0], k), lerp(S.ballFrom[1], S.ballMid[1], k)]; }
-  else { const k = ease((t - 0.25) / 0.75); S.ball = [lerp(S.ballMid[0], S.ballTo[0], k), lerp(S.ballMid[1], S.ballTo[1], k)]; }
+  stepScene(now);
 
   S.draws = S.draws.filter((d) => d.until > now);
   for (const d of S.draws) drawViz(d, now);
@@ -431,9 +426,123 @@ function frame(now) {
 
   for (const tg of S.tags) {
     const p = S.pos[tg.pid];
-    if (!p) continue;
+    if (!p || S.view === "tv") continue;
     tg.el.style.left = (X(p[0]) / DPR) + "px";
     tg.el.style.top = (Y(p[1]) / DPR) + "px";
+  }
+}
+
+function stepScene(now) {
+  const t = Math.min(1, (now - S.t0) / S.dur);
+  const e = ease(t);
+  for (const pid of Object.keys(S.to)) {
+    const f = S.from[pid] || S.to[pid], to = S.to[pid];
+    S.pos[pid] = [lerp(f[0], to[0], e), lerp(f[1], to[1], e)];
+  }
+  // ball: to the event origin quickly, then along the action (with height for lofted passes and shots)
+  S.ballZ = 0.11;
+  if (t < 0.25) { const k = ease(t / 0.25); S.ball = [lerp(S.ballFrom[0], S.ballMid[0], k), lerp(S.ballFrom[1], S.ballMid[1], k)]; }
+  else {
+    const k = ease((t - 0.25) / 0.75);
+    S.ball = [lerp(S.ballMid[0], S.ballTo[0], k), lerp(S.ballMid[1], S.ballTo[1], k)];
+    const ev = S.ballEv;
+    if (ev && ev.end_x != null) {
+      const d = Math.hypot(ev.end_x - ev.x, ev.end_y - ev.y);
+      if (ev.etype === "pass" && ev.q && ev.q.height === "high") S.ballZ += 4 * Math.min(14, d / 3.2) * k * (1 - k);
+      if (ev.etype === "shot") S.ballZ += 4 * 1.1 * k * (1 - k) + 0.9 * k;
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ TV view: the broadcast camera (mirrors touchline/vision/camera.py) */
+const TV = { tx: 52.5, ty: 30, camY: -40, camZ: 23, fov: 30 };
+function tvBasis() {
+  const c = [TV.tx, TV.camY, TV.camZ], tg = [TV.tx, TV.ty, 0];
+  let f = [tg[0] - c[0], tg[1] - c[1], tg[2] - c[2]];
+  const n = Math.hypot(...f); f = f.map((v) => v / n);
+  let r = [f[1], -f[0], 0]; const rn = Math.hypot(...r); r = r.map((v) => v / rn);
+  const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  return { c, f, r, u };
+}
+function tvProject(B, x, y, z = 0) {
+  const d = [x - B.c[0], y - B.c[1], z - B.c[2]];
+  const zc = Math.max(0.1, d[0] * B.f[0] + d[1] * B.f[1] + d[2] * B.f[2]);
+  const xc = d[0] * B.r[0] + d[1] * B.r[1] + d[2] * B.r[2], yc = d[0] * B.u[0] + d[1] * B.u[1] + d[2] * B.u[2];
+  const fl = (cv.width / 2) / Math.tan((TV.fov / 2) * Math.PI / 180);
+  return [cv.width / 2 + fl * xc / zc, cv.height / 2 - fl * yc / zc, zc];
+}
+function tvPoly(B, pts, fill) {
+  ctx.beginPath();
+  pts.forEach(([x, y, z], i) => { const [px, py] = tvProject(B, x, y, z || 0); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+function tvLine(B, pts, stroke, w) {
+  ctx.beginPath();
+  pts.forEach(([x, y, z], i) => { const [px, py] = tvProject(B, x, y, z || 0); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+  ctx.strokeStyle = stroke; ctx.lineWidth = w; ctx.stroke();
+}
+function drawTV(now) {
+  // camera follows the ball, smoothly
+  const bx = Math.min(Math.max(S.ball[0], 24), L - 24);
+  TV.tx += (bx - TV.tx) * 0.035; TV.ty += ((30 + (S.ball[1] - 34) * 0.18) - TV.ty) * 0.035;
+  const B = tvBasis(), lw = Math.max(1.5, cv.width / 700);
+  ctx.fillStyle = "#102c21"; ctx.fillRect(0, 0, cv.width, cv.height);
+  tvPoly(B, [[-30, 78, 0], [135, 78, 0], [135, 78, 14], [-30, 78, 14]], "#0b1f17");
+  tvPoly(B, [[-30, 78, 14], [135, 78, 14], [135, 92, 26], [-30, 92, 26]], "#142821");
+  tvPoly(B, [[-6, -6], [L + 6, -6], [L + 6, W + 6], [-6, W + 6]], "#184a32");
+  for (let k = 0; k < 18; k++) tvPoly(B, [[k * L / 18, 0], [(k + 1) * L / 18, 0], [(k + 1) * L / 18, W], [k * L / 18, W]], k % 2 ? "#1f5c3d" : "#1c5438");
+  const chalk = "rgba(232,238,226,.9)";
+  tvLine(B, [[0, 0], [L, 0], [L, W], [0, W], [0, 0]], chalk, lw);
+  tvLine(B, [[L / 2, 0], [L / 2, W]], chalk, lw);
+  tvLine(B, Array.from({ length: 49 }, (_, i) => [L / 2 + 9.15 * Math.cos(i / 48 * 2 * Math.PI), W / 2 + 9.15 * Math.sin(i / 48 * 2 * Math.PI)]), chalk, lw);
+  for (const side of [0, 1]) {
+    const xe = side ? L : 0, x16 = side ? L - 16.5 : 16.5, x6 = side ? L - 5.5 : 5.5;
+    tvLine(B, [[xe, W / 2 - 20.16], [x16, W / 2 - 20.16], [x16, W / 2 + 20.16], [xe, W / 2 + 20.16]], chalk, lw);
+    tvLine(B, [[xe, W / 2 - 9.16], [x6, W / 2 - 9.16], [x6, W / 2 + 9.16], [xe, W / 2 + 9.16]], chalk, lw);
+    tvLine(B, [[xe, W / 2 - 3.66, 0], [xe, W / 2 - 3.66, 2.44], [xe, W / 2 + 3.66, 2.44], [xe, W / 2 + 3.66, 0]], "#fff", lw * 1.6);
+  }
+  // live graphics on the grass
+  S.draws = S.draws.filter((d) => d.until > now);
+  for (const d of S.draws) {
+    if ((d.kind === "pass" || d.kind === "evidence") && d.end_x != null) tvLine(B, [[d.x, d.y], [d.end_x, d.end_y]], "rgba(242,193,78,.95)", lw * 2.2);
+    if (d.kind === "shot") {
+      tvLine(B, [[d.x, d.y], [d.end_x, d.end_y]], "rgba(238,240,232,.9)", lw * 2);
+      const ring = Array.from({ length: 33 }, (_, i) => [d.x + (0.8 + d.xg * 5) * Math.cos(i / 32 * 2 * Math.PI), d.y + (0.8 + d.xg * 5) * Math.sin(i / 32 * 2 * Math.PI)]);
+      tvLine(B, ring, "#f2c14e", lw * 2);
+    }
+  }
+  // players, far to near
+  const list = Object.entries(S.pos).map(([pid, p]) => {
+    const foot = tvProject(B, p[0], p[1], 0), head = tvProject(B, p[0], p[1], 1.82);
+    return { pid, p, foot, head };
+  }).filter((o) => o.foot[2] > 0.5).sort((a, b) => b.foot[2] - a.foot[2]);
+  for (const o of list) {
+    const pl = S.players[o.pid]; if (!pl) continue;
+    const [fx_, fy_] = o.foot, h = Math.max(6, fy_ - o.head[1]), w = h * 0.3;
+    const gk = pl.position === "GK";
+    const shirt = gk ? (pl.team === "home" ? "#7cc4ff" : "#ffb36b") : pl.color;
+    ctx.fillStyle = "rgba(10,30,20,.75)"; ctx.beginPath(); ctx.ellipse(fx_, fy_, w * 0.9, w * 0.25, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = "#1e1e1e"; ctx.fillRect(fx_ - w * 0.32, fy_ - h * 0.42, w * 0.64, h * 0.42);
+    ctx.fillStyle = "#11221a"; ctx.fillRect(fx_ - w * 0.5, fy_ - h * 0.55, w, h * 0.17);
+    ctx.fillStyle = shirt; ctx.beginPath(); ctx.roundRect(fx_ - w * 0.55, fy_ - h * 0.86, w * 1.1, h * 0.33, Math.max(1, w * 0.25)); ctx.fill();
+    ctx.fillStyle = "#c4967a"; ctx.beginPath(); ctx.ellipse(fx_, fy_ - h * 0.92, w * 0.26, h * 0.08, 0, 0, 7); ctx.fill();
+    if (h > 40) { ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(h * 0.17)}px Barlow Condensed, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(pl.number, fx_, fy_ - h * 0.7); }
+    if (o.pid === S.prefs.focus) {
+      ctx.strokeStyle = "#f2c14e"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(fx_, fy_, w * 1.3, w * 0.4, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = "#f2c14e"; ctx.font = `600 ${Math.max(12, Math.round(h * 0.2))}px Barlow, sans-serif`; ctx.textAlign = "center";
+      ctx.fillText(pl.name.split(" ").slice(-1)[0], fx_, o.head[1] - Math.max(10, h * 0.15));
+    }
+  }
+  // ball and its shadow
+  const sh = tvProject(B, S.ball[0], S.ball[1], 0), bl = tvProject(B, S.ball[0], S.ball[1], S.ballZ || 0.11);
+  const fl = (cv.width / 2) / Math.tan((TV.fov / 2) * Math.PI / 180), br = Math.max(2.5, fl * 0.24 / bl[2]);
+  ctx.fillStyle = "rgba(10,30,20,.8)"; ctx.beginPath(); ctx.ellipse(sh[0], sh[1], br * 1.2, br * 0.45, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(bl[0], bl[1], br, 0, 7); ctx.fill();
+  // tags follow heads in TV view
+  for (const tg of S.tags) {
+    const p = S.pos[tg.pid]; if (!p) continue;
+    const hd = tvProject(B, p[0], p[1], 2.1);
+    tg.el.style.left = (hd[0] / DPR) + "px"; tg.el.style.top = (hd[1] / DPR + 6) + "px";
   }
 }
 
@@ -528,14 +637,24 @@ function updateMetric() {
 
 /* ------------------------------------------------------------------ speech (audio description) */
 function queueSpeech(ins) {
-  if (!("speechSynthesis" in window)) return;
+  if (!S.speechNeural && !("speechSynthesis" in window)) return;
   const r = rendersFor(ins, "access");
   if (!r) return;
   if (S.speechQ.length > 2 && ins.salience < 0.6) return;
   S.speechQ.push({ text: r.speech || r.title, lang: S.prefs.lang });
 }
+let speaking = false;
 function tickSpeech() {
-  if (!("speechSynthesis" in window) || speechSynthesis.speaking || !S.speechQ.length) return;
+  if (speaking || !S.speechQ.length) return;
+  if (S.speechNeural) {
+    const { text, lang } = S.speechQ.shift();
+    speaking = true;
+    const a = new Audio(`/api/speak?lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(text)}`);
+    a.onended = a.onerror = () => { speaking = false; };
+    a.play().catch(() => { speaking = false; });
+    return;
+  }
+  if (!("speechSynthesis" in window) || speechSynthesis.speaking) return;
   const { text, lang } = S.speechQ.shift();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = { en: "en-GB", es: "es-ES", fr: "fr-FR", pt: "pt-PT" }[lang] || lang;
@@ -671,13 +790,13 @@ function drawTopology(topo) {
   const svg = $("#topology");
   svg.setAttribute("viewBox", "0 0 590 300");
   const nodes = {
-    "IngestGuard": [10, 20], "MatchState": [10, 80], "MomentScout": [10, 140], "TacticalAnalyst": [10, 200], "FactChecker": [190, 200],
+    "IngestGuard": [10, 20], "MatchState": [10, 80], "MomentScout": [10, 140], "TacticalAnalyst": [10, 200], "StorylineKeeper": [190, 140], "FactChecker": [190, 200],
     "Narrator[casual]": [370, 20], "Narrator[analyst]": [370, 80], "Narrator[studio]": [370, 140], "Narrator[access]": [370, 200], "Producer": [370, 260],
   };
   const w = 170, h = 34;
   const edge = ([a, b]) => {
-    const [x1, y1] = nodes[a], [x2, y2] = nodes[b];
     if (!nodes[a] || !nodes[b]) return "";
+    const [x1, y1] = nodes[a], [x2, y2] = nodes[b];
     const sx = x1 + (x2 > x1 ? w : w / 2), sy = y1 + (x2 > x1 ? h / 2 : h), ex = x2 + (x2 > x1 ? 0 : w / 2), ey = y2 + (x2 > x1 ? h / 2 : 0);
     return `<path d="M${sx},${sy} C${(sx + ex) / 2},${sy} ${(sx + ex) / 2},${ey} ${ex},${ey}" fill="none" stroke="#2a5242" stroke-width="1.5"/>`;
   };
@@ -687,7 +806,7 @@ function drawTopology(topo) {
   }).join("");
   const edges = (topo ? topo.edges : []).filter(([a, b]) => b !== "Producer").map(edge).join("") + fanIn;
   svg.innerHTML = edges + Object.entries(nodes).map(([n, [x, y]]) =>
-    `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${n === "FactChecker" ? "#3d3415" : "#184232"}" stroke="${n === "FactChecker" ? "#f2c14e" : "#2a5242"}"/>
+    `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${n === "FactChecker" ? "#3d3415" : "#184232"}" stroke="${n === "FactChecker" ? "#f2c14e" : n === "StorylineKeeper" ? "#a6b3a9" : "#2a5242"}"/>
      <text x="${x + w / 2}" y="${y + h / 2 + 5}" text-anchor="middle" fill="#eef0e8" font-family="Barlow Condensed" font-weight="600" font-size="16">${n}</text></g>`).join("");
 }
 
@@ -703,7 +822,53 @@ async function loadModels() {
   } catch { /* optional */ }
 }
 
+/* ------------------------------------------------------------------ my match */
+function reelQuery() {
+  const p = new URLSearchParams({ lang: S.prefs.lang, persona: S.prefs.persona === "analyst" ? "analyst" : "casual" });
+  if (S.prefs.club) p.set("club", S.prefs.club);
+  if (S.prefs.focus) p.set("player", S.prefs.focus);
+  return p.toString();
+}
+const fmtClock = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+async function loadReelPlan() {
+  try {
+    const plan = await fetch(`/api/matches/${S.sid}/reel?${reelQuery()}`).then((r) => r.json());
+    const who = [S.prefs.club && S.meta ? S.meta[S.prefs.club].name : "", S.prefs.focus && S.players[S.prefs.focus] ? S.players[S.prefs.focus].name : ""].filter(Boolean).join(" and ");
+    $("#mineTitle").textContent = who ? `Highlights for ${who}` : "The match in highlights";
+    $("#mineIntro").textContent = plan.clips.length ? `${plan.clips.length} moments, ${Math.round(plan.duration_s)} seconds of action, picked for you and checked against the match data.` : "Highlights appear here as the match produces them.";
+    $("#clips").innerHTML = plan.clips.map((c) => `<li><span class="m">${c.minute}'</span><span><span class="t">${esc(c.title)}</span><br><span class="l">${esc(c.line)}</span></span>
+      <span class="d">${fmtClock(c.start)} to ${fmtClock(c.end)}</span></li>`).join("");
+    $("#edlLink").href = `/api/matches/${S.sid}/reel?${reelQuery()}`;
+    if (plan.video && plan.video.url) showReel(plan.video.url);
+  } catch { /* keep previous */ }
+}
+function showReel(url) {
+  const v = $("#reelVideo"); v.hidden = false; if (!v.src.endsWith(url)) v.src = url;
+  $("#reelStatus").textContent = "Your reel is ready. Download it from the player menu to share it.";
+  $("#reelBtn").disabled = false;
+}
+async function makeReel() {
+  $("#reelBtn").disabled = true;
+  $("#reelStatus").textContent = "Rendering your reel through the broadcast camera…";
+  const r = await fetch(`/api/matches/${S.sid}/reel?${reelQuery()}`, { method: "POST" });
+  if (!r.ok) { $("#reelStatus").textContent = "The renderer is busy. Try again in a minute."; $("#reelBtn").disabled = false; return; }
+  const job = await r.json();
+  if (job.url) return showReel(job.url);
+  const poll = setInterval(async () => {
+    const p = await fetch(`/api/matches/${S.sid}/reel?${reelQuery()}`).then((x) => x.json());
+    if (p.video && p.video.status === "ready") { clearInterval(poll); showReel(p.video.url); }
+    else if (p.video && String(p.video.status).startsWith("failed")) { clearInterval(poll); $("#reelStatus").textContent = "The reel couldn't be rendered. Try again."; $("#reelBtn").disabled = false; }
+  }, 3000);
+}
+
 /* ------------------------------------------------------------------ controls */
+function applyView() {
+  S.view = S.prefs.view === "tactical" ? "tactical" : "tv";
+  $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === S.view)));
+  $("#pitchBox").classList.toggle("tv", S.view === "tv");
+  resizeCanvas();
+}
+
 function applyPrefs() {
   $$("#personaSeg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.persona === S.prefs.persona)));
   $("#club").value = S.prefs.club; $("#metric").value = S.prefs.metric; $("#speak").checked = S.prefs.speak;
@@ -714,6 +879,7 @@ function applyPrefs() {
   document.documentElement.lang = S.prefs.lang;
   rerenderCards();
   updateMetric();
+  if (!$("#tab-mine").hidden && S.meta) loadReelPlan();
 }
 
 async function control(action, value) {
@@ -723,6 +889,13 @@ async function control(action, value) {
 function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; }
 
 function bindControls() {
+  $("#viewSeg").addEventListener("click", (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    S.view = b.dataset.view; S.prefs.view = S.view; savePrefs();
+    $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $("#pitchBox").classList.toggle("tv", S.view === "tv");
+    resizeCanvas();
+  });
   $("#moreBtn").addEventListener("click", () => {
     const open = $(".prefs").classList.toggle("open");
     $("#moreBtn").setAttribute("aria-expanded", String(open));
@@ -757,6 +930,7 @@ function bindControls() {
   });
   $("#askForm").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#askInput").value.trim(); if (v) { ask(v); $("#askInput").value = ""; } });
   $("#recapBtn").addEventListener("click", loadRecap);
+  $("#reelBtn").addEventListener("click", makeReel);
   $("#drawerClose").addEventListener("click", () => { $("#drawer").hidden = true; });
   addEventListener("keydown", (e) => { if (e.key === "Escape") $("#drawer").hidden = true; });
   $$(".tabs [role=tab]").forEach((t) => t.addEventListener("click", () => {
@@ -766,6 +940,7 @@ function bindControls() {
     if (t.dataset.tab === "producer") renderProducer();
     if (t.dataset.tab === "ops") renderOps();
     if (t.dataset.tab === "recap") loadRecap();
+    if (t.dataset.tab === "mine") loadReelPlan();
   }));
   $("#modeSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;

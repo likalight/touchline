@@ -146,7 +146,9 @@ async def overlay():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status()}
+    from touchline.speech import speech
+
+    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status()}
 
 
 @app.get("/api/i18n")
@@ -288,6 +290,88 @@ async def event(sid: str, eid: str):
     if en.pass_features:
         out["pass_explain"] = s.state.models.pass_.explain(en.pass_features, s.state.models.pass_baseline)
     return out
+
+
+REELS: dict[str, dict] = {}
+REEL_DIR = Path(os.getenv("TOUCHLINE_REEL_DIR", "/tmp/touchline-reels"))
+
+
+@app.get("/api/matches/{sid}/reel")
+async def reel_plan(sid: str, club: Optional[str] = None, player: Optional[str] = None, lang: str = "en", persona: str = "casual"):
+    """My Match: the personal highlights plan (an edit decision list on the match clock)."""
+    from touchline.highlights import plan_reel
+
+    s = get(sid)
+    if club not in (None, "", "home", "away") or (player and player not in s.state.players):
+        raise HTTPException(400, "unknown club or player")
+    edl = plan_reel(s, club or None, player or None, lang, persona)
+    key = f"{sid}:{s.meta.match_id}:{len(s.insights)}:{club}:{player}:{lang}:{persona}"
+    job = REELS.get(key)
+    edl["video"] = {"status": job["status"], "url": f"/api/reels/{job['id']}.mp4" if job["status"] == "ready" else None} if job else None
+    edl["key"] = key
+    return edl
+
+
+@app.post("/api/matches/{sid}/reel")
+async def reel_render(sid: str, club: Optional[str] = None, player: Optional[str] = None, lang: str = "en", persona: str = "casual"):
+    """Render the personal reel to MP4 in the background (broadcast camera, burned-in graphics, optional voice)."""
+    import uuid as _uuid
+
+    from touchline.highlights import plan_reel, render_reel
+    from touchline.speech import speech
+
+    s = get(sid)
+    if club not in (None, "", "home", "away") or (player and player not in s.state.players):
+        raise HTTPException(400, "unknown club or player")
+    key = f"{sid}:{s.meta.match_id}:{len(s.insights)}:{club}:{player}:{lang}:{persona}"
+    if key in REELS:
+        job = REELS[key]
+        return {"id": job["id"], "status": job["status"], "url": f"/api/reels/{job['id']}.mp4" if job["status"] == "ready" else None}
+    if sum(1 for j in REELS.values() if j["status"] == "rendering") >= 2:
+        raise HTTPException(429, "two reels are already rendering; try again shortly")
+    REEL_DIR.mkdir(parents=True, exist_ok=True)
+    job = {"id": _uuid.uuid4().hex[:12], "status": "rendering", "started": time.time()}
+    REELS[key] = job
+    edl = plan_reel(s, club or None, player or None, lang, persona)
+
+    async def go():
+        try:
+            voice = None
+            if speech.available:
+                voice = [await speech.synthesize(f"{c['title']}. {c['line']}", lang) for c in edl["clips"]]
+            out = str(REEL_DIR / f"{job['id']}.mp4")
+            await asyncio.to_thread(render_reel, s, edl, out, 25, 1280, 720, voice)
+            job["status"] = "ready"
+        except Exception as exc:  # pragma: no cover
+            log.exception("reel failed")
+            job["status"] = f"failed: {exc}"
+    asyncio.create_task(go())
+    return {"id": job["id"], "status": "rendering", "clips": len(edl["clips"])}
+
+
+@app.get("/api/reels/{rid}.mp4", include_in_schema=False)
+async def reel_file(rid: str):
+    if not rid.isalnum():
+        raise HTTPException(404)
+    path = REEL_DIR / f"{rid}.mp4"
+    if not path.exists():
+        raise HTTPException(404, "not ready")
+    return FileResponse(path, media_type="video/mp4")
+
+
+@app.get("/api/speak")
+async def speak(text: str, lang: str = "en"):
+    """Neural voice for audio description and commentary (Azure AI Speech). 503 when not configured."""
+    from fastapi.responses import Response
+
+    from touchline.speech import speech
+
+    if not speech.available or len(text) > 600:
+        raise HTTPException(503, "speech not configured")
+    audio = await speech.synthesize(text, lang)
+    if not audio:
+        raise HTTPException(503, "speech unavailable")
+    return Response(audio, media_type="audio/mpeg")
 
 
 @app.get("/api/matches/{sid}/audit")

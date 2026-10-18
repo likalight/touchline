@@ -13,6 +13,7 @@ var roles = {
   azureAiUser: '53ca6127-db72-4b80-b1b0-d745d6d5456d'
   eventHubsReceiver: 'a638d3c7-ab3a-418d-83e6-5f17a39d4fde'
   eventHubsSender: '2b629674-e913-4c01-ae53-ef4638d8f975'
+  speechUser: 'f2dc8367-1007-4938-bd23-fe263f013447'
 }
 
 // ---------------------------------------------------------------- identity & observability
@@ -125,6 +126,16 @@ resource aiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
+resource speechUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundry.id, identity.id, roles.speechUser)
+  scope: foundry
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.speechUser)
+  }
+}
+
 // ---------------------------------------------------------------- Event Hubs (event-driven ingestion)
 resource hubs 'Microsoft.EventHub/namespaces@2024-01-01' = if (enableEventHubs) {
   name: 'evh-touchline-${token}'
@@ -194,7 +205,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
-  dependsOn: [acrPull, openAiUser]
+  dependsOn: [acrPull, openAiUser, speechUser]
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -227,6 +238,8 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
             { name: 'TOUCHLINE_PUBLIC_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
             { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }
+            { name: 'AZURE_SPEECH_REGION', value: location }
+            { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
           ]
           probes: [
             {

@@ -65,6 +65,8 @@
 
 <main class="stage">
   <section class="pitch-wrap" aria-label="Live pitch">
+    <div class="view-bar"><div class="seg" id="viewSeg" role="group" aria-label="Camera">
+      <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div></div>
     <div class="pitch-box" id="pitchBox">
       <canvas id="pitch"></canvas>
       <div class="overlay-layer" id="overlay" aria-live="polite"></div>
@@ -84,7 +86,8 @@
 
 <section class="tabs-wrap">
   <div class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="ask">Ask the analyst</button>
+    <button role="tab" aria-selected="true" data-tab="mine">My match</button>
+    <button role="tab" aria-selected="false" data-tab="ask">Ask the analyst</button>
     <button role="tab" aria-selected="false" data-tab="recap">Recap</button>
     <button role="tab" aria-selected="false" data-tab="players">Players</button>
     <button role="tab" aria-selected="false" data-tab="producer">Producer console</button>
@@ -92,7 +95,24 @@
     <button role="tab" aria-selected="false" data-tab="about">How it works</button>
   </div>
 
-  <div class="tabpanel" id="tab-ask" role="tabpanel">
+  <div class="tabpanel" id="tab-mine" role="tabpanel">
+    <div class="two">
+      <div class="box">
+        <h3 id="mineTitle">Your highlights</h3>
+        <p class="muted" id="mineIntro">Pick a club or follow a player above, and we'll cut the moments that matter to you, captioned in your language.</p>
+        <ol class="clips" id="clips"></ol>
+        <div class="ctl" style="margin-top:10px"><button class="btn primary" id="reelBtn">Make my highlights video</button>
+          <a class="btn ghost" id="edlLink" href="#" target="_blank" rel="noopener">Edit list for a studio (JSON)</a></div>
+      </div>
+      <div class="box">
+        <h3>Your reel</h3>
+        <video id="reelVideo" controls playsinline hidden style="width:100%;border-radius:6px;background:#0c241b"></video>
+        <p class="muted" id="reelStatus">Rendered through the broadcast camera with your graphics and language. It takes about a minute.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-ask" role="tabpanel" hidden>
     <form class="ask-form" id="askForm"><input id="askInput" placeholder="Ask about this match: “Why did they score?”, “How is the number 9 playing?”" autocomplete="off" maxlength="300"><button class="btn primary">Ask</button></form>
     <div class="suggest" id="suggest"></div>
     <div class="qa" id="qa"></div>
