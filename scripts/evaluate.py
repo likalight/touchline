@@ -173,7 +173,7 @@ def main() -> int:
     (ROOT / "docs" / "EVAL.md").write_text(f"""# Evaluation
 
 `python scripts/evaluate.py --matches {args.matches} --gate` on {args.matches} unseen synthetic matches
-(seeds 5000+, half of them through a {int(args.chaos * 100)}% faulty feed), deterministic path. Runs in CI on every push.
+(seeds 5000+, half of them through a {int(args.chaos * 100)}% faulty feed), deterministic path. The CI workflow runs it on every push.
 
 | Metric | Result | Gate |
 |---|---|---|

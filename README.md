@@ -25,9 +25,9 @@ synthetic, and the clubs, players and venue are fictional.
 
 | Stage the brief asks for | What Touchline does |
 |---|---|
-| **Ingest** | A seeded, calibrated simulator generates a full 90-minute match (about 2.4 goals, 23 shots and 1,100 passes per game): passes, carries, dribbles, shots, saves, tackles, interceptions, pressures, fouls, cards and corners, with a 22-player tracking snapshot on every event. The `IngestGuard` validates, de-duplicates and re-orders the feed, and repaired a 10%-faulty feed exactly once in every evaluation match. The same pipeline consumes **Azure Event Hubs** or events **auto-generated from video**. |
+| **Ingest** | A seeded, calibrated simulator generates a full 90-minute match (about 2.3 goals, 23 shots and 1,100 passes per game): passes, carries, dribbles, shots, saves, tackles, interceptions, pressures, fouls, cards and corners, with a 22-player tracking snapshot on every event. The `IngestGuard` validates, de-duplicates and re-orders the feed, and repaired a 10%-faulty feed exactly once in every evaluation match. The same pipeline consumes **Azure Event Hubs** or events **auto-generated from video**. |
 | **Interpret** | `MatchState` keeps a live model of the match: possession, xG, expected threat (xT), pass difficulty, progressive and line-breaking passes, PPDA, momentum, **control vs chaos**, game rhythm, win probability (stoppage time included), player speed and distance, records and ratings. |
-| **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have been 0.79 xG"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
+| **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have gone in 67% of the time"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
 | **Render** | The `Producer` agent is an editor: moments compete for the screen, and it scores each one (news value, storyline, freshness, team balance) and **airs, cuts in, queues or drops** it with a stated reason. It emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`), and a human producer can approve each one. The live app has a **3D broadcast view** (floodlit stadium, animated players in club kits, goal replays, an isolated player cam, LED boards carrying the verified insight), a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
 | **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. **Two-voice commentary** (a lead commentator and an analyst, captioned) speaks every key moment. After the match, **My Match** replays each fan's own highlights in the 3D stadium and records the reel in their browser: their clubs, their players, their language. |
 
@@ -111,13 +111,13 @@ flowchart LR
 - **Agents published to Foundry Agent Service.** `azd up` runs `scripts/foundry_publish.py`, which publishes `touchline-analyst` (with its six tools) and `touchline-narrator` as new versions tagged with the git commit, each with a Responsible-AI content policy. At runtime `FoundryAgent` binds the published version to the live match tools (`TOUCHLINE_FOUNDRY_AGENTS=on`).
 - **Any language from one model deployment.** The narrator writes graphics copy in any language; the FactChecker and Content Safety check it before it airs.
 - **Tracing.** The project is connected to Application Insights, so every agent run and workflow superstep appears in the Foundry tracing view.
-- **Evaluations.** `scripts/foundry_eval.py` runs Foundry's quality, tool-use and safety evaluators (relevance, coherence, task adherence, intent resolution, tool-call accuracy, tool-output use, hate and violence) together with Touchline's own checks (every number grounded in a tool result, citations for "why" questions, short answers), and writes `docs/FOUNDRY_EVAL.md` with the portal link.
+- **Evaluations.** `scripts/foundry_eval.py` runs Foundry's quality, tool-use and safety evaluators (relevance, coherence, task adherence, intent resolution, tool-call accuracy, tool-output use, hate and violence) together with Touchline's own checks (every number grounded in a tool result, citations for "why" questions, short answers), and writes `docs/FOUNDRY_EVAL.md` with the portal link. It needs the deployed Foundry project, so run it after `azd up`.
 
 ## Enterprise readiness
 
 - **Microsoft Entra ID** sign-in for producer tools through Container Apps authentication, with `Touchline.Producer` and `Touchline.Admin` roles (`scripts/setup_entra.sh`). Fans stay anonymous. Every producer action is audited with who did it.
 - **Azure AI Content Safety:** Prompt Shields on fan questions, moderation on model output. Optional **Microsoft Purview** policies on agent prompts and responses.
-- **No keys anywhere:** one managed identity with least-privilege roles; local auth disabled on Foundry, Event Hubs and Storage.
+- **No API keys:** Azure services authenticate with one managed identity and least-privilege roles; local auth is disabled on Foundry and Event Hubs and shared-key access is off on Storage. The only secret is the optional Entra sign-in client secret, held as a Container Apps secret.
 - **Audit export** per match: agent spans, verification results, editorial decisions, producer actions, drills and viewer feedback.
 
 Details in [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
@@ -138,7 +138,7 @@ contributions, which the evidence drawer shows. See [docs/MODEL_CARD.md](docs/MO
 
 ## Evaluation
 
-Runs in CI on every push (`python scripts/evaluate.py --matches 12 --gate`), on 12 unseen
+The CI workflow runs it on every push (`python scripts/evaluate.py --matches 12 --gate`), on 12 unseen
 matches, half of them through a 10% faulty feed. Full report: [docs/EVAL.md](docs/EVAL.md).
 
 | Metric | Result |
@@ -209,13 +209,13 @@ azd up            # provisions everything in infra/ and deploys the container
 - **Log Analytics and Application Insights**
 - a **user-assigned managed identity** with least-privilege roles
 
-There are no secrets anywhere. To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
+No API keys: services use the managed identity (the optional Entra sign-in client secret is the only secret, stored as a Container Apps secret). To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
 plays a match onto Event Hubs, and the app serves it as session `live` at `<url>/?session=live`.
 
 ## Interfaces
 
 - **Stream:** `GET /api/matches/{session}/stream` (SSE): events, state, insights, cues, late renders and agent traces.
-- **Read endpoints:** `GET /insights?persona=&lang=`, `/recap`, `/players`, `/events/{id}` (facts, model drivers, pitch control), `/audit`, `/dataset.jsonl`.
+- **Read endpoints** (all under `/api/matches/{session}`): `GET /insights?persona=&lang=`, `/recap`, `/players`, `/events/{id}` (facts, model drivers, pitch control), `/audit`, `/dataset.jsonl`.
 - **My Match:** `/reel?session=&club=&player=&lang=` plays and records the 3D reel in the browser; `GET /api/matches/{id}/reel` returns the edit list; `POST` renders a quick MP4 on the server; `GET /window?start=&end=` returns any slice of the match with positions.
 - **Post-match and feedback:** `GET /package` (recaps x personas x languages, highlights, top players, verification), `POST /feedback`, `GET /api/downstream`, `GET /api/me`.
 - **Voice:** `GET /api/speak?text=&lang=`.

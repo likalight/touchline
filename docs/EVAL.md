@@ -1,7 +1,7 @@
 # Evaluation
 
 `python scripts/evaluate.py --matches 12 --gate` on 12 unseen synthetic matches
-(seeds 5000+, half of them through a 10% faulty feed), deterministic path. Runs in CI on every push.
+(seeds 5000+, half of them through a 10% faulty feed), deterministic path. The CI workflow runs it on every push.
 
 | Metric | Result | Gate |
 |---|---|---|

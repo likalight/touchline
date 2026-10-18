@@ -9,7 +9,7 @@ Costs and the workflow fit are in [BROADCASTERS.md](BROADCASTERS.md); the models
 |---|---|
 | What data does it process? | Match events (passes, shots, tackles, positions) and fan questions. In this entry every match is synthetic and every club and player is fictional. |
 | Personal data? | None stored. Fans are anonymous; producers are identified only by their Microsoft Entra ID name in the audit trail. |
-| Where does data live? | In the Azure region you deploy to (one `azd` parameter). Match state is in memory for the life of a session; nothing is written to disk except optional reel videos, deleted on restart. |
+| Where does data live? | In the Azure region you deploy to (one `azd` parameter). Match state is in memory for the life of a session. Verified insights, social cards and post-match packages are written to Blob Storage in the same deployment; optional server-rendered reel videos are deleted on restart. |
 | Training on customer data? | No. The glass-box models (xG, pass completion, threat, win probability) are fitted on Touchline's own synthetic league and frozen ([params.json](../touchline/analytics/params.json)). Azure OpenAI does not train on prompts. |
 
 ## Layers of AI control
@@ -20,7 +20,7 @@ Every graphic, line of commentary and answer passes through these, in order. A f
 |---|---|---|
 | Deterministic analytics | Made-up statistics: every number starts as a computed fact with an event ID | `touchline/analytics` |
 | FactChecker agent | Any number, player or future event the match data does not support, including in model-written copy | `touchline/agents/verifier.py` |
-| Azure AI Content Safety | Harmful language in model output; **Prompt Shields** on fan questions (refused before any agent sees them) | `touchline/safety.py` |
+| Azure AI Content Safety | Harmful language in model output; **Prompt Shields** on questions from fans and from other agents over A2A (refused before the analyst sees them) | `touchline/safety.py` |
 | Foundry Responsible-AI policy | Attached to every published agent version in Foundry Agent Service | `touchline/foundry_agents.py` |
 | Microsoft Purview (optional) | Data-security and compliance policies on agent prompts and responses (`TOUCHLINE_PURVIEW=on`) | `touchline/llm.py` |
 | Human in the loop | Review mode: graphics wait for a producer; goals, red cards and full time always air | Producer console |
@@ -29,7 +29,7 @@ Every graphic, line of commentary and answer passes through these, in order. A f
 
 * **Fans:** anonymous.
 * **Producers:** Microsoft Entra ID sign-in through Azure Container Apps built-in authentication. App roles `Touchline.Producer` and `Touchline.Admin` gate approving graphics, review mode, controlling the shared broadcast and running drills. Set up with `scripts/setup_entra.sh`; `TOUCHLINE_AUTH=entra` enforces it.
-* **Services:** one user-assigned managed identity with least-privilege roles (AcrPull, Azure AI User, Cognitive Services OpenAI User, Cognitive Services Speech User, Cognitive Services User, Event Hubs sender and receiver). `disableLocalAuth` is on for the Foundry account, so there are **no API keys** anywhere.
+* **Services:** one user-assigned managed identity with least-privilege roles (AcrPull, Azure AI User, Cognitive Services OpenAI User, Cognitive Services Speech User, Cognitive Services User, Event Hubs sender and receiver, Storage Blob Data Owner). Local auth is disabled on the Foundry account and Event Hubs, and shared-key access is off on Storage, so there are **no API keys**. The only secret is the optional Entra sign-in client secret, held as a Container Apps secret.
 
 ## Audit
 
@@ -46,7 +46,7 @@ Every graphic, line of commentary and answer passes through these, in order. A f
 
 | Target | How it is met | Evidence |
 |---|---|---|
-| Graphics ready inside one broadcast frame | Agent pipeline p95 under 5 ms; CI fails above 250 ms | [EVAL.md](EVAL.md), run on every push |
+| Graphics ready inside one broadcast frame | Agent pipeline p95 under 5 ms; the CI workflow fails above 250 ms | [EVAL.md](EVAL.md), run on every push |
 | No wrong number on air | 100% FactChecker verification is a CI gate | [EVAL.md](EVAL.md) |
 | Survives a bad feed | IngestGuard: validation, de-duplication, re-ordering; exactly-once in 100% of faulty-feed matches | [EVAL.md](EVAL.md), drills |
 | Survives a model outage | Circuit breaker; hosted Foundry agent falls back to the same agent run locally, then to phrase banks | Resilience drills |
@@ -58,7 +58,7 @@ Resilience drills (Agents at work tab) inject each failure on demand in the live
 ## Change management
 
 * Agents are **versioned in Foundry Agent Service**, each version tagged with the git commit, published by `azd up`.
-* CI runs the tests and the evaluation gate on every push; a regression in verification, coverage or latency fails the build.
+* The CI workflow runs the tests and the evaluation gate on every push; a regression in verification, coverage or latency fails the build.
 * Foundry evaluations (quality, tool use, safety) plus Touchline's own grounding checks run with `scripts/foundry_eval.py`.
 
 ## Rolling out across a global organisation

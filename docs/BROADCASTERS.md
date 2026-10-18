@@ -13,7 +13,7 @@ with it, and an engineering team can run it.
 | Live: producer | Approve or drop each graphic; goals and red cards always air | Producer console, `POST /cues/{id}/decision` |
 | Live: commentary and studio | Storylines with callbacks ("redemption for Varga"); ask the analyst anything | Insight feed, `POST /ask`, A2A agent card |
 | Live: streaming app | Every viewer picks a mode, language, club, player or single metric | Live app; `GET /insights?persona=&lang=` |
-| Live: accessibility | Spatial audio description, neural voice via Azure AI Speech | Audio description mode, `/api/speak` |
+| Live: accessibility | Spoken description of where play is, two-voice commentary, neural voices via Azure AI Speech | Audio description mode, `/api/speak` |
 | Half-time and full-time | Recaps that find the story (comeback, ten men, late winner) | `GET /recap?persona=&lang=` |
 | Post-match | A personal highlights reel per fan, and an edit list for the studio | `GET/POST /reel` (MP4 + EDL) |
 

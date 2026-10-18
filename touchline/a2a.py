@@ -36,7 +36,11 @@ def mount_a2a(app, get_session: Callable, base_url: str) -> bool:
             if session is None:
                 answer = "No live match is running."
             else:
-                res = await session.ask_agent.ask(question)
+                from touchline.safety import safety
+
+                refused = await safety.screen_question(question)  # same Prompt Shields as fan questions
+                res = ({"answer": "I can only help with questions about this match.", "citations": []} if refused
+                       else await session.ask_agent.ask(question))
                 cites = f" Evidence: {', '.join(res['citations'][:6])}." if res.get("citations") else ""
                 answer = f"[{session.meta.match_id} {session.state.minute}'] {res['answer']}{cites}"
             await event_queue.enqueue_event(new_text_message(answer, context_id=context.context_id, task_id=context.task_id))

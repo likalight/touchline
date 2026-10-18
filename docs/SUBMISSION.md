@@ -33,13 +33,13 @@ highlights reel for every fan.
 
 - **A drop-in graphics template:** it loads in CasparCG and SPX, the open playout tools broadcasters use.
 - **An event-driven back office:** every verified insight streams out on Event Hubs. An Azure Function writes social cards and, at full time, a post-match package to Blob Storage.
-- **Controls a security team signs off:** Microsoft Entra ID roles on producer tools, Content Safety, no keys anywhere, and a full audit trail of agent hand-offs, editorial decisions and who approved what.
+- **Controls a security team signs off:** Microsoft Entra ID roles on producer tools, Content Safety, managed identity instead of API keys, and a full audit trail of agent hand-offs, editorial decisions and who approved what.
 - **Resilience drills:** break the feed, the model, a narrator, the storyline agent, or inject a made-up number, and watch which agent catches it and how fast it recovers.
 
 **Microsoft and Azure technology.**
 
 - Microsoft Agent Framework: workflows with fan-out and fan-in, a supervisor, agents and tool calling
-- Microsoft Foundry: agents published to Foundry Agent Service (versioned, with a content policy), model deployment, tracing and evaluations
+- Microsoft Foundry: agents published to Foundry Agent Service (versioned, with a content policy), model deployment, tracing, and an evaluation script for Foundry's evaluators
 - Azure AI Content Safety (Prompt Shields and moderation) and Azure AI Speech (two neural voices per language)
 - A2A protocol
 - Azure Container Apps, with Microsoft Entra ID authentication
@@ -92,5 +92,5 @@ red card comes at 29'.
 | 0:55 to 1:05 | Producer console: Editor's decisions (aired, cut in, queued, dropped, with reasons) | "A producer agent decides what goes on air, and says why. A human can approve every graphic." |
 | 1:05 to 1:17 | Switch to Español, then Audio description; Player cam on Varga | "One moment, four audiences and any language, including audio description for blind fans." |
 | 1:17 to 1:30 | Agents at work: press "Inject a made-up number" and "Crash a narrator"; the log shows who caught each and the recovery time | "We break it on purpose. The fact-checker blocks a made-up number; a crashed agent is covered and the show goes on." |
-| 1:30 to 1:42 | Azure services panel: Foundry hosted agents, Content Safety, Event Hubs, Functions packages | "It runs on Microsoft Foundry Agent Service, Content Safety, Event Hubs and Azure Functions, with no keys anywhere." |
+| 1:30 to 1:42 | Azure services panel: Foundry hosted agents, Content Safety, Event Hubs, Functions packages | "It runs on Microsoft Foundry Agent Service, Content Safety, Event Hubs and Azure Functions, with no API keys." |
 | 1:42 to 1:55 | My Match: the 3D reel plays, then the CasparCG template | "Every fan gets their own highlights, and broadcasters get graphics that drop straight into their playout. Touchline: the game, explained." |
