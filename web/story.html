@@ -117,6 +117,8 @@ nav.top .links a:not(.btn):hover { text-decoration: underline; text-underline-of
 .w4 img { width: 560px; }
 .w6 img { width: 380px; }
 .w7 img { width: 560px; }
+.w8 img { width: 560px; }
+.w9 img { width: 560px; }
 .w5 video { width: 520px; aspect-ratio: 420 / 272; image-rendering: pixelated; background: #1d5a3c; }
 
 /* ------------------------------------------------ close + footer */
@@ -238,15 +240,20 @@ footer .giant { font: 700 29vw/0.8 var(--display); text-transform: uppercase; wh
   <p><span class="lead">Twelve unseen matches:</span>
     <span class="fact">735 moments,</span> <span class="fact">all fact-checked,</span>
     <span class="fact">every goal covered,</span> <span class="fact">no broken citations,</span>
-    <span class="fact">4.8 ms at p95.</span></p>
+    <span class="fact">4.3 ms at p95.</span></p>
   <p class="src">From the evaluation gate that runs on every commit. Synthetic matches, deterministic path.</p>
 </section>
 
 <section class="features" data-field="#0f2b20">
   <div class="intro rise"><h2>One moment, every fan</h2></div>
 
+  <div class="row w8 rise">
+    <div class="txt"><h3>A stadium in your browser</h3><p>The match plays in a floodlit 3D stadium: animated players in club kits, a crowd that jumps when their team scores, LED boards that carry the latest checked insight, a replay angle on every goal and a camera that can follow one player all match.</p></div>
+    <figure><img src="/static/img/stadium-3d.png" alt="The 3D broadcast view: floodlit stands in both club colours, players on a striped pitch, a pass drawn on the grass and a checked lower-third" width="560" height="315" loading="lazy"></figure>
+  </div>
+
   <div class="row w1 rise">
-    <div class="txt"><h3>Four voices</h3><p>The same goal is written for a casual fan, an analyst, a studio lower-third and a listener who can't see the screen. English, Spanish, French and Portuguese work offline. Any other language comes from Azure OpenAI, and is fact-checked again.</p></div>
+    <div class="txt"><h3>Four voices</h3><p>The same goal is written for a casual fan, an analyst, a studio lower-third and a listener who can't see the screen. English, Spanish, French and Portuguese work offline. Any other language comes from Microsoft Foundry, and is fact-checked again.</p></div>
     <figure><img src="/static/img/fan-es-crop.png" alt="Insight cards in Spanish from the live app, each marked for or against the fan's club and checked against the data" width="380" height="596" loading="lazy"></figure>
   </div>
 
@@ -266,13 +273,18 @@ footer .giant { font: 700 29vw/0.8 var(--display); text-transform: uppercase; wh
   </div>
 
   <div class="row w7 rise">
-    <div class="txt"><h3>Your match, your reel</h3><p>After the final whistle, every fan gets their own highlights: their club, the player they followed, in their language, cut from the broadcast camera with the storyline written in.</p></div>
-    <figure><img src="/static/img/reel-frame.png" alt="A frame from a personal highlights reel in Spanish: Ravi Varga scores, Kestrel Bay have played with ten men since minute 29" width="560" height="315" loading="lazy"></figure>
+    <div class="txt"><h3>Your match, your reel</h3><p>After the final whistle, every fan gets their own highlights: their club, the players they follow, in their language, replayed in the 3D stadium with the storyline written in, and saved straight from the browser.</p></div>
+    <figure><img src="/static/img/reel-frame.png" alt="A frame from a personal 3D highlights reel: the scorebug at 7 minutes and a line-breaking pass drawn on the grass" width="560" height="315" loading="lazy"></figure>
   </div>
 
   <div class="row w4 rise">
-    <div class="txt"><h3>Agents that check each other</h3><p>A Microsoft Agent Framework workflow runs per moment: an analyst, a fact-checker, four narrators side by side, then a producer. Every handoff is traced, and the live show never waits on a model.</p></div>
+    <div class="txt"><h3>Agents that check each other</h3><p>A Microsoft Agent Framework workflow runs per moment: an analyst, a fact-checker, four narrators side by side, then a producer that decides what deserves the screen and says why. Every handoff is traced, and the live show never waits on a model.</p></div>
     <figure><img src="/static/img/agents-crop.png" alt="The agent pipeline from IngestGuard to Producer, beside the live log of handoffs between agents" width="560" height="299" loading="lazy"></figure>
+  </div>
+
+  <div class="row w9 rise">
+    <div class="txt"><h3>Break it on purpose</h3><p>Corrupt the feed, take the language model down, crash an agent or slip in a made-up number, while the match plays. The log shows which agent caught each fault and how long recovery took. Building these drills found a real gap in our own fact-checker, now fixed.</p></div>
+    <figure><img src="/static/img/drills.png" alt="The resilience drills log: each fault, the agent that caught it, and the recovery time" width="560" height="211" loading="lazy"></figure>
   </div>
 
   <div class="row w5 rise">

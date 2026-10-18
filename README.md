@@ -1,19 +1,22 @@
 # Touchline
 
-**The game, explained.** Touchline is an AI insights engine on Azure. It turns a live stream of
-football events into explained moments, storylines that run across the whole match, timed
-broadcast graphics, automated recaps and personal highlight reels. Each one is rendered
-differently for every viewer, and every number is checked before it airs.
+**The game, explained.** Touchline is a multi-agent AI insights engine on Azure. It turns a live
+stream of football events into explained moments, storylines that run across the whole match,
+timed broadcast graphics chosen by an editorial agent, two-voice commentary, automated recaps and
+personal 3D highlight reels. Each one is rendered differently for every viewer, and every number
+is checked before it airs.
 
 Built for the Microsoft x Premier League *Inside the Game: Developer Hackathon*, for the
 challenge *The Synthetic Match Insights Engine for Premier League Studio*. All data is
 synthetic, and the clubs, players and venue are fictional.
 
-![Touchline live view: the broadcast camera with a scorebug and a momentum panel, beside verified insight cards](docs/screenshot.png)
+![Touchline live view: the 3D broadcast camera with a scorebug and a verified lower-third, beside insight cards](docs/screenshot.png)
 
 - **Live demo:** `<your Container Apps URL>` (see [Deploy](#deploy-to-azure)). The live app is at `/`, the project page at `/story`, and the keyable graphics output at `/overlay`.
 - **Demo video:** `<YouTube link>`
 - **For broadcasters:** [workflow fit, latency budget, trust and cost per match](docs/BROADCASTERS.md)
+- **Impact:** [problem, outcomes, cost and the path to production](docs/IMPACT.md), with a [ten-minute user test](docs/USER_TEST.md)
+- **Governance:** [data, AI controls, identity, audit and reliability](docs/GOVERNANCE.md)
 - **Submission kit:** [pitch and 2-minute video script](docs/SUBMISSION.md)
 
 ---
@@ -25,8 +28,8 @@ synthetic, and the clubs, players and venue are fictional.
 | **Ingest** | A seeded, calibrated simulator generates a full 90-minute match (about 2.4 goals, 23 shots and 1,100 passes per game): passes, carries, dribbles, shots, saves, tackles, interceptions, pressures, fouls, cards and corners, with a 22-player tracking snapshot on every event. The `IngestGuard` validates, de-duplicates and re-orders the feed, and repaired a 10%-faulty feed exactly once in every evaluation match. The same pipeline consumes **Azure Event Hubs** or events **auto-generated from video**. |
 | **Interpret** | `MatchState` keeps a live model of the match: possession, xG, expected threat (xT), pass difficulty, progressive and line-breaking passes, PPDA, momentum, **control vs chaos**, game rhythm, win probability (stoppage time included), player speed and distance, records and ratings. |
 | **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have been 0.79 xG"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
-| **Render** | The `Producer` emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`) with layers, priorities and copy in every language. A producer can approve each one. The live app has a **broadcast TV camera** view, a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
-| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. After the match, **My Match** cuts each fan a personal highlights reel: their clubs, their players, their language. |
+| **Render** | The `Producer` agent is an editor: moments compete for the screen, and it scores each one (news value, storyline, freshness, team balance) and **airs, cuts in, queues or drops** it with a stated reason. It emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`), and a human producer can approve each one. The live app has a **3D broadcast view** (floodlit stadium, animated players in club kits, goal replays, an isolated player cam, LED boards carrying the verified insight), a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
+| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. **Two-voice commentary** (a lead commentator and an analyst, captioned) speaks every key moment. After the match, **My Match** replays each fan's own highlights in the 3D stadium and records the reel in their browser: their clubs, their players, their language. |
 
 Everything else in the brief is covered too:
 
@@ -52,25 +55,27 @@ his hat-trick in the 94th minute. Varga's own loss of possession had led to Iron
 flowchart LR
   subgraph Feed
     SIM[Synthetic match simulator]:::src
-    EH[(Azure Event Hubs)]:::az
+    EH[(Azure Event Hubs<br/>match-events)]:::az
     CV[Auto-eventing from video]:::src
   end
   SIM & EH & CV --> IG[IngestGuard<br/>validate · dedupe · re-order]
   IG --> MS[(MatchState<br/>shared blackboard)]
   MS --> SC[MomentScout] & SK[StorylineKeeper<br/>match-long threads]
-  subgraph WF[Microsoft Agent Framework workflow, one run per moment]
+  subgraph WF[Microsoft Agent Framework workflow, one run per moment, under a supervisor]
     TA[TacticalAnalyst<br/>models · counterfactuals] --> ST[StorylineKeeper<br/>callbacks] --> FC{FactChecker<br/>re-derive every number}
     FC --> N1[Narrator: fan] & N2[Narrator: analyst] & N3[Narrator: studio] & N4[Narrator: audio]
-    N1 & N2 & N3 & N4 --> PR[Producer<br/>overlay cue · approval]
+    N1 & N2 & N3 & N4 --> PR[Producer<br/>editorial decision · cue] --> CB[CommentaryBooth<br/>two voices]
   end
   SC & SK --> TA
-  PR --> SSE[[SSE stream]] --> UI[Live app · TV camera] & OV[/overlay · CasparCG template/]
-  MS --> ASK[AskTheAnalyst<br/>agent + tools] --> A2A[[A2A endpoint]]
-  MS --> RC[RecapWriter] --> MM[My Match reels]
-  N1 -. any language .-> AOAI[(Azure OpenAI<br/>in Microsoft Foundry)]:::az
-  ASK -. tool calling .-> AOAI
-  MM -. voice-over .-> SPEECH[(Azure AI Speech)]:::az
-  WF -. OpenTelemetry .-> AI[(Application Insights)]:::az
+  PR --> SSE[[SSE stream]] --> UI[Live app · 3D broadcast view] & OV[/overlay · CasparCG template/]
+  PR --> OUT[(Azure Event Hubs<br/>touchline-insights)]:::az --> FN[Azure Function<br/>packages · social cards · watchdog]:::az --> BLOB[(Blob Storage)]:::az
+  MS --> ASK[AskTheAnalyst<br/>Foundry Agent Service + tools] --> A2A[[A2A endpoint]]
+  Q[Fan question] --> CS{Azure AI<br/>Content Safety}:::az --> ASK
+  MS --> RC[RecapWriter] --> MM[My Match 3D reels]
+  N1 -. any language .-> FD[(Microsoft Foundry<br/>published agents · model)]:::az
+  ASK -. hosted agent .-> FD
+  CB -. neural voices .-> SPEECH[(Azure AI Speech)]:::az
+  WF -. OpenTelemetry .-> AI[(Application Insights<br/>Foundry tracing)]:::az
   classDef az fill:#0f6cbd,color:#fff,stroke:#0f6cbd
   classDef src fill:#184232,color:#fff,stroke:#2a5242
 ```
@@ -85,17 +90,37 @@ flowchart LR
 | `TacticalAnalyst` | Explains why it matters | Glass-box xG, pass and xT models; counterfactuals; evidence IDs on every claim |
 | `FactChecker` | Nothing unverifiable airs | Recomputes every number from the raw events; blocks future citations; rejects LLM text with unsupported numbers or names |
 | `Narrator` x4 | Persona- and language-specific copy | Verified phrase banks; optional Azure OpenAI rewrite or translation, always re-checked, delivered off the hot path |
-| `Producer` | Graphics director | Layer scheduling, pre-emption, review mode, `touchline.overlay/1` cues |
+| `Producer` | Editorial graphics director | Scores every moment and airs, cuts in, queues or drops it with a reason; review mode; `touchline.overlay/1` cues |
+| `CommentaryBooth` | Two voices in the booth | A lead call (names only, no figures) plus the co-commentator's verified line, in four languages, spoken with two neural voices |
+| Supervisor | Keeps the workflow alive | If a workflow run fails, rebuilds the graph and retries the moment once |
 | `RecapWriter` | Half-time and full-time recaps | Story detection, turning points, the storylines that aired, standouts |
-| `AskTheAnalyst` | Q&A for fans, producers and other agents | Agent Framework agent with function tools; answers rejected if numbers aren't in a tool result; exposed over **A2A** |
+| `AskTheAnalyst` | Q&A for fans, producers and other agents | Published to **Foundry Agent Service** with six match-data tools; fan questions pass Content Safety Prompt Shields first; answers rejected if numbers aren't in a tool result; exposed over **A2A** |
 
 **Multi-agent design: what makes it more than a chain of prompts.**
 
 - **A real workflow graph.** Built with `WorkflowBuilder`: analyst, then storyline, then fact-checker, which **fans out** to four narrators in one superstep, which **fan in** to the producer. See `touchline/orchestrator.py`.
 - **Memory that matters.** The StorylineKeeper carries state across the whole match, so commentary can call back to minute 36 in minute 76.
 - **Agents that check each other.** The FactChecker found two real bugs during development. One was a comeback line citing an event from the future during fast replay. The other was a duel story that named two different players who shared a name. In both cases the insight was blocked instead of aired, and the root cause was fixed.
-- **Failure recovery.** Executors contain their own failures. LLM calls sit behind a timeout and a circuit breaker and fall back to verified copy. Analysis runs in step with the feed, so it can never read the future, and slow language-model work arrives later as an update.
+- **Agents that decide.** The Producer weighs moments against each other and against what is already on air, and says why it aired, cut in, queued or dropped each one (Producer console, *Editor's decisions*).
+- **Failure recovery you can watch.** The *Resilience drills* panel breaks things on purpose while the match plays: a corrupted feed (IngestGuard repairs it), a model outage (circuit breaker, then phrase banks), a crashed narrator (a sibling's verified copy stands in), a crashed storyline agent (the moment airs without callbacks), and an injected made-up number (the FactChecker blocks it). Each shows which agent caught it and how long recovery took. Building the drills found a real gap, ordinals like "99th" slipping past the number check, which is now fixed and tested.
+- **Contained language models.** LLM calls sit behind a timeout and a circuit breaker; a hosted Foundry agent falls back to the same agent run locally. Analysis runs in step with the feed, so it can never read the future, and slow language-model work arrives later as an update.
 - **Observability.** Every handoff is a span: live in the *Agents at work* tab, exportable as an audit trail, and sent to Application Insights through OpenTelemetry with Agent Framework's own instrumentation.
+
+## Microsoft Foundry
+
+- **Agents published to Foundry Agent Service.** `azd up` runs `scripts/foundry_publish.py`, which publishes `touchline-analyst` (with its six tools) and `touchline-narrator` as new versions tagged with the git commit, each with a Responsible-AI content policy. At runtime `FoundryAgent` binds the published version to the live match tools (`TOUCHLINE_FOUNDRY_AGENTS=on`).
+- **Any language from one model deployment.** The narrator writes graphics copy in any language; the FactChecker and Content Safety check it before it airs.
+- **Tracing.** The project is connected to Application Insights, so every agent run and workflow superstep appears in the Foundry tracing view.
+- **Evaluations.** `scripts/foundry_eval.py` runs Foundry's quality, tool-use and safety evaluators (relevance, coherence, task adherence, intent resolution, tool-call accuracy, tool-output use, hate and violence) together with Touchline's own checks (every number grounded in a tool result, citations for "why" questions, short answers), and writes `docs/FOUNDRY_EVAL.md` with the portal link.
+
+## Enterprise readiness
+
+- **Microsoft Entra ID** sign-in for producer tools through Container Apps authentication, with `Touchline.Producer` and `Touchline.Admin` roles (`scripts/setup_entra.sh`). Fans stay anonymous. Every producer action is audited with who did it.
+- **Azure AI Content Safety:** Prompt Shields on fan questions, moderation on model output. Optional **Microsoft Purview** policies on agent prompts and responses.
+- **No keys anywhere:** one managed identity with least-privilege roles; local auth disabled on Foundry, Event Hubs and Storage.
+- **Audit export** per match: agent spans, verification results, editorial decisions, producer actions, drills and viewer feedback.
+
+Details in [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
 
 ## Explainable by construction
 
@@ -122,7 +147,7 @@ matches, half of them through a 10% faulty feed. Full report: [docs/EVAL.md](doc
 | Goals explained | **100%** |
 | Citations resolving to a real, non-future event | **0 errors** |
 | Renders per insight (4 personas x 4 languages) | 16, **0 template leaks** |
-| Agent pipeline per moment, p50 / p95 | **2.9 / 4.8 ms** (inside one 20 ms broadcast frame) |
+| Agent pipeline per moment, p50 / p95 | **2.4 / 4.3 ms** (inside one 20 ms broadcast frame) |
 | Event to state update, p95 | **0.5 ms** |
 | Faulty feed recovered exactly once and in order | **100%** |
 
@@ -131,7 +156,7 @@ From video:
 - **Top-down feed:** pass precision 0.88, recall 0.75, passer and receiver correct 89%, ball-speed error 2.1 km/h, shot recall 0.8.
 - **Broadcast camera:** player localisation within 0.43 m (median) over 17,000 detections. Pass detection from the angled view is experimental, and the report says why.
 
-There are **26 tests**. They include the real Agent Framework LLM path against a mock model, checking that a model which invents "99 goals" is rejected. They also check that tampered story numbers are blocked and that no insight uses information from its future.
+There are **46 tests**. They include the real Agent Framework LLM path against a mock model (a model that invents "99 goals" is rejected), tampered story numbers, no insight using its future, every resilience drill, the Producer's editorial decisions, the Foundry agent definitions and content policy, Entra roles on producer tools, Prompt Shields, the post-match package and the Azure Functions app.
 
 ## Run it locally
 
@@ -156,8 +181,10 @@ export AZURE_SPEECH_REGION=<region> AZURE_SPEECH_KEY=...
 Other useful commands:
 
 ```bash
-pytest -q                                          # 26 tests
-python scripts/evaluate.py --gate                  # evaluation gate (add --foundry for Azure AI groundedness scoring)
+pytest -q                                          # 46 tests
+python scripts/evaluate.py --gate                  # evaluation gate
+python scripts/foundry_eval.py                     # Foundry evaluators + Touchline checks on the analyst agent (needs Foundry)
+python scripts/render_reel3d.py --club home        # render a 3D My Match reel to MP4 offline
 python -m touchline.vision.autoevent --minutes 5   # auto-eventing from the top-down feed
 python -m touchline.vision.broadcast_cv            # computer vision from the broadcast camera
 python scripts/find_demo_seed.py --seeds 400       # find the most dramatic match
@@ -173,22 +200,24 @@ azd up            # provisions everything in infra/ and deploys the container
 
 [`infra/`](infra) (Bicep) provisions:
 
-- **Azure Container Apps**, with HTTP autoscaling, sticky sessions and health probes
+- **Azure Container Apps**, with HTTP autoscaling, sticky sessions, health probes and optional Entra ID authentication
 - **Azure Container Registry**
-- **Microsoft Foundry**: an AI Services account, a project, and a `gpt-4.1-mini` deployment, with local auth disabled
-- **Azure AI Speech**, through the same AI Services account
-- **Azure Event Hubs**, for event-driven ingestion
+- **Microsoft Foundry**: an AI Services account, a project with a tracing connection to Application Insights, and a `gpt-4.1-mini` deployment, with local auth disabled. The postprovision hook publishes the agents to **Foundry Agent Service**.
+- **Azure AI Speech** and **Azure AI Content Safety**, through the same AI Services account
+- **Azure Event Hubs**: `match-events` in, `touchline-insights` out
+- **Azure Functions** (Flex Consumption) and **Blob Storage** for the event-driven back office
 - **Log Analytics and Application Insights**
 - a **user-assigned managed identity** with least-privilege roles
 
-There are no secrets anywhere. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
+There are no secrets anywhere. To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
 plays a match onto Event Hubs, and the app serves it as session `live` at `<url>/?session=live`.
 
 ## Interfaces
 
 - **Stream:** `GET /api/matches/{session}/stream` (SSE): events, state, insights, cues, late renders and agent traces.
 - **Read endpoints:** `GET /insights?persona=&lang=`, `/recap`, `/players`, `/events/{id}` (facts, model drivers, pitch control), `/audit`, `/dataset.jsonl`.
-- **My Match:** `GET /reel?club=home|away|both&player=h9,a7&lang=` returns the edit list; `POST /reel` renders the MP4.
+- **My Match:** `/reel?session=&club=&player=&lang=` plays and records the 3D reel in the browser; `GET /api/matches/{id}/reel` returns the edit list; `POST` renders a quick MP4 on the server; `GET /window?start=&end=` returns any slice of the match with positions.
+- **Post-match and feedback:** `GET /package` (recaps x personas x languages, highlights, top players, verification), `POST /feedback`, `GET /api/downstream`, `GET /api/me`.
 - **Voice:** `GET /api/speak?text=&lang=`.
 - **Graphics:** the [overlay contract](docs/OVERLAY_CONTRACT.md). `web/templates/touchline-graphics.html` loads in **CasparCG** (`play`, `stop`, `next`, `update`) and **SPX Graphics Controller**, or runs live with `?live=1`.
 - **A2A:** agent card at `/.well-known/agent-card.json`, JSON-RPC at `/a2a`.
@@ -203,9 +232,13 @@ One design system across the app, the on-air graphics, the reels and the story p
 touchline/
   sim/            synthetic match engine (spatial possession model, fatigue, game state)
   analytics/      glass-box models, fitted params, incremental MatchState, win probability, pitch control
-  agents/         IngestGuard, MomentScout, StorylineKeeper, TacticalAnalyst, FactChecker, Narrator, Producer, RecapWriter, AskTheAnalyst
-  orchestrator.py Microsoft Agent Framework workflow (fan-out / fan-in) + tracing
-  runtime.py      live match session, pacing, controls, SSE bus
+  agents/         IngestGuard, MomentScout, StorylineKeeper, TacticalAnalyst, FactChecker, Narrator, Producer, CommentaryBooth, RecapWriter, AskTheAnalyst
+  orchestrator.py Microsoft Agent Framework workflow (fan-out / fan-in), supervisor, drills, tracing
+  runtime.py      live match session, pacing, controls, resilience drills, feedback, post-match package, SSE bus
+  foundry_agents.py  agent definitions published to Foundry Agent Service, hosted-agent binding
+  safety.py       Azure AI Content Safety (Prompt Shields, moderation)
+  auth.py         Microsoft Entra ID principal and roles (Container Apps authentication)
+  outbound.py     verified-insight stream to Event Hubs
   highlights.py   My Match: reel planning (EDL) and rendering
   vision/         broadcast camera, top-down and broadcast-angle auto-eventing
   llm.py          Foundry / Azure OpenAI / OpenAI-compatible clients via Agent Framework, circuit breaker
@@ -213,11 +246,13 @@ touchline/
   a2a.py          A2A server (a2a-sdk)
   feeds.py        Azure Event Hubs producer / consumer
   i18n.py         en / es / fr / pt phrase banks
-web/              live app, story page, overlay output, CasparCG/SPX template, self-hosted OFL fonts
+web/              live app, 3D broadcast view (tv3d.js), 3D reel player, story page, overlay output, CasparCG/SPX template
+  vendor/three/   three.js (MIT); models/ CC0 characters and animations (Mesh2Motion / Quaternius)
+functions/        Azure Functions: post-match packages, social cards, watchdog
 infra/            Bicep for azd
-scripts/          model fitting, evaluation gate, demo-seed search, Event Hubs publisher
+scripts/          model fitting, evaluation gate, Foundry publish and evaluation, Entra setup, 3D reel renderer, demo-seed search, Event Hubs publisher
 tests/            pytest suite
-docs/             evaluation, model card, overlay contract, broadcasters, design system, submission kit
+docs/             evaluation, model card, overlay contract, broadcasters, impact, user test, governance, design system, submission kit
 ```
 
 ## Rules and data
@@ -225,6 +260,7 @@ docs/             evaluation, model card, overlay contract, broadcasters, design
 - Every event comes from a seeded simulator. No real match data, clubs, players, marks or
   broadcast footage are used.
 - Club and player names are invented. Fonts are SIL OFL; their licences are in `web/fonts/`.
+- 3D: three.js (MIT, `web/vendor/three/LICENSE`); player model and animations CC0 from the Mesh2Motion project (Quaternius).
 - The project was created during the hackathon period, from September 29, 2026.
 
 ## License
