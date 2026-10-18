@@ -66,8 +66,9 @@
 <main class="stage">
   <section class="pitch-wrap" aria-label="Live pitch">
     <div class="view-bar"><div class="seg" id="viewSeg" role="group" aria-label="Camera">
-      <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div></div>
+      <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="player" aria-pressed="false" title="Follows your focus player, or whoever has the ball">Player cam</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div></div>
     <div class="pitch-box" id="pitchBox">
+      <canvas id="pitch3d" aria-hidden="true"></canvas>
       <canvas id="pitch"></canvas>
       <div class="overlay-layer" id="overlay" aria-live="polite"></div>
     </div>
@@ -186,6 +187,8 @@
   <div id="drawerBody"></div>
 </aside>
 
+<script type="importmap">{ "imports": { "three": "/static/vendor/three/three.module.min.js", "three/addons/": "/static/vendor/three/addons/" } }</script>
 <script src="/static/app.js"></script>
+<script type="module" src="/static/tv3d.js"></script>
 </body>
 </html>

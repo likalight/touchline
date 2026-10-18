@@ -172,6 +172,7 @@ function onState(s) {
 /* ------------------------------------------------------------------ events -> pitch */
 function onEvent(ev) {
   const now = performance.now();
+  if (window.TV3D && TV3D.ready) TV3D.onEvent(ev);
   if (ev.frame) {
     for (const [pid, p] of Object.entries(ev.frame)) {
       S.from[pid] = S.pos[pid] ? [...S.pos[pid]] : p;
@@ -236,6 +237,7 @@ function onInsight(ins, replayed) {
   while (cards.children.length > 80) cards.lastChild.remove();
   $("#feedCount").textContent = `${S.insights.length} moments explained`;
   if (!replayed && ins.cue && ins.cue.approval === "auto") playCue(ins);
+  if (!replayed && window.TV3D && TV3D.ready && ins.salience >= 0.5) { const r = rendersFor(ins, "studio"); if (r) TV3D.board(r.title, ins.team && S.meta ? S.meta[ins.team].color : null); }
   if (!replayed && (S.prefs.speak || S.prefs.persona === "access")) queueSpeech(ins);
   if (!$("#tab-producer").hidden) renderProducer();
   if (ins.kind === "half_time" || ins.kind === "full_time") loadRecap();
@@ -411,6 +413,7 @@ function ease(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 function frame(now) {
   requestAnimationFrame(frame);
   ctx.clearRect(0, 0, cv.width, cv.height);
+  if (S.view === "tv" && window.TV3D && TV3D.ready && !S.flat) { stepScene(now); TV3D.render(now); placeTags3D(); return; }
   if (S.view === "tv") { stepScene(now); drawTV(now); return; }
   pitchLines();
   stepScene(now);
@@ -448,6 +451,14 @@ function frame(now) {
     if (!p || S.view === "tv") continue;
     tg.el.style.left = (X(p[0]) / DPR) + "px";
     tg.el.style.top = (Y(p[1]) / DPR) + "px";
+  }
+}
+
+function placeTags3D() {
+  for (const tg of S.tags) {
+    const p = S.pos[tg.pid]; if (!p) continue;
+    const [x, y, vis] = TV3D.project(p[0], p[1], 2.15);
+    tg.el.style.left = x + "px"; tg.el.style.top = (y + 4) + "px"; tg.el.style.visibility = vis ? "" : "hidden";
   }
 }
 
@@ -903,7 +914,9 @@ async function makeReel() {
 /* ------------------------------------------------------------------ controls */
 function applyView() {
   S.view = S.prefs.view === "tactical" ? "tactical" : "tv";
-  $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === S.view)));
+  S.camMode = S.prefs.view === "player" ? "player" : "main";
+  const sel = S.prefs.view === "player" ? "player" : S.view;
+  $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === sel)));
   $("#pitchBox").classList.toggle("tv", S.view === "tv");
   resizeCanvas();
 }
@@ -930,10 +943,8 @@ function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" 
 function bindControls() {
   $("#viewSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
-    S.view = b.dataset.view; S.prefs.view = S.view; savePrefs();
-    $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    $("#pitchBox").classList.toggle("tv", S.view === "tv");
-    resizeCanvas();
+    S.prefs.view = b.dataset.view; savePrefs();
+    applyView();
   });
   $("#moreBtn").addEventListener("click", () => {
     const open = $(".prefs").classList.toggle("open");
@@ -1008,3 +1019,5 @@ function toast(msg) {
 }
 
 boot();
+
+window.S = S; window.isFav = isFav;
