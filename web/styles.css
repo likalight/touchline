@@ -354,3 +354,11 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 .drill-log li.ok { border-left-color: #4fbf7f; }
 .drill-log .t { font-weight: 600; }
 .drill-log .s { font-size: 14px; color: #c9d3c4; }
+
+.svc { display: grid; gap: 6px; }
+.svc > div { display: grid; grid-template-columns: 190px 1fr; gap: 10px; padding: 6px 10px; border-radius: 6px; background: #102a1f; font-size: 14px; }
+.svc > div b { font-weight: 600; }
+.svc > div span { color: #c9d3c4; }
+.svc > div.on { box-shadow: inset 3px 0 0 #4fbf7f; }
+.svc > div.off { box-shadow: inset 3px 0 0 #3a5446; }
+@media (max-width: 640px) { .svc > div { grid-template-columns: 1fr; } }

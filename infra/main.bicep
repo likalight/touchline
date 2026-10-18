@@ -60,3 +60,4 @@ output FOUNDRY_PROJECT_ENDPOINT string = resources.outputs.foundryProjectEndpoin
 output FOUNDRY_MODEL string = modelName
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.appInsightsConnectionString
 output TOUCHLINE_EVENTHUB_NAMESPACE string = resources.outputs.eventHubNamespace
+output SERVICE_PACKAGES_URI string = resources.outputs.packagesUri

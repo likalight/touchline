@@ -157,6 +157,12 @@
 
   <div class="tabpanel" id="tab-ops" role="tabpanel" hidden>
     <div class="kv" id="opsKv"></div>
+    <div class="two" style="margin-top:16px">
+      <div class="box"><h3>Azure services</h3><div class="svc" id="svcList"></div>
+        <p class="muted">Live status from the running app. Each line falls back safely when its service is not configured.</p></div>
+      <div class="box"><h3>Event-driven back office</h3><div id="downstream" class="svc"></div>
+        <p class="muted">Every verified insight streams to Azure Event Hubs. An Azure Function turns goals into social cards and full time into a post-match package in Blob Storage.</p></div>
+    </div>
     <div class="box drills" style="margin-top:16px">
       <h3>Resilience drills</h3>
       <p class="muted">Break something on purpose and watch the agents notice and recover, live, while the match keeps playing.</p>

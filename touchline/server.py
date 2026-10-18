@@ -444,6 +444,30 @@ async def speak(text: str, lang: str = "en", voice: str = "lead"):
     return Response(audio, media_type="audio/mpeg")
 
 
+@app.get("/api/matches/{sid}/package")
+async def package(sid: str):
+    """Post-match package (recaps x personas x languages, highlights edit list, top players, verification)."""
+    return get(sid).package()
+
+
+@app.get("/api/downstream")
+async def downstream():
+    """What the event-driven side has produced: the outbound stream and the packages Azure Function's output."""
+    import httpx
+
+    from touchline.outbound import outbound
+
+    out = {"outbound": outbound.status(), "packages": None}
+    url = os.getenv("TOUCHLINE_PACKAGES_URL")
+    if url:
+        try:
+            async with httpx.AsyncClient(timeout=4) as c:
+                out["packages"] = (await c.get(f"{url.rstrip('/')}/api/packages")).json()
+        except Exception as exc:
+            out["packages"] = {"error": str(exc)[:200]}
+    return out
+
+
 @app.get("/api/matches/{sid}/audit")
 async def audit(sid: str):
     return get(sid).audit()

@@ -21,6 +21,7 @@ from touchline.agents.verifier import FactChecker
 from touchline.analytics.models import get_models
 from touchline.analytics.state import MatchState
 from touchline.llm import get_llm
+from touchline.outbound import insight_message, outbound
 from touchline.orchestrator import Deps, MomentPipeline, Trace
 from typing import AsyncIterator
 
@@ -175,6 +176,7 @@ class MatchSession:
                     break
             await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
             self.done = True
+            self._emit_full_time()
             self.publish({"type": "done"})
             return
         for payload in self.injector.apply(self.events):
@@ -184,8 +186,29 @@ class MatchSession:
             await self._play(ev)
         await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
         self.done = True
+        self._emit_full_time()
         self.publish({"type": "state", **self.snapshot()})
         self.publish({"type": "done"})
+
+    def _emit_full_time(self) -> None:
+        outbound.emit({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
+                       "score": dict(self.state.score), "insights": len(self.insights)})
+
+    def package(self) -> dict:
+        """The post-match package: final score, recaps in every built-in language and persona, the highlights
+        edit list, top players and the verification summary. Built by the `packages` Azure Function at full time."""
+        from touchline.highlights import plan_reel
+        from touchline.i18n import BANKS
+
+        recaps = {p: {lang: self.get_recap(p, lang) for lang in BANKS} for p in ("casual", "analyst")}
+        ver = [i["verification"]["status"] for i in self.insights]
+        return {"schema": "touchline.package/1", "match_id": self.meta.match_id, "session": self.id, "synthetic": True,
+                "home": self.meta.home.name, "away": self.meta.away.name, "score": dict(self.state.score),
+                "complete": self.done, "recaps": recaps, "highlights": plan_reel(self, lang="en"),
+                "top_players": self.state.top_players(3),
+                "verification": {"insights": len(ver), "verified": ver.count("verified")},
+                "goals": [{"minute": i["minute"], "team": i["team"], "title": i["renders"]["casual"]["en"]["title"]}
+                          for i in self.insights if i["kind"] == "goal" and i.get("renders")]}
 
     async def _play(self, ev: Event, realtime: bool = False) -> None:
         jumping = self.jump_to is not None and ev.minute < self.jump_to and not realtime
@@ -251,6 +274,8 @@ class MatchSession:
         if ins["kind"] in ("half_time", "full_time"):
             self.recaps.clear()
         self.publish({"type": "insight", "insight": ins, "replayed": jumping})
+        if ins.get("verification", {}).get("status") == "verified":
+            outbound.emit(insight_message(self.id, self.meta.match_id, ins))
         if self.drills:
             self._drill_tick(ins)
 

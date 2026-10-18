@@ -169,7 +169,7 @@ function onState(s) {
   drawTimeline();
   updateMetric();
   if (!$("#tab-players").hidden) renderPlayers();
-  if (!$("#tab-ops").hidden) { renderOps(); renderDrills(); }
+  if (!$("#tab-ops").hidden) { renderOps(); renderDrills(); if (!S.svcAt || Date.now() - S.svcAt > 10000) { S.svcAt = Date.now(); renderServices(); } }
 }
 
 /* ------------------------------------------------------------------ events -> pitch */
@@ -862,6 +862,27 @@ function onTrace(sp) {
   row.innerHTML = `<span class="ag">${esc(sp.agent)}</span><span class="muted">${esc(String(sp.ref).split("-").pop())}</span><span class="st-${esc(sp.status)}">${esc(sp.note)}${sp.handoff_to ? ", hands off to " + esc(sp.handoff_to) : ""}</span><span class="muted" style="text-align:right">${sp.ms} ms</span>`;
   el.prepend(row);
   while (el.children.length > 60) el.lastChild.remove();
+}
+
+async function renderServices() {
+  try {
+    const [h, d] = await Promise.all([fetch("/api/health").then((r) => r.json()), fetch("/api/downstream").then((r) => r.json())]);
+    const llm = h.llm || {}, cs = h.content_safety || {}, sp = h.speech || {};
+    const row = (on, name, detail) => `<div class="${on ? "on" : "off"}"><b>${esc(name)}</b><span>${esc(detail)}</span></div>`;
+    $("#svcList").innerHTML = [
+      row(llm.backend === "foundry", "Microsoft Foundry", llm.backend === "foundry" ? `${llm.model}; ${(llm.hosted_agents || []).length ? "hosted agents: " + llm.hosted_agents.join(", ") : "agents run locally on the Foundry model"}; ${llm.calls} calls` : llm.backend === "offline" ? "not configured here: verified phrase banks in use" : `${llm.backend}, ${llm.model}`),
+      row(true, "Microsoft Agent Framework", "workflow with fan-out and fan-in, supervisor, A2A endpoint"),
+      row(cs.mode === "azure", "Azure AI Content Safety", cs.mode === "azure" ? `${cs.checked} checks, ${cs.blocked} blocked, ${cs.shield_attacks} prompt attacks refused` : `local screen: ${cs.shield_attacks || 0} prompt attacks refused`),
+      row(sp.available, "Azure AI Speech", sp.available ? `${sp.mode} auth, ${sp.calls} syntheses` : "browser voices in use"),
+      row(h.auth === "entra", "Microsoft Entra ID", h.auth === "entra" ? "producer tools need the Producer role" : "open demo: producer tools unlocked, actions audited"),
+      row(d.outbound && d.outbound.enabled, "Azure Event Hubs", d.outbound && d.outbound.enabled ? `${d.outbound.sent} insights streamed to ${d.outbound.hub}` : "not configured here"),
+    ].join("");
+    const p = d.packages;
+    $("#downstream").innerHTML = p && !p.error
+      ? row(true, "Post-match packages", `${p.packages_built} built${p.latest ? `; latest ${p.latest.home} ${p.latest.score.home}-${p.latest.score.away} ${p.latest.away}` : ""}`) +
+        row(true, "Social cards", `${(p.recent_social_cards || []).length} recent`) + row(true, "Watchdog", "health check every 5 minutes")
+      : row(false, "Azure Functions", p && p.error ? "unreachable: " + p.error : "deployed with azd up; the package endpoint is /api/matches/{id}/package");
+  } catch (e) { /* offline */ }
 }
 
 S.drills = {};

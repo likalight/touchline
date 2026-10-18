@@ -16,8 +16,8 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      - run: pip install -r requirements.txt pytest httpx
-      - name: Unit, pipeline, API, A2A and mocked-LLM tests
+      - run: pip install -r requirements.txt -r functions/requirements.txt pytest
+      - name: Unit, pipeline, API, A2A, Foundry wiring, drills, enterprise controls, Functions and mocked-LLM tests
         run: pytest -q
         env:
           TOUCHLINE_LLM: "off"

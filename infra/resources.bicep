@@ -20,7 +20,43 @@ var roles = {
   eventHubsSender: '2b629674-e913-4c01-ae53-ef4638d8f975'
   speechUser: 'f2dc8367-1007-4938-bd23-fe263f013447'
   cognitiveServicesUser: 'a97b65f3-24c7-4388-baec-2e87135dc908' // Azure AI Content Safety data plane
+  storageBlobDataOwner: 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b'
 }
+
+// Flex Consumption regions; elsewhere the function app runs in East US 2 (it only talks to Event Hubs and the web app)
+var flexRegions = [
+  'australiaeast'
+  'brazilsouth'
+  'canadacentral'
+  'centralindia'
+  'centralus'
+  'eastasia'
+  'eastus'
+  'eastus2'
+  'francecentral'
+  'germanywestcentral'
+  'italynorth'
+  'japaneast'
+  'koreacentral'
+  'northcentralus'
+  'northeurope'
+  'norwayeast'
+  'southafricanorth'
+  'southcentralus'
+  'southeastasia'
+  'southindia'
+  'spaincentral'
+  'swedencentral'
+  'uaenorth'
+  'uksouth'
+  'ukwest'
+  'westcentralus'
+  'westeurope'
+  'westus'
+  'westus2'
+  'westus3'
+]
+var fnLocation = contains(flexRegions, location) ? location : 'eastus2'
 
 // ---------------------------------------------------------------- identity & observability
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -199,6 +235,21 @@ resource hub 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = if (enableEv
   }
 }
 
+// outbound: every verified insight and full time, for downstream consumers (the packages function, a CMS, social tools)
+resource insightsHub 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = if (enableEventHubs) {
+  parent: hubs
+  name: 'touchline-insights'
+  properties: {
+    partitionCount: 2
+    messageRetentionInDays: 1
+  }
+}
+
+resource packagesGroup 'Microsoft.EventHub/namespaces/eventhubs/consumergroups@2024-01-01' = if (enableEventHubs) {
+  parent: insightsHub
+  name: 'packages'
+}
+
 resource hubReceiver 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableEventHubs) {
   name: guid(resourceGroup().id, identity.id, roles.eventHubsReceiver)
   scope: hubs
@@ -216,6 +267,95 @@ resource hubSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (en
     principalId: identity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.eventHubsSender)
+  }
+}
+
+// ---------------------------------------------------------------- Azure Functions: the event-driven back office
+resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = if (enableEventHubs) {
+  name: take('sttouchline${token}', 24)
+  location: fnLocation
+  tags: tags
+  kind: 'StorageV2'
+  sku: { name: 'Standard_LRS' }
+  properties: {
+    allowSharedKeyAccess: false // identity only
+    allowBlobPublicAccess: false
+    minimumTlsVersion: 'TLS1_2'
+  }
+}
+
+resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2023-05-01' = if (enableEventHubs) {
+  parent: storage
+  name: 'default'
+}
+
+resource deployContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (enableEventHubs) {
+  parent: blobService
+  name: 'deployments'
+}
+
+resource packagesContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (enableEventHubs) {
+  parent: blobService
+  name: 'packages'
+}
+
+resource blobOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableEventHubs) {
+  name: guid(resourceGroup().id, identity.id, roles.storageBlobDataOwner)
+  scope: storage
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.storageBlobDataOwner)
+  }
+}
+
+resource fnPlan 'Microsoft.Web/serverfarms@2024-04-01' = if (enableEventHubs) {
+  name: 'plan-touchline-${token}'
+  location: fnLocation
+  tags: tags
+  kind: 'functionapp'
+  sku: { tier: 'FlexConsumption', name: 'FC1' }
+  properties: { reserved: true }
+}
+
+resource packagesFn 'Microsoft.Web/sites@2024-04-01' = if (enableEventHubs) {
+  name: 'func-touchline-${token}'
+  location: fnLocation
+  tags: union(tags, { 'azd-service-name': 'packages' })
+  kind: 'functionapp,linux'
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${identity.id}': {} }
+  }
+  dependsOn: [blobOwner, hubReceiver]
+  properties: {
+    serverFarmId: fnPlan.id
+    httpsOnly: true
+    functionAppConfig: {
+      deployment: {
+        storage: {
+          type: 'blobContainer'
+          value: '${storage!.properties.primaryEndpoints.blob}deployments'
+          authentication: { type: 'UserAssignedIdentity', userAssignedIdentityResourceId: identity.id }
+        }
+      }
+      scaleAndConcurrency: { maximumInstanceCount: 40, instanceMemoryMB: 2048 } // scales out on Event Hubs backlog
+      runtime: { name: 'python', version: '3.11' }
+    }
+    siteConfig: {
+      appSettings: [
+        { name: 'AzureWebJobsStorage__accountName', value: storage.name }
+        { name: 'AzureWebJobsStorage__credential', value: 'managedidentity' }
+        { name: 'AzureWebJobsStorage__clientId', value: identity.properties.clientId }
+        { name: 'EventHubConnection__fullyQualifiedNamespace', value: hubNamespaceFqdn }
+        { name: 'EventHubConnection__credential', value: 'managedidentity' }
+        { name: 'EventHubConnection__clientId', value: identity.properties.clientId }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+        { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+        { name: 'PACKAGES_STORAGE_ACCOUNT', value: storage.name }
+        { name: 'TOUCHLINE_WEB_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
+      ]
+    }
   }
 }
 
@@ -289,6 +429,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
             { name: 'AZURE_CONTENT_SAFETY_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.cognitiveservices.azure.com' }
             { name: 'TOUCHLINE_AUTH', value: empty(authClientId) ? 'open' : 'entra' }
+            { name: 'TOUCHLINE_PACKAGES_URL', value: enableEventHubs ? 'https://${packagesFn!.properties.defaultHostName}' : '' }
           ]
           probes: [
             {
@@ -346,3 +487,4 @@ output openAiEndpoint string = 'https://${foundry.properties.customSubDomainName
 output foundryProjectEndpoint string = 'https://${foundry.properties.customSubDomainName}.services.ai.azure.com/api/projects/${project.name}'
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output eventHubNamespace string = hubNamespaceFqdn
+output packagesUri string = enableEventHubs ? 'https://${packagesFn!.properties.defaultHostName}' : ''
