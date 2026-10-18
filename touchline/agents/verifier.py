@@ -36,6 +36,7 @@ class FactChecker:
 
     def __init__(self, state: MatchState):
         self.s = state
+        self.storyline = None  # StorylineKeeper, for independent recounts of story claims
         self.passed = 0
         self.blocked = 0
         self.corrected = 0
@@ -55,6 +56,12 @@ class FactChecker:
                     issues.append(f"{fr['k']}: cites future event {eid}")
             if fr["k"] not in ("r.buildup",) and fr["k"].startswith("r.") and not fr["ev"]:
                 issues.append(f"{fr['k']}: claim without evidence")
+            if (fr["k"].startswith("s.") or fr["k"] == "rc.ten_men") and self.storyline is not None and all(i in s.events for i in fr["ev"]):
+                checks += 1
+                issue = self.storyline.recount(fr)
+                if issue:
+                    issues.append(issue)
+                continue
             p = fr["p"]
             ev = s.events.get(fr["ev"][0]) if fr["ev"] else None
             en = s.enriched.get(ev.id) if ev else None

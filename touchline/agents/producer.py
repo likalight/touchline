@@ -21,11 +21,13 @@ TEMPLATES = {
     "wp_swing": ("wp_chart", 7.0), "brace": ("player_card", 7.0), "hat_trick": ("player_card", 9.0),
     "saves": ("player_card", 6.0), "record_shot": ("shot_card", 6.0), "rhythm": ("rhythm_meter", 6.0),
     "standout": ("player_card", 8.0), "half_time": ("summary", 15.0), "full_time": ("summary", 20.0),
+    "story_duel": ("story_card", 8.0), "story_channel": ("story_card", 8.0), "story_keeper": ("story_card", 8.0),
+    "story_waste": ("story_card", 7.0), "story_fatigue": ("story_card", 8.0),
 }
 LAYER = {
     "full_banner": "lower_third", "shot_card": "lower_third", "pass_card": "lower_third", "player_tag": "player_tag",
     "momentum_bar": "side_panel", "phase_meter": "side_panel", "press_card": "side_panel", "card": "lower_third",
-    "wp_chart": "side_panel", "player_card": "side_panel", "rhythm_meter": "side_panel", "summary": "full_screen",
+    "wp_chart": "side_panel", "player_card": "side_panel", "rhythm_meter": "side_panel", "summary": "full_screen", "story_card": "side_panel",
 }
 ALWAYS_AIR = {"goal", "card_red", "half_time", "full_time", "hat_trick"}
 

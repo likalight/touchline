@@ -61,7 +61,8 @@ class RecapWriter:
                 run[g.team] += 1
                 if run[win] < run[lose]:
                     trailed = True
-            if trailed:
+            story = getattr(self, "storyline", None)
+            if trailed and not (story and any(x["k"] == "s.comeback" for x in story.arcs)):
                 reasons.append(F("rc.comeback", ev0, team=wt.name))
             win_goals = [g for g in goals if g.team == win]
             if win_goals and win_goals[-1].minute >= 80 and abs(sh - sa) == 1:
@@ -70,6 +71,24 @@ class RecapWriter:
         else:
             head = F("rc.lead.draw", ev0, home=h.name, away=a.name, score=f"{sh}-{sa}")
             reasons.append(F("rc.draw_xg", ev0, xg_h=xh, xg_a=xa))
+        hat = max(s.players, key=lambda pid: s.pl[pid]["goals"])
+        if s.pl[hat]["goals"] >= 3:
+            gl = [e.id for e in s.events.values() if e.type == "goal" and e.player_id == hat]
+            reasons.append(F("rc.hat_trick", gl, player=s.name(hat), goals=int(s.pl[hat]["goals"])))
+        # the story arcs that aired (comeback, ten men, redemption) - most narrative first
+        story = getattr(self, "storyline", None)
+        if story is not None:
+            rank = {"s.ten_men": 0, "s.comeback": 1, "s.redemption": 2, "s.error": 3}
+            arcs = sorted((x for x in story.arcs if x["k"] in rank), key=lambda x: (rank[x["k"]], -x["minute"]))
+            seen = set()
+            for arc in arcs:
+                if arc["k"] in seen:
+                    continue
+                seen.add(arc["k"])
+                key = "rc.ten_men" if arc["k"] == "s.ten_men" else arc["k"]
+                reasons.append({"k": key, "p": arc["p"], "ev": arc["ev"], "aud": ["casual", "analyst", "studio", "access"]})
+                if len(seen) == 2:
+                    break
         tps = self.turning_points(2)
         for tp in tps:
             team = h.name if tp["team"] == "home" else a.name
@@ -94,13 +113,17 @@ class RecapWriter:
                 "headline": head, "reasons": reasons, "score": dict(s.score), "turning_points": tps,
                 "players": s.top_players(3), "home": s.team_summary("home"), "away": s.team_summary("away")}
 
+    LIMITS = {"casual": 4, "studio": 4, "access": 5, "analyst": 12}
+    CASUAL_ORDER = ["rc.ten_men", "s.comeback", "rc.late", "rc.hat_trick", "s.redemption", "rc.comeback", "rc.upset", "rc.deserved",
+                    "rc.draw_xg", "rc.standout"]
+
     def render(self, persona: str = "casual", lang: str = "en", recap: Optional[dict] = None) -> dict:
         rc = recap or self.frames()
         out = self.narrator.render(rc, persona, lang)
-        if persona == "casual":
-            out["lines"] = out["lines"][:3]
-        elif persona == "analyst":
-            out["lines"] = [{"text": _render_frame(f, lang, persona), "ev": f["ev"], "k": f["k"]}
-                            for f in rc["reasons"] if persona in f["aud"]]
+        frames = [f for f in rc["reasons"] if persona in f["aud"]]
+        if persona != "analyst":
+            order = {k: i for i, k in enumerate(self.CASUAL_ORDER)}
+            frames = sorted(frames, key=lambda f: order.get(f["k"], 99))
+        out["lines"] = [{"text": _render_frame(f, lang, persona), "ev": f["ev"], "k": f["k"]} for f in frames][:self.LIMITS[persona]]
         out["data"] = {k: rc[k] for k in ("turning_points", "players", "home", "away", "score")}
         return out

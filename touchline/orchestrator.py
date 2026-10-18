@@ -2,7 +2,7 @@
 
 Per detected moment, one workflow run:
 
-    MomentScout --> TacticalAnalyst --> FactChecker --+--> Narrator[casual]  --+
+    MomentScout --> TacticalAnalyst --> StorylineKeeper --> FactChecker --+--> Narrator[casual]  --+
                                                       +--> Narrator[analyst] --+--> Producer --> overlay cue
                                                       +--> Narrator[studio]  --+
                                                       +--> Narrator[access]  --+
@@ -78,6 +78,8 @@ class Deps:
     trace: Trace
     extra_langs: set = field(default_factory=set)
     now_t: Callable[[], float] = lambda: 0.0
+    storyline: object = None
+    late: Optional[Callable] = None  # schedules slow renders off the hot path
 
 
 class AnalystExecutor(Executor):
@@ -93,10 +95,38 @@ class AnalystExecutor(Executor):
             ins["_t0"] = t0
             self.d.trace.record("TacticalAnalyst", ins["id"], (time.perf_counter() - t0) * 1000,
                                 note=f"{mo.kind}: {len(ins['reasons'])} reasons, {len(ins['event_ids'])} events cited",
-                                to="FactChecker")
+                                to="StorylineKeeper")
             await ctx.send_message(ins)
         except Exception as exc:  # never break the live pipeline
             self.d.trace.record("TacticalAnalyst", mo.kind, (time.perf_counter() - t0) * 1000, "error", repr(exc))
+
+
+class StorylineExecutor(Executor):
+    """Adds match-long callbacks (errors, redemption, comebacks, keepers) to the analyst's insight."""
+
+    def __init__(self, deps: "Deps"):
+        super().__init__(id="StorylineKeeper")
+        self.d = deps
+
+    @handler
+    async def run(self, ins: dict, ctx: WorkflowContext[dict]) -> None:
+        t0 = time.perf_counter()
+        added = []
+        try:
+            if self.d.storyline is not None:
+                added = self.d.storyline.callbacks(ins)
+                if added:
+                    # callbacks go straight after the headline facts so every persona sees them
+                    ins["reasons"] = ins["reasons"][:2] + added + ins["reasons"][2:]
+                    ins["event_ids"] = sorted(set(ins["event_ids"]) | {i for f in added for i in f["ev"]})
+                    ins["storyline"] = [f["k"] for f in added]
+        except Exception as exc:
+            self.d.trace.record("StorylineKeeper", ins["id"], (time.perf_counter() - t0) * 1000, "error", repr(exc), to="FactChecker")
+            await ctx.send_message(ins)
+            return
+        self.d.trace.record("StorylineKeeper", ins["id"], (time.perf_counter() - t0) * 1000,
+                            note=f"{len(added)} callbacks" if added else "no thread applies", to="FactChecker")
+        await ctx.send_message(ins)
 
 
 class VerifierExecutor(Executor):
@@ -130,13 +160,17 @@ class NarratorExecutor(Executor):
             for lang in BANKS:
                 res.renders[lang] = self.d.narrator.render(ins, self.persona, lang)
             llm = get_llm()
-            if llm.available and self.d.extra_langs:
-                async def one(lang):
-                    r = await self.d.narrator.render_llm(ins, self.persona, lang)
-                    if r is None:
-                        r = {**res.renders["en"], "lang": lang, "source": "fallback:en"}
-                    res.renders[lang] = r
-                await asyncio.gather(*(one(lg) for lg in sorted(self.d.extra_langs) if lg not in BANKS))
+            if llm.available and self.d.extra_langs and self.d.late is not None:
+                for lg in sorted(self.d.extra_langs):
+                    if lg in BANKS:
+                        continue
+                    res.renders[lg] = {**res.renders["en"], "lang": lg, "source": "pending"}
+
+                    async def one(lang=lg, persona=self.persona, base=dict(ins)):
+                        r = await self.d.narrator.render_llm(base, persona, lang)
+                        return base["id"], persona, lang, r
+
+                    self.d.late(one())
             res.status = "ok"
         else:
             res.status = "skipped"
@@ -169,11 +203,12 @@ class MomentPipeline:
 
     def __init__(self, deps: Deps):
         self.d = deps
-        a, v, p = AnalystExecutor(deps), VerifierExecutor(deps), ProducerExecutor(deps)
+        a, st, v, p = AnalystExecutor(deps), StorylineExecutor(deps), VerifierExecutor(deps), ProducerExecutor(deps)
         narrators = [NarratorExecutor(deps, persona) for persona in PERSONAS]
         self.workflow = (WorkflowBuilder(start_executor=a, name="touchline-moment",
-                                         description="Analyst -> FactChecker -> 4x Narrator -> Producer")
-                         .add_edge(a, v)
+                                         description="Analyst -> Storyline -> FactChecker -> 4x Narrator -> Producer")
+                         .add_edge(a, st)
+                         .add_edge(st, v)
                          .add_fan_out_edges(v, narrators)
                          .add_fan_in_edges(narrators, p)
                          .build())
@@ -189,10 +224,11 @@ class MomentPipeline:
     @staticmethod
     def topology() -> dict:
         return {
-            "nodes": ["IngestGuard", "MatchState", "MomentScout", "TacticalAnalyst", "FactChecker",
+            "nodes": ["IngestGuard", "MatchState", "MomentScout", "TacticalAnalyst", "StorylineKeeper", "FactChecker",
                       *[f"Narrator[{p}]" for p in PERSONAS], "Producer", "RecapWriter", "AskTheAnalyst"],
             "edges": [["IngestGuard", "MatchState"], ["MatchState", "MomentScout"], ["MomentScout", "TacticalAnalyst"],
-                      ["TacticalAnalyst", "FactChecker"], *[["FactChecker", f"Narrator[{p}]"] for p in PERSONAS],
+                      ["TacticalAnalyst", "StorylineKeeper"], ["StorylineKeeper", "FactChecker"],
+                      *[["FactChecker", f"Narrator[{p}]"] for p in PERSONAS],
                       *[[f"Narrator[{p}]", "Producer"] for p in PERSONAS]],
             "framework": "Microsoft Agent Framework WorkflowBuilder (fan-out / fan-in)",
         }

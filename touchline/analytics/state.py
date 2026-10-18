@@ -168,7 +168,12 @@ class MatchState:
 
     def remaining_lambda(self) -> tuple[float, float]:
         elapsed = max(self.t / 60, 1.0)
-        remaining = max(0.0, (93 if self.period == 2 else 93) - self.t / 60)
+        # minutes left including expected added time (about 2' and 4'); stoppage time is never "no time left"
+        m = self.t / 60
+        if self.period == 1:
+            remaining = max(0.5, 47 - m) + 49
+        else:
+            remaining = max(0.6, 94.5 - m)
         w = max(0.4, 1 - elapsed / 90)
         lam = {}
         for s in ("home", "away"):

@@ -30,6 +30,7 @@ class TacticalAnalyst:
         self.scout = scout
         self.m = get_models()
         self.n = 0
+        self.storyline = None  # set by the runtime; story moments are written by the StorylineKeeper
 
     # ------------------------------------------------------------------ helpers
     def tname(self, side: Optional[str]) -> str:
@@ -120,7 +121,9 @@ class TacticalAnalyst:
         team = self.tname(mo.team)
         head: dict
 
-        if k == "goal":
+        if k.startswith("story_") and self.storyline is not None:
+            head, reasons, viz = self.storyline.frames(mo)
+        elif k == "goal":
             shot = s.events[mo.event_ids[0]]
             sen = s.enriched[shot.id]
             head = F("h.goal", [ev.id], player=self.pname(ev.player_id), team=team)

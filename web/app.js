@@ -37,6 +37,7 @@ const KIND_LABEL = {
   hard_pass: "Pass quality", sprint: "Speed", long_carry: "Carry", momentum: "Momentum", phase: "Control vs chaos", press: "Pressing",
   card_yellow: "Booking", card_red: "Sending off", wp_swing: "Win probability", brace: "Milestone", hat_trick: "Milestone",
   saves: "Goalkeeping", record_shot: "Speed record", rhythm: "Game rhythm", standout: "Player focus", half_time: "Half-time", full_time: "Full-time",
+  story_duel: "Storyline", story_channel: "Storyline", story_keeper: "Storyline", story_waste: "Storyline", story_fatigue: "Storyline",
 };
 const EXTRA_LANGS = { de: "Deutsch", ja: "日本語", hi: "हिन्दी", ar: "العربية", zh: "中文", ta: "தமிழ்", sw: "Kiswahili" };
 const CLUB_WORDS = {
@@ -95,6 +96,15 @@ function connect() {
   es.addEventListener("event", (e) => onEvent(JSON.parse(e.data)));
   es.addEventListener("insight", (e) => { const m = JSON.parse(e.data); onInsight(m.insight, m.replayed); });
   es.addEventListener("trace", (e) => onTrace(JSON.parse(e.data)));
+  es.addEventListener("render", (e) => {
+    const m = JSON.parse(e.data), ins = S.insights.find((x) => x.id === m.insight_id);
+    if (!ins) return;
+    ((ins.renders = ins.renders || {})[m.persona] = ins.renders[m.persona] || {})[m.lang] = m.render;
+    if (m.persona === S.prefs.persona && m.lang === S.prefs.lang) {
+      const old = document.querySelector(`.card[data-id="${CSS.escape(ins.id)}"]`);
+      if (old) old.replaceWith(renderCard(ins));
+    }
+  });
   es.addEventListener("cue_update", (e) => onCueUpdate(JSON.parse(e.data).cue));
   es.addEventListener("control", (e) => { const m = JSON.parse(e.data); if (m.action === "pause") setPaused(true); if (m.action === "resume") setPaused(false); });
   es.addEventListener("done", () => toast("Full-time. A fresh live match starts shortly."));
@@ -241,6 +251,7 @@ function renderCard(ins) {
     <div class="meta"><span class="min">${ins.minute}'</span><span>${esc(KIND_LABEL[ins.kind] || ins.kind)}</span>
       ${flag ? `<span style="color:var(--sodium)">${esc(flag)}</span>` : ""}
       ${v.status === "verified" ? `<span class="verified" title="${v.checks} checks against the match data"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>Checked</span>` : ""}
+      ${ins.storyline && ins.storyline.length ? `<span style="color:var(--chalk)">Storyline</span>` : ""}
       <span class="src">${src}</span></div>
     <h3>${esc(r.title)}</h3>
     ${r.lines.length ? `<ul>${r.lines.map((l) => `<li>${esc(l.text)}</li>`).join("")}</ul>` : ""}

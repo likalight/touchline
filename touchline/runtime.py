@@ -15,6 +15,7 @@ from touchline.agents.narrator import Narrator
 from touchline.agents.producer import Producer
 from touchline.agents.recap import RecapWriter
 from touchline.agents.scout import MomentScout
+from touchline.agents.storyline import StorylineKeeper
 from touchline.agents.verifier import FactChecker
 from touchline.analytics.models import get_models
 from touchline.analytics.state import MatchState
@@ -54,8 +55,12 @@ class MatchSession:
         self.checker = FactChecker(self.state)
         self.narrator = Narrator(self.checker)
         self.analyst = TacticalAnalyst(self.state, self.scout)
+        self.storyline = StorylineKeeper(self.state)
+        self.analyst.storyline = self.storyline
+        self.checker.storyline = self.storyline
         self.producer = Producer(self.meta.match_id, mode=mode)
         self.recap = RecapWriter(self.state, self.narrator)
+        self.recap.storyline = self.storyline
         self.guard = IngestGuard()
         self.injector = FaultInjector(chaos, seed)
         self.trace = Trace()
@@ -63,7 +68,7 @@ class MatchSession:
         self.ask_agent = AskTheAnalyst(self.state, lambda: self.insights)
         self.extra_langs = set(extra_langs or [])
         self.deps = Deps(self.analyst, self.checker, self.narrator, self.producer, self.trace, self.extra_langs,
-                         now_t=lambda: self.state.t)
+                         now_t=lambda: self.state.t, storyline=self.storyline, late=self._late_render)
         self.pipeline = MomentPipeline(self.deps)
         self.subscribers: set[asyncio.Queue] = set()
         self.recent_events: deque = deque(maxlen=40)
@@ -198,21 +203,33 @@ class MatchSession:
         self.clock_t = ev.t
         t0 = time.perf_counter()
         en = self.state.apply(ev)
-        moments = self.scout.observe(en)
+        moments = self.scout.observe(en) + self.storyline.observe(en)
         self.event_latency.append((time.perf_counter() - t0) * 1000)
         msg = self.event_msg(ev, en)
         self.recent_events.append(msg)
         if not jumping:
             self.publish(msg)
         for mo in moments:
-            task = asyncio.create_task(self._process(mo, jumping))
-            self.pending_tasks.add(task)
-            task.add_done_callback(self.pending_tasks.discard)
+            # Analysis runs in step with the feed (~10 ms), so an insight can never read state from its future.
+            # Slow LLM work (extra languages) is scheduled separately and arrives as a `render` update.
+            await self._process(mo, jumping)
         if ev.seq % 12 == 0 or ev.type in ("goal", "half_time", "full_time", "card") or moments:
             if not jumping or ev.seq % 120 == 0:
                 self.publish({"type": "state", **self.snapshot()})
         for cue in self.producer.expire():
             self.publish({"type": "cue_update", "cue": cue})
+
+    def _late_render(self, coro) -> None:
+        """Run slow (LLM) renders off the hot path; publish each as it lands."""
+        async def run():
+            ins_id, persona, lang, render = await coro
+            for ins in self.insights:
+                if ins["id"] == ins_id and render:
+                    ins.setdefault("renders", {}).setdefault(persona, {})[lang] = render
+                    self.publish({"type": "render", "insight_id": ins_id, "persona": persona, "lang": lang, "render": render})
+        task = asyncio.create_task(run())
+        self.pending_tasks.add(task)
+        task.add_done_callback(self.pending_tasks.discard)
 
     async def _process(self, mo, jumping: bool) -> None:
         ins = await self.pipeline.run(mo)

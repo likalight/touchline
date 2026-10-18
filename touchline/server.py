@@ -24,7 +24,7 @@ from touchline.telemetry import setup_telemetry
 log = logging.getLogger("touchline")
 WEB = Path(__file__).resolve().parents[1] / "web"
 MAX_SESSIONS = int(os.getenv("TOUCHLINE_MAX_SESSIONS", "12"))
-DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", "7"))
+DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", "221"))  # 3-2 comeback, hat-trick, red card, 94th-minute winner
 DEMO_SPEED = float(os.getenv("TOUCHLINE_DEMO_SPEED", "10"))
 
 sessions: dict[str, MatchSession] = {}
