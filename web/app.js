@@ -21,7 +21,7 @@ const S = {
   lastPass: null,
   i18n: null,
   llm: { backend: "offline" },
-  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", favs: [], metric: "", speak: false }, store.get("prefs", {})),
+  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", favs: [], metric: "", speak: false, booth: false }, store.get("prefs", {})),
   pos: {}, from: {}, to: {}, t0: 0, dur: 1,
   ball: [52.5, 34], ballFrom: [52.5, 34], ballMid: [52.5, 34], ballTo: [52.5, 34],
   lastT: 0,
@@ -238,7 +238,8 @@ function onInsight(ins, replayed) {
   $("#feedCount").textContent = `${S.insights.length} moments explained`;
   if (!replayed && ins.cue && ins.cue.approval === "auto") playCue(ins);
   if (!replayed && window.TV3D && TV3D.ready && ins.salience >= 0.5) { const r = rendersFor(ins, "studio"); if (r) TV3D.board(r.title, ins.team && S.meta ? S.meta[ins.team].color : null); }
-  if (!replayed && (S.prefs.speak || S.prefs.persona === "access")) queueSpeech(ins);
+  if (!replayed && S.prefs.booth && ins.commentary && (ins.salience >= 0.5 || (ins.cue && ins.cue.approval === "auto"))) queueBooth(ins);
+  else if (!replayed && (S.prefs.speak || S.prefs.persona === "access")) queueSpeech(ins);
   if (!$("#tab-producer").hidden) renderProducer();
   if (ins.kind === "half_time" || ins.kind === "full_time") loadRecap();
   if (!replayed && ins.kind === "goal" && !$("#tab-mine").hidden) loadReelPlan();
@@ -688,22 +689,49 @@ function queueSpeech(ins) {
   if (S.speechQ.length > 2 && ins.salience < 0.6) return;
   S.speechQ.push({ text: r.speech || r.title, lang: S.prefs.lang });
 }
+function queueBooth(ins) {
+  const ex = ins.commentary[S.prefs.lang] || ins.commentary.en;
+  if (!ex) return;
+  if (S.speechQ.length > 3 && ins.salience < 0.8) return; // don't fall behind the play
+  if (ins.kind === "goal") S.speechQ = S.speechQ.filter((q) => q.goal);
+  for (const l of ex) S.speechQ.push({ text: l.text, lang: S.prefs.lang, who: l.who, goal: ins.kind === "goal" });
+}
+const BOOTH_NAMES = { en: { lead: "Commentary", analyst: "Analysis" }, es: { lead: "Narración", analyst: "Análisis" }, fr: { lead: "Commentaire", analyst: "Analyse" }, pt: { lead: "Relato", analyst: "Análise" } };
+function caption(item) {
+  const c = $("#caption");
+  if (!item) { c.hidden = true; return; }
+  const n = BOOTH_NAMES[item.lang] || BOOTH_NAMES.en;
+  $("#capWho").textContent = item.who ? (n[item.who] || "") : "";
+  $("#capText").textContent = item.text; c.dataset.who = item.who || ""; c.hidden = false;
+}
+function browserVoice(lang, who) {
+  const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const loc = { en: "en-GB", es: "es-ES", fr: "fr-FR", pt: "pt-PT" }[lang] || lang;
+  const mine = vs.filter((v) => v.lang && v.lang.toLowerCase().startsWith(lang));
+  const exact = mine.filter((v) => v.lang === loc);
+  const pool = exact.length > 1 ? exact : mine;
+  return pool.length ? pool[who === "analyst" ? Math.min(1, pool.length - 1) : 0] : null;
+}
 let speaking = false;
 function tickSpeech() {
   if (speaking || !S.speechQ.length) return;
+  const item = S.speechQ.shift();
+  const done = () => { speaking = false; setTimeout(() => { if (!speaking) caption(null); }, 900); };
+  speaking = true;
+  if (item.who) caption(item);
   if (S.speechNeural) {
-    const { text, lang } = S.speechQ.shift();
-    speaking = true;
-    const a = new Audio(`/api/speak?lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(text)}`);
-    a.onended = a.onerror = () => { speaking = false; };
-    a.play().catch(() => { speaking = false; });
+    const a = new Audio(`/api/speak?lang=${encodeURIComponent(item.lang)}&voice=${item.who || "lead"}&text=${encodeURIComponent(item.text)}`);
+    a.onended = a.onerror = done;
+    a.play().catch(done);
     return;
   }
-  if (!("speechSynthesis" in window) || speechSynthesis.speaking) return;
-  const { text, lang } = S.speechQ.shift();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = { en: "en-GB", es: "es-ES", fr: "fr-FR", pt: "pt-PT" }[lang] || lang;
-  u.rate = 1.05;
+  if (!("speechSynthesis" in window)) { setTimeout(done, 2200); return; }
+  const u = new SpeechSynthesisUtterance(item.text);
+  u.lang = { en: "en-GB", es: "es-ES", fr: "fr-FR", pt: "pt-PT" }[item.lang] || item.lang;
+  const v = browserVoice(item.lang, item.who); if (v) u.voice = v;
+  // two distinct voices even when the browser has only one: the lead is quicker and brighter
+  u.rate = item.who === "lead" ? 1.12 : 0.98; u.pitch = item.who === "lead" ? 1.08 : item.who === "analyst" ? 0.82 : 1;
+  u.onend = u.onerror = done;
   speechSynthesis.speak(u);
 }
 
@@ -933,7 +961,7 @@ function applyView() {
 
 function applyPrefs() {
   $$("#personaSeg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.persona === S.prefs.persona)));
-  $("#club").value = S.prefs.club; $("#metric").value = S.prefs.metric; $("#speak").checked = S.prefs.speak;
+  $("#club").value = S.prefs.club; $("#metric").value = S.prefs.metric; $("#speak").checked = S.prefs.speak; $("#booth").checked = !!S.prefs.booth;
   if ($("#lang").querySelector(`option[value="${S.prefs.lang}"]:not([disabled])`)) $("#lang").value = S.prefs.lang;
   if (S.meta) $("#focus").value = S.prefs.focus;
   $("#homeBug").classList.toggle("fav", isMine("home"));
@@ -974,6 +1002,7 @@ function bindControls() {
   $("#club").addEventListener("change", (e) => { S.prefs.club = e.target.value; savePrefs(); applyPrefs(); });
   $("#focus").addEventListener("change", (e) => { S.prefs.focus = e.target.value; savePrefs(); applyPrefs(); });
   $("#metric").addEventListener("change", (e) => { S.prefs.metric = e.target.value; savePrefs(); updateMetric(); });
+  $("#booth").addEventListener("change", (e) => { S.prefs.booth = e.target.checked; savePrefs(); if (!e.target.checked) { if ("speechSynthesis" in window) speechSynthesis.cancel(); S.speechQ = []; caption(null); } });
   $("#speak").addEventListener("change", (e) => { S.prefs.speak = e.target.checked; savePrefs(); if (!e.target.checked && "speechSynthesis" in window) { speechSynthesis.cancel(); S.speechQ = []; } });
   $("#pauseBtn").addEventListener("click", () => control(S.paused ? "resume" : "pause"));
   $("#speed").addEventListener("change", (e) => control("speed", Number(e.target.value)));

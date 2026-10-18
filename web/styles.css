@@ -341,3 +341,9 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 .cue.dec.bump .act { background: var(--sodium, #f2c14e); color: #1a1405; }
 .cue.dec.queue .act { background: #2b3f4f; }
 .cue.dec.drop .act { background: transparent; border: 1px solid #3a5446; color: #a8b5a6; }
+
+/* commentary captions: who is speaking, then what they said */
+.caption { position: absolute; left: 50%; top: 4%; transform: translateX(-50%); max-width: min(44%, 560px); background: rgba(6, 18, 12, .86); color: #eef0e8;
+  padding: 8px 14px 9px; border-radius: 6px; font: 400 clamp(14px, 1.5vw, 19px)/1.35 "Source Serif 4", serif; display: flex; gap: 10px; align-items: baseline; z-index: 5; }
+.caption b { font: 600 12px/1 Barlow, sans-serif; color: var(--sodium); white-space: nowrap; }
+.caption[data-who="analyst"] b { color: #9fd4ff; }

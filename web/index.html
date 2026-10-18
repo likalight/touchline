@@ -53,6 +53,7 @@
       <option value="press">Pressing intensity</option><option value="possession">Possession</option>
     </select></label>
     <label class="field"><input type="checkbox" id="speak"> Read aloud</label>
+    <label class="field" title="Two voices: a lead commentator calls it, an analyst explains it"><input type="checkbox" id="booth"> Commentary</label>
     <span class="spacer"></span>
     <div class="ctl">
       <span class="status-dot" id="liveDot" title="Stream status"></span>
@@ -71,6 +72,7 @@
       <canvas id="pitch3d" aria-hidden="true"></canvas>
       <canvas id="pitch"></canvas>
       <div class="overlay-layer" id="overlay" aria-live="polite"></div>
+      <div class="caption" id="caption" hidden><b id="capWho"></b><span id="capText"></span></div>
     </div>
     <div class="under">
       <div class="chart-title"><span>Win probability and momentum</span>
