@@ -334,3 +334,10 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 #pitch3d { position: absolute; inset: 0; width: 100%; height: 100%; display: none; border-radius: inherit; }
 .pitch-box.gl.tv #pitch3d { display: block; }
 .pitch-box.gl.tv #pitch { opacity: 0; pointer-events: none; }
+
+.cue.dec { display: grid; grid-template-columns: 74px 1fr; gap: 10px; align-items: start; }
+.cue.dec .act { font: 600 12px/1 Barlow, sans-serif; padding: 5px 7px; border-radius: 4px; text-align: center; background: #1c3a2c; color: var(--ink, #eef0e8); }
+.cue.dec.air .act { background: #1f4d36; }
+.cue.dec.bump .act { background: var(--sodium, #f2c14e); color: #1a1405; }
+.cue.dec.queue .act { background: #2b3f4f; }
+.cue.dec.drop .act { background: transparent; border: 1px solid #3a5446; color: #a8b5a6; }

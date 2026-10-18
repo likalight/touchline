@@ -216,8 +216,8 @@ class MatchSession:
         if ev.seq % 12 == 0 or ev.type in ("goal", "half_time", "full_time", "card") or moments:
             if not jumping or ev.seq % 120 == 0:
                 self.publish({"type": "state", **self.snapshot()})
-        for cue in self.producer.expire():
-            self.publish({"type": "cue_update", "cue": cue})
+        for cue in self.producer.expire() + self.producer.tick():
+            self._update_cue(cue)
 
     def _late_render(self, coro) -> None:
         """Run slow (LLM) renders off the hot path; publish each as it lands."""
@@ -260,6 +260,13 @@ class MatchSession:
             self.extra_langs.update(l for l in (value or []) if isinstance(l, str) and len(l) <= 8)
         self.publish({"type": "control", "action": action, "value": value})
         return {"ok": True, "speed": self.speed, "paused": self.paused, "mode": self.producer.mode}
+
+    def _update_cue(self, cue: dict) -> None:
+        for ins in reversed(self.insights):
+            if ins.get("cue") and ins["cue"]["cue_id"] == cue["cue_id"]:
+                ins["cue"] = cue
+                break
+        self.publish({"type": "cue_update", "cue": cue})
 
     def decide_cue(self, cue_id: str, approve: bool) -> Optional[dict]:
         cue = self.producer.decide(cue_id, approve, self.state.t)

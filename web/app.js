@@ -308,8 +308,7 @@ function playCue(ins) {
   const r = rendersFor(ins, persona) || rendersFor(ins, "studio");
   if (!r) return;
   const wall = Math.max(4.5, Math.min(cue.duration_s, 9)) * 1000;
-  const cur = S.layers[cue.layer];
-  if (cur && cur._prio > cue.priority && cur._until > performance.now()) return;
+  // the Producer agent already decided this graphic airs (and cut anything it beat), so the client just plays it
   const viz = ins.viz || {};
   if (cue.layer === "player_tag") {
     showTag(viz.player_id, `${esc(viz.name)}<b>${viz.speed_kmh ? viz.speed_kmh + " km/h" : ""}</b>`, wall);
@@ -334,7 +333,7 @@ function playCue(ins) {
     el = layerEl("full_screen", "full-screen");
     el.innerHTML = `<div class="ttl">${esc(r.title)}</div>${r.lines.map((l) => `<div class="ln">${esc(l.text)}</div>`).join("")}`;
   } else return;
-  el._prio = cue.priority; el._until = performance.now() + wall;
+  el._prio = cue.priority; el._until = performance.now() + wall; el._cue = cue.cue_id;
   clearTimeout(el._t);
   el._t = setTimeout(() => hideLayer(cue.layer, el), wall);
   // pitch drawings
@@ -798,6 +797,12 @@ function renderProducer() {
     const r = rendersFor(i, "studio");
     return `<div class="cue"><div><div class="t">${esc(r ? r.title : i.kind)}</div><div class="s">${i.minute}', ${i.cue.approval === "approved" ? "approved by the producer" : "aired automatically"}, ready ${i.latency_ms} ms after the event</div></div></div>`;
   }).join("") || `<p class="muted">No graphics yet.</p>`;
+  const ACT = { air: "Aired", bump: "Cut in", queue: "Queued", drop: "Dropped" };
+  const dec = S.insights.filter((i) => i.cue && i.cue.decision).slice(-8).reverse();
+  $("#rundown").innerHTML = dec.map((i) => {
+    const d = i.cue.decision, r = rendersFor(i, "studio");
+    return `<div class="cue dec ${d.action}"><span class="act">${ACT[d.action] || d.action}</span><div><div class="t">${esc(r ? r.title : i.kind)}</div><div class="s">${i.minute}', score ${Number(d.score).toFixed(2)}. ${esc(d.reason)}</div></div></div>`;
+  }).join("") || `<p class="muted">Decisions appear as moments compete for the screen.</p>`;
   const last = S.insights.filter((i) => i.cue).slice(-1)[0];
   if (last) {
     const c = { ...last.cue }; delete c.data;
@@ -814,7 +819,7 @@ function renderOps() {
     [`${o.verifier.verified} / ${o.verifier.blocked}`, "insights verified / blocked"],
     [o.ingest.accepted, "events accepted"],
     [`${o.ingest.quarantined} / ${o.ingest.duplicates} / ${o.ingest.reordered}`, "quarantined / duplicates / re-ordered"],
-    [`${o.producer.aired} / ${o.producer.pending}`, "graphics aired / pending"],
+    [o.producer.decisions ? `${o.producer.decisions.air + o.producer.decisions.bump} / ${o.producer.decisions.bump} / ${o.producer.decisions.drop}` : o.producer.aired, "graphics aired / cut in / dropped by the Producer"],
     [o.llm.backend === "offline" ? "Offline" : `${o.llm.backend}`, o.llm.backend === "offline" ? "language model (phrase banks in use)" : `model ${o.llm.model}, ${o.llm.calls} calls`],
   ];
   $("#opsKv").innerHTML = kv.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("");
@@ -829,7 +834,11 @@ function onTrace(sp) {
 }
 
 function onCueUpdate(cue) {
-  for (const i of S.insights) if (i.cue && i.cue.cue_id === cue.cue_id) { i.cue = cue; if (cue.approval === "approved") playCue(i); }
+  for (const i of S.insights) if (i.cue && i.cue.cue_id === cue.cue_id) {
+    const was = i.cue.approval; i.cue = cue;
+    if (cue.approval === "approved" || (cue.approval === "auto" && was === "queued")) playCue(i);
+    if (cue.approval === "bumped") { const el = S.layers[cue.layer]; if (el && el._cue === cue.cue_id) { el._until = 0; clearTimeout(el._t); hideLayer(cue.layer, el); } }
+  }
   if (!$("#tab-producer").hidden) renderProducer();
 }
 

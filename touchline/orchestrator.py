@@ -192,9 +192,9 @@ class ProducerExecutor(Executor):
         cue = self.d.producer.schedule(ins, self.d.now_t())
         ins["cue"] = cue
         ins["latency_ms"] = round((time.perf_counter() - ins.pop("_t0", t0)) * 1000, 2)
-        status = "aired" if cue and cue["approval"] == "auto" else (cue["approval"] if cue else "dropped")
-        self.d.trace.record("Producer", ins["id"], (time.perf_counter() - t0) * 1000, "ok",
-                            f"cue {status}" + (f" on {cue['layer']}" if cue else ""))
+        dec = (cue or {}).get("decision") or {}
+        note = f"{dec.get('action', 'drop')} ({dec.get('score', 0):.2f}): {dec.get('reason', 'not verified')}" if cue else "dropped: not verified"
+        self.d.trace.record("Producer", ins["id"], (time.perf_counter() - t0) * 1000, "ok", note)
         await ctx.yield_output(ins)
 
 
