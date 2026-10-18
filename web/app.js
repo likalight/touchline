@@ -108,6 +108,7 @@ function connect() {
       if (old) old.replaceWith(renderCard(ins));
     }
   });
+  es.addEventListener("drill", (e) => onDrill(JSON.parse(e.data).drill));
   es.addEventListener("cue_update", (e) => onCueUpdate(JSON.parse(e.data).cue));
   es.addEventListener("control", (e) => { const m = JSON.parse(e.data); if (m.action === "pause") setPaused(true); if (m.action === "resume") setPaused(false); });
   es.addEventListener("done", () => toast("Full-time. A fresh live match starts shortly."));
@@ -149,6 +150,7 @@ function tvBug(s) {
 
 function onState(s) {
   S.snap = s;
+  if (s.drills && s.drills.length) { for (const d of s.drills) S.drills[d.id] = d; if (!$("#tab-ops").hidden) renderDrills(); }
   tvBug(s);
   const sc = s.score;
   $("#score").textContent = `${sc.home}–${sc.away}`;
@@ -166,7 +168,7 @@ function onState(s) {
   drawTimeline();
   updateMetric();
   if (!$("#tab-players").hidden) renderPlayers();
-  if (!$("#tab-ops").hidden) renderOps();
+  if (!$("#tab-ops").hidden) { renderOps(); renderDrills(); }
 }
 
 /* ------------------------------------------------------------------ events -> pitch */
@@ -861,6 +863,22 @@ function onTrace(sp) {
   while (el.children.length > 60) el.lastChild.remove();
 }
 
+S.drills = {};
+function onDrill(d) { S.drills[d.id] = d; renderDrills(); }
+function renderDrills() {
+  const list = Object.values(S.drills).sort((a, b) => b.started - a.started);
+  $("#drillLog").innerHTML = list.map((d) => {
+    const det = d.detected ? `caught by <b>${esc(d.detected_by)}</b> after ${Math.max(0, Math.round((d.detected - d.started) * 1000))} ms` : "waiting for the fault to hit…";
+    const rec = d.recovered ? `recovered in ${(d.ms / 1000).toFixed(1)} s` : d.detected ? "recovering…" : "";
+    return `<li class="${d.recovered ? "ok" : d.detected ? "busy" : ""}"><div class="t">${esc(d.label)} <span class="muted">${d.minute}'</span></div>
+      <div class="s">${det}${rec ? `, ${rec}` : ""}.</div>${d.notes.length ? `<div class="s">${d.notes.map((n) => esc(n.charAt(0).toUpperCase() + n.slice(1))).join(". ")}.</div>` : ""}</li>`;
+  }).join("") || `<li class="muted">No drills run yet.</li>`;
+}
+async function runDrill(name) {
+  const r = await control("drill", name);
+  if (r && r.ok === false) toast(r.reason === "already running" ? "That drill is already running." : "Couldn't start that drill.");
+}
+
 function onCueUpdate(cue) {
   for (const i of S.insights) if (i.cue && i.cue.cue_id === cue.cue_id) {
     const was = i.cue.approval; i.cue = cue;
@@ -875,7 +893,7 @@ function drawTopology(topo) {
   svg.setAttribute("viewBox", "0 0 590 300");
   const nodes = {
     "IngestGuard": [10, 20], "MatchState": [10, 80], "MomentScout": [10, 140], "TacticalAnalyst": [10, 200], "StorylineKeeper": [190, 140], "FactChecker": [190, 200],
-    "Narrator[casual]": [370, 20], "Narrator[analyst]": [370, 80], "Narrator[studio]": [370, 140], "Narrator[access]": [370, 200], "Producer": [370, 260],
+    "Narrator[casual]": [370, 20], "Narrator[analyst]": [370, 80], "Narrator[studio]": [370, 140], "Narrator[access]": [370, 200], "Producer": [370, 260], "CommentaryBooth": [190, 260],
   };
   const w = 170, h = 34;
   const edge = ([a, b]) => {
@@ -1012,6 +1030,7 @@ function bindControls() {
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
     const say = e.target.closest("[data-say]"); if (say) { const i = S.insights.find((x) => x.id === say.dataset.say); if (i) queueSpeech({ ...i, salience: 1 }); return; }
     const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q);
+    const dr = e.target.closest("[data-drill]"); if (dr) { runDrill(dr.dataset.drill); return; }
     const fv = e.target.closest("[data-fav]"); if (fv) { const f = new Set(S.prefs.favs || []); f.has(fv.dataset.fav) ? f.delete(fv.dataset.fav) : f.add(fv.dataset.fav); S.prefs.favs = [...f]; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const fol = e.target.closest("[data-follow]"); if (fol) { S.prefs.focus = S.prefs.focus === fol.dataset.follow ? "" : fol.dataset.follow; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const ap = e.target.closest("[data-approve]"); if (ap) return decide(ap.dataset.approve, true);

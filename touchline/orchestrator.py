@@ -81,6 +81,8 @@ class Deps:
     storyline: object = None
     late: Optional[Callable] = None  # schedules slow renders off the hot path
     booth: object = None             # CommentaryBooth: two-voice commentary on each moment
+    drills: dict = field(default_factory=dict)  # resilience drills: name -> moments remaining
+    on_fault: Optional[Callable] = None         # runtime hook: a drill fault was detected (name, agent, note)
 
 
 class AnalystExecutor(Executor):
@@ -114,6 +116,9 @@ class StorylineExecutor(Executor):
         t0 = time.perf_counter()
         added = []
         try:
+            if self.d.drills.get("storyline_crash", 0) > 0:
+                self.d.drills["storyline_crash"] -= 1
+                raise RuntimeError("drill: StorylineKeeper crashed")
             if self.d.storyline is not None:
                 added = self.d.storyline.callbacks(ins)
                 if added:
@@ -122,7 +127,11 @@ class StorylineExecutor(Executor):
                     ins["event_ids"] = sorted(set(ins["event_ids"]) | {i for f in added for i in f["ev"]})
                     ins["storyline"] = [f["k"] for f in added]
         except Exception as exc:
-            self.d.trace.record("StorylineKeeper", ins["id"], (time.perf_counter() - t0) * 1000, "error", repr(exc), to="FactChecker")
+            self.d.trace.record("StorylineKeeper", ins["id"], (time.perf_counter() - t0) * 1000, "error",
+                                f"{exc}; moment continues without callbacks", to="FactChecker")
+            ins.setdefault("degraded", []).append("storyline")
+            if self.d.on_fault:
+                self.d.on_fault("storyline_crash", "StorylineKeeper", "caught in the agent; the moment went on without storyline callbacks")
             await ctx.send_message(ins)
             return
         self.d.trace.record("StorylineKeeper", ins["id"], (time.perf_counter() - t0) * 1000,
@@ -159,7 +168,32 @@ class NarratorExecutor(Executor):
         res = NarrationResult(self.persona, ins)
         if ins["verification"]["status"] == "verified":
             for lang in BANKS:
-                res.renders[lang] = self.d.narrator.render(ins, self.persona, lang)
+                try:
+                    if self.persona == "analyst" and self.d.drills.get("narrator_crash", 0) > 0:
+                        raise RuntimeError("drill: Narrator[analyst] crashed")
+                    res.renders[lang] = self.d.narrator.render(ins, self.persona, lang)
+                except Exception as exc:
+                    # recover: a sibling persona's copy stands in, flagged, so the moment still airs everywhere
+                    res.renders[lang] = {**self.d.narrator.render(ins, "studio", lang), "persona": self.persona, "source": "fallback:studio"}
+                    res.status = "recovered"
+                    if lang == "en":
+                        self.d.trace.record(self.id, ins["id"], (time.perf_counter() - t0) * 1000, "error",
+                                            f"{exc}; studio copy stands in", to="Producer")
+                        if self.d.on_fault:
+                            self.d.on_fault("narrator_crash", self.id, "caught; the studio narrator's verified copy stood in")
+            if self.persona == "analyst" and self.d.drills.get("narrator_crash", 0) > 0:
+                self.d.drills["narrator_crash"] -= 1
+            if self.persona == "casual" and self.d.drills.get("hallucination", 0) > 0:
+                # the same check every language-model line goes through: a fabricated figure must never air
+                self.d.drills["hallucination"] -= 1
+                fake = res.renders["en"]["title"] + ", his 99th goal of the season"
+                issues = self.d.checker.check_text(ins, [fake])
+                self.d.trace.record("FactChecker", ins["id"], 0.1, "blocked" if issues else "ok",
+                                    f"rejected a generated line: {issues[:1]}" if issues else "missed a fabricated line",
+                                    to=self.id)
+                if self.d.on_fault:
+                    self.d.on_fault("hallucination", "FactChecker",
+                                    f"blocked \"{fake}\" ({next((i for i in issues if '99' in str(i)), issues[0]) if issues else 'not caught'}); the verified copy aired")
             llm = get_llm()
             if llm.available and self.d.extra_langs and self.d.late is not None:
                 for lg in sorted(self.d.extra_langs):
@@ -172,7 +206,7 @@ class NarratorExecutor(Executor):
                         return base["id"], persona, lang, r
 
                     self.d.late(one())
-            res.status = "ok"
+            res.status = "ok" if res.status != "recovered" else "recovered"
         else:
             res.status = "skipped"
         res.ms = (time.perf_counter() - t0) * 1000
@@ -216,22 +250,41 @@ class MomentPipeline:
                          .add_fan_in_edges(narrators, p)
                          .build())
         self._lock = asyncio.Lock()
+        self.restarts = 0
+
+    def _build(self):
+        d = self.d
+        a, st, v, p = AnalystExecutor(d), StorylineExecutor(d), VerifierExecutor(d), ProducerExecutor(d)
+        narrators = [NarratorExecutor(d, persona) for persona in PERSONAS]
+        return (WorkflowBuilder(start_executor=a, name="touchline-moment",
+                                description="Analyst -> Storyline -> FactChecker -> 4x Narrator -> Producer")
+                .add_edge(a, st).add_edge(st, v).add_fan_out_edges(v, narrators).add_fan_in_edges(narrators, p).build())
 
     async def run(self, mo: Moment) -> Optional[dict]:
         # A workflow instance processes one run at a time; moments are queued in order.
+        # Supervisor: if a run fails outright, rebuild the workflow and retry the moment once.
         async with self._lock:
-            res = await self.workflow.run(mo)
-        outs = res.get_outputs()
-        return outs[0] if outs else None
+            for attempt in range(2):
+                t0 = time.perf_counter()
+                try:
+                    res = await self.workflow.run(mo)
+                    outs = res.get_outputs()
+                    return outs[0] if outs else None
+                except Exception as exc:
+                    self.restarts += 1
+                    self.d.trace.record("Supervisor", getattr(mo, "kind", "moment"), (time.perf_counter() - t0) * 1000, "error",
+                                        f"workflow failed ({exc}); rebuilt and {'retrying' if attempt == 0 else 'dropped the moment'}")
+                    self.workflow = self._build()
+        return None
 
     @staticmethod
     def topology() -> dict:
         return {
             "nodes": ["IngestGuard", "MatchState", "MomentScout", "TacticalAnalyst", "StorylineKeeper", "FactChecker",
-                      *[f"Narrator[{p}]" for p in PERSONAS], "Producer", "RecapWriter", "AskTheAnalyst"],
+                      *[f"Narrator[{p}]" for p in PERSONAS], "Producer", "CommentaryBooth", "RecapWriter", "AskTheAnalyst"],
             "edges": [["IngestGuard", "MatchState"], ["MatchState", "MomentScout"], ["MomentScout", "TacticalAnalyst"],
                       ["TacticalAnalyst", "StorylineKeeper"], ["StorylineKeeper", "FactChecker"],
                       *[["FactChecker", f"Narrator[{p}]"] for p in PERSONAS],
-                      *[[f"Narrator[{p}]", "Producer"] for p in PERSONAS]],
+                      *[[f"Narrator[{p}]", "Producer"] for p in PERSONAS], ["Producer", "CommentaryBooth"]],
             "framework": "Microsoft Agent Framework WorkflowBuilder (fan-out / fan-in)",
         }

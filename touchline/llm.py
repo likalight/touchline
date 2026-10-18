@@ -40,6 +40,10 @@ class CircuitBreaker:
             return False
         return True
 
+    def force_open(self, seconds: float) -> None:
+        """Resilience drill: treat the model as down for `seconds`."""
+        self.opened_at = time.monotonic() - self.cooldown + seconds
+
     def ok(self) -> None:
         self.failures = 0
 

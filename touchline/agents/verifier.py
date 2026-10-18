@@ -14,7 +14,8 @@ from typing import Iterable
 
 from touchline.analytics.state import MatchState
 
-NUM_RE = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(?![\w])")
+# a number, including ordinals ("99th", "2º") and run-on units ("29.7km/h", "16m", "3x")
+NUM_RE = re.compile(r"(?<![\w.])(\d+(?:[.,]\d+)?)(?:st|nd|rd|th|º|ª|er|e|km|m|s|x)?(?![\w])")
 
 
 def _num(v) -> list[str]:
@@ -124,9 +125,13 @@ class FactChecker:
                 n2 = n.replace(",", ".")
                 if n2 not in allowed and n2.rstrip("0").rstrip(".") not in allowed:
                     issues.append(f"unsupported number '{n}'")
+            named_last = {n.split()[-1] for n in named}
             for p in self.s.players.values():
+                if p.name in named:
+                    continue
                 last = p.name.split()[-1]
-                if (p.name in text or re.search(rf"\b{re.escape(last)}\b", text)) and p.name not in named:
+                # a shared surname only counts when the full name is used
+                if p.name in text or (last not in named_last and re.search(rf"\b{re.escape(last)}\b", text)):
                     issues.append(f"unsupported player '{p.name}'")
         return issues
 

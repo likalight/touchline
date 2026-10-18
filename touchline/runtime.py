@@ -72,6 +72,9 @@ class MatchSession:
                          now_t=lambda: self.state.t, storyline=self.storyline, late=self._late_render,
                          booth=CommentaryBooth(self.state.players, {"home": self.meta.home.name, "away": self.meta.away.name}))
         self.pipeline = MomentPipeline(self.deps)
+        self.deps.on_fault = self._on_fault
+        self.drills: list[dict] = []
+        self._storm_left = 0
         self.subscribers: set[asyncio.Queue] = set()
         self.recent_events: deque = deque(maxlen=40)
         self.latencies: deque = deque(maxlen=500)
@@ -118,6 +121,7 @@ class MatchSession:
 
     def snapshot(self) -> dict:
         snap = self.state.snapshot()
+        snap["drills"] = [self._public_drill(d) for d in self.drills[-8:]]
         snap["speed"] = self.speed
         snap["paused"] = self.paused
         snap["timeline"] = self.state.timeline[-120:]
@@ -220,6 +224,10 @@ class MatchSession:
                 self.publish({"type": "state", **self.snapshot()})
         for cue in self.producer.expire() + self.producer.tick():
             self._update_cue(cue)
+        if self.drills:
+            if self._storm_left > 0:
+                self._storm_left -= 1
+            self._drill_tick()
 
     def _late_render(self, coro) -> None:
         """Run slow (LLM) renders off the hot path; publish each as it lands."""
@@ -242,6 +250,8 @@ class MatchSession:
         if ins["kind"] in ("half_time", "full_time"):
             self.recaps.clear()
         self.publish({"type": "insight", "insight": ins, "replayed": jumping})
+        if self.drills:
+            self._drill_tick(ins)
 
     # ------------------------------------------------------------------ controls
     def control(self, action: str, value=None) -> dict:
@@ -257,6 +267,8 @@ class MatchSession:
                 self.jump_to = target
         elif action == "mode":
             self.producer.mode = "review" if value == "review" else "auto"
+        elif action == "drill":
+            return self.start_drill(str(value))
         elif action == "langs":
             self.extra_langs.clear()
             self.extra_langs.update(l for l in (value or []) if isinstance(l, str) and len(l) <= 8)
@@ -269,6 +281,77 @@ class MatchSession:
                 ins["cue"] = cue
                 break
         self.publish({"type": "cue_update", "cue": cue})
+
+    # ------------------------------------------------------------------ resilience drills
+    DRILLS = {
+        "feed_storm": "Corrupt the feed", "llm_outage": "Take the language model down", "narrator_crash": "Crash a narrator",
+        "storyline_crash": "Crash the storyline agent", "hallucination": "Inject a made-up number",
+    }
+
+    def start_drill(self, name: str) -> dict:
+        if name not in self.DRILLS:
+            raise ValueError("unknown drill")
+        if any(d["name"] == name and not d["recovered"] for d in self.drills):
+            return {"ok": False, "reason": "already running"}
+        entry = {"id": f"D{len(self.drills) + 1}", "name": name, "label": self.DRILLS[name], "minute": self.state.minute,
+                 "started": time.time(), "detected": None, "detected_by": None, "recovered": None, "ms": None, "notes": []}
+        if name == "feed_storm":
+            self.injector.rate = 0.35
+            self._storm_left = 60
+            entry["_guard0"] = dict(self.guard.stats)
+        elif name == "llm_outage":
+            get_llm().breaker.force_open(25)
+            entry.update(detected=time.time(), detected_by="CircuitBreaker")
+            entry["notes"].append("model marked unavailable; narrators and the analyst switched to verified phrase banks"
+                                  if get_llm().client is not None else "no model configured here, so the app already runs on verified phrase banks")
+        else:
+            self.deps.drills[name] = 1 if name == "hallucination" else 2
+        self.drills.append(entry)
+        self._publish_drill(entry)
+        return {"ok": True, "drill": self._public_drill(entry)}
+
+    def _public_drill(self, d: dict) -> dict:
+        return {k: v for k, v in d.items() if not k.startswith("_")}
+
+    def _publish_drill(self, d: dict) -> None:
+        self.publish({"type": "drill", "drill": self._public_drill(d)})
+
+    def _on_fault(self, name: str, agent: str, note: str) -> None:
+        for d in self.drills:
+            if d["name"] == name and not d["recovered"]:
+                if not d["detected"]:
+                    d.update(detected=time.time(), detected_by=agent)
+                if note not in d["notes"]:
+                    d["notes"].append(note)
+                self._publish_drill(d)
+
+    def _drill_tick(self, after_insight: Optional[dict] = None) -> None:
+        for d in self.drills:
+            if d["recovered"]:
+                continue
+            n = d["name"]
+            done = False
+            if n == "feed_storm":
+                g0, g = d["_guard0"], self.guard.stats
+                caught = {k: g.get(k, 0) - g0.get(k, 0) for k in ("quarantined", "duplicates", "reordered")}
+                if any(caught.values()) and not d["detected"]:
+                    d.update(detected=time.time(), detected_by="IngestGuard")
+                if self._storm_left <= 0 and d["detected"]:
+                    self.injector.rate = self.chaos
+                    d["notes"] = [f"{caught['quarantined']} malformed events quarantined, {caught['duplicates']} duplicates dropped, "
+                                  f"{caught['reordered']} re-ordered; every real event applied exactly once, in order"]
+                    done = True
+            elif n == "llm_outage":
+                done = not get_llm().breaker.open
+                if done:
+                    d["notes"].append("breaker closed again; model calls allowed (any failure re-opens it)")
+            elif after_insight is not None and d["detected"] and self.deps.drills.get(n, 0) == 0 and not after_insight.get("degraded"):
+                done = True
+                d["notes"].append("next moment ran the full pipeline cleanly")
+            if done:
+                d["recovered"] = time.time()
+                d["ms"] = round((d["recovered"] - d["started"]) * 1000)
+                self._publish_drill(d)
 
     def decide_cue(self, cue_id: str, approve: bool) -> Optional[dict]:
         cue = self.producer.decide(cue_id, approve, self.state.t)

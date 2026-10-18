@@ -156,6 +156,18 @@
 
   <div class="tabpanel" id="tab-ops" role="tabpanel" hidden>
     <div class="kv" id="opsKv"></div>
+    <div class="box drills" style="margin-top:16px">
+      <h3>Resilience drills</h3>
+      <p class="muted">Break something on purpose and watch the agents notice and recover, live, while the match keeps playing.</p>
+      <div class="ctl" id="drillBtns">
+        <button class="btn small" data-drill="feed_storm">Corrupt the feed</button>
+        <button class="btn small" data-drill="llm_outage">Take the language model down</button>
+        <button class="btn small" data-drill="narrator_crash">Crash a narrator</button>
+        <button class="btn small" data-drill="storyline_crash">Crash the storyline agent</button>
+        <button class="btn small" data-drill="hallucination">Inject a made-up number</button>
+      </div>
+      <ol class="drill-log" id="drillLog"></ol>
+    </div>
     <div class="two" style="margin-top:16px">
       <div class="box"><h3>Agent pipeline</h3><svg id="topology" viewBox="0 0 560 300" style="width:100%" role="img" aria-label="Agent pipeline"></svg>
         <p class="muted">Each moment runs through a Microsoft Agent Framework workflow. The four narrators work in parallel. Nothing airs unless the FactChecker can re-derive every number from the match data.</p></div>
