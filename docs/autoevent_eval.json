@@ -1,0 +1,27 @@
+{
+ "seed": 7,
+ "window_min": [
+  0.0,
+  45.0
+ ],
+ "frames": 27001,
+ "fps": 10,
+ "resolution": "420x272",
+ "noise_sigma": 6.0,
+ "passes": {
+  "ground_truth": 439,
+  "detected": 373,
+  "matched": 328,
+  "precision": 0.879,
+  "recall": 0.747,
+  "passer_and_receiver_correct": 0.89,
+  "ball_speed_mae_kmh": 2.14,
+  "distance_mae_m": 2.11
+ },
+ "shots": {
+  "ground_truth": 10,
+  "detected": 9,
+  "recall": 0.8
+ },
+ "ball_visible": 1.0
+}

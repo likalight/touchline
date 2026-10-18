@@ -38,6 +38,40 @@ def new_demo() -> MatchSession:
     return s
 
 
+async def hub_consumer():
+    """Event-driven mode: build a `live` session from matches published to Azure Event Hubs."""
+    from touchline.feeds import eventhub_payloads
+    from touchline.schema import MatchMeta
+
+    feed = eventhub_payloads()
+    queue: asyncio.Queue = asyncio.Queue()
+
+    async def pump():
+        async for payload in feed:
+            await queue.put(payload)
+
+    asyncio.create_task(pump())
+
+    async def session_feed():
+        while True:
+            payload = await queue.get()
+            if "meta" in payload:  # a new match started on the hub: hand over to a new session
+                await queue.put(payload)
+                return
+            yield payload
+
+    while True:
+        payload = await queue.get()
+        if "meta" not in payload:
+            continue
+        s = MatchSession(meta=MatchMeta.model_validate(payload["meta"]), feed=session_feed(), match_id="live")
+        sessions["live"] = s
+        s.start()
+        log.info("live Event Hubs session started for %s", s.meta.match_id)
+        while not s.done and queue.empty():
+            await asyncio.sleep(1)
+
+
 async def demo_keeper():
     """Keep a live demo match running 24/7 (restart a fresh one a minute after full-time)."""
     while True:
@@ -52,9 +86,13 @@ async def demo_keeper():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_telemetry()
-    task = asyncio.create_task(demo_keeper())
+    tasks = [asyncio.create_task(demo_keeper())]
+    from touchline.feeds import eventhub_enabled
+    if eventhub_enabled():
+        tasks.append(asyncio.create_task(hub_consumer()))
     yield
-    task.cancel()
+    for t in tasks:
+        t.cancel()
 
 
 app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
@@ -94,6 +132,11 @@ class Decision(BaseModel):
 @app.get("/", include_in_schema=False)
 async def index():
     return FileResponse(WEB / "index.html")
+
+
+@app.get("/story", include_in_schema=False)
+async def story():
+    return FileResponse(WEB / "story.html")
 
 
 @app.get("/overlay", include_in_schema=False)

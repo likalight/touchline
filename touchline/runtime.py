@@ -20,7 +20,9 @@ from touchline.analytics.models import get_models
 from touchline.analytics.state import MatchState
 from touchline.llm import get_llm
 from touchline.orchestrator import Deps, MomentPipeline, Trace
-from touchline.schema import Event
+from typing import AsyncIterator
+
+from touchline.schema import Event, MatchMeta
 from touchline.sim.engine import MatchSimulator
 
 Q_EVENT_KEYS = ("distance_m", "ball_speed_kmh", "shot_speed_kmh", "speed_kmh", "pass_type", "body_part", "height")
@@ -35,11 +37,16 @@ def percentile(xs: list[float], p: float) -> Optional[float]:
 
 class MatchSession:
     def __init__(self, seed: int = 7, speed: float = 12.0, chaos: float = 0.0, mode: str = "auto",
-                 extra_langs: Optional[set] = None, match_id: Optional[str] = None):
+                 extra_langs: Optional[set] = None, match_id: Optional[str] = None,
+                 meta: Optional[MatchMeta] = None, feed: Optional[AsyncIterator[dict]] = None):
         self.id = match_id or f"m-{uuid.uuid4().hex[:8]}"
-        sim = MatchSimulator(seed, match_id=f"SYN-{seed:05d}")
-        self.meta = sim.meta
-        self.events: list[Event] = list(sim.run())
+        self.feed = feed
+        if meta is not None:  # external, event-driven feed (e.g. Azure Event Hubs)
+            self.meta, self.events = meta, []
+        else:
+            sim = MatchSimulator(seed, match_id=f"SYN-{seed:05d}")
+            self.meta = sim.meta
+            self.events = list(sim.run())
         self.seed, self.speed, self.chaos = seed, speed, chaos
         self.created = time.time()
         self.state = MatchState(self.meta)
@@ -87,7 +94,7 @@ class MatchSession:
         for e in list(self.recent_events)[-20:]:
             q.put_nowait(e)
         for ins in self.insights[-30:]:
-            q.put_nowait({"type": "insight", "insight": ins})
+            q.put_nowait({"type": "insight", "insight": ins, "replayed": True})  # history: feed only, no graphics
         return q
 
     def unsubscribe(self, q: asyncio.Queue) -> None:
@@ -143,7 +150,19 @@ class MatchSession:
             self.task = asyncio.create_task(self._run())
 
     async def _run(self) -> None:
-        wall_prev = time.monotonic()
+        if self.feed is not None:
+            async for payload in self.feed:
+                for ev in self.guard.push(payload):
+                    self.events.append(ev)
+                    await self._play(ev, realtime=True)
+                    if ev.type == "full_time":
+                        break
+                if self.state.status == "full_time":
+                    break
+            await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
+            self.done = True
+            self.publish({"type": "done"})
+            return
         for payload in self.injector.apply(self.events):
             for ev in self.guard.push(payload):
                 await self._play(ev)
@@ -153,13 +172,14 @@ class MatchSession:
         self.done = True
         self.publish({"type": "state", **self.snapshot()})
         self.publish({"type": "done"})
-        _ = wall_prev
 
-    async def _play(self, ev: Event) -> None:
-        jumping = self.jump_to is not None and ev.minute < self.jump_to
+    async def _play(self, ev: Event, realtime: bool = False) -> None:
+        jumping = self.jump_to is not None and ev.minute < self.jump_to and not realtime
         if self.jump_to is not None and not jumping:
             self.jump_to = None
-        if not jumping:
+        if realtime:
+            pass  # the feed itself is paced by the real match clock
+        elif not jumping:
             gap = max(0.0, ev.t - self.clock_t)
             remaining = gap / max(self.speed, 0.1)
             while remaining > 0:

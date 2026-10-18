@@ -1,0 +1,13 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30
+pydantic>=2.8,<3
+numpy>=2.0
+scipy>=1.13
+agent-framework-core==1.22.0
+agent-framework-openai==1.17.0
+agent-framework-foundry==1.15.0
+a2a-sdk[http-server,fastapi]==1.2.2
+azure-identity>=1.19
+azure-monitor-opentelemetry>=1.6
+azure-eventhub>=5.12
+imageio>=2.34

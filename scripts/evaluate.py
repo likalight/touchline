@@ -1,0 +1,160 @@
+"""Evaluation harness and CI gate.
+
+Runs N full synthetic matches (optionally with a faulty feed) through the complete agent
+pipeline and measures what a broadcaster would care about:
+
+* groundedness  - share of insights the FactChecker verified; every citation resolves to a
+                  real, non-future event
+* coverage      - moments explained per match, kinds covered, goals explained (must be 100%)
+* personalisation - personas x languages rendered without template leaks
+* latency       - per-event state update and per-moment agent pipeline, p50 / p95
+* resilience    - events recovered exactly-once from a 10% faulty feed
+
+    python scripts/evaluate.py --matches 20 --gate          # fails (exit 1) if any threshold is missed
+    python scripts/evaluate.py --foundry                    # + Azure AI Foundry groundedness evaluator (needs env)
+
+Writes docs/EVAL.md.
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import os
+import statistics
+import sys
+import time
+from collections import Counter
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+os.environ.setdefault("TOUCHLINE_LLM", "off")
+
+from touchline.agents.narrator import PERSONAS  # noqa: E402
+from touchline.i18n import BANKS  # noqa: E402
+from touchline.runtime import MatchSession, percentile  # noqa: E402
+
+GATES = {
+    "verified_rate": 1.0, "goals_explained": 1.0, "template_leaks": 0, "citation_errors": 0,
+    "pipeline_ms_p95": 250.0, "event_ms_p95": 5.0, "exactly_once": 1.0,
+}
+
+
+async def run(seed: int, chaos: float) -> MatchSession:
+    s = MatchSession(seed=seed, speed=1000, chaos=chaos)
+    s.control("jump", 200)
+    s.start()
+    while not s.done:
+        await asyncio.sleep(0.02)
+    return s
+
+
+def foundry_groundedness(samples: list[dict]) -> dict | None:
+    """Optional: score rendered copy against its evidence with azure-ai-evaluation."""
+    try:
+        from azure.ai.evaluation import GroundednessEvaluator
+    except Exception:
+        return None
+    cfg = {"azure_endpoint": os.getenv("AZURE_OPENAI_ENDPOINT"), "azure_deployment": os.getenv("AZURE_OPENAI_MODEL"),
+           "api_key": os.getenv("AZURE_OPENAI_API_KEY")}
+    if not all(cfg.values()):
+        return None
+    ev = GroundednessEvaluator(model_config=cfg)
+    scores = []
+    for s in samples[:40]:
+        r = ev(response=s["text"], context=s["context"])
+        scores.append(float(r.get("groundedness", 0)))
+    return {"groundedness_mean_1to5": round(statistics.mean(scores), 2), "n": len(scores)}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--matches", type=int, default=12)
+    ap.add_argument("--chaos", type=float, default=0.10)
+    ap.add_argument("--gate", action="store_true")
+    ap.add_argument("--foundry", action="store_true")
+    args = ap.parse_args()
+    t0 = time.time()
+    n_ins, verified, goals, goals_explained, leaks, cite_err = 0, 0, 0, 0, 0, 0
+    kinds: Counter = Counter()
+    lat, ev_lat, per_match, exactly = [], [], [], []
+    samples = []
+    for i in range(args.matches):
+        seed = 5000 + i
+        s = asyncio.run(run(seed, args.chaos if i % 2 else 0.0))
+        exactly.append(int(s.guard.stats["accepted"] == len(s.events)))
+        goals += sum(e.type == "goal" for e in s.events)
+        goals_explained += sum(1 for x in s.insights if x["kind"] == "goal")
+        per_match.append(len(s.insights))
+        lat += list(s.latencies)
+        ev_lat += list(s.event_latency)
+        for ins in s.insights:
+            n_ins += 1
+            kinds[ins["kind"]] += 1
+            verified += ins["verification"]["status"] == "verified"
+            for eid in ins["event_ids"]:
+                e = s.state.events.get(eid)
+                if e is None or e.t > ins["t"] + 1:
+                    cite_err += 1
+            for p in PERSONAS:
+                for lang in BANKS:
+                    r = ins["renders"][p][lang]
+                    for text in [r["title"]] + [x["text"] for x in r["lines"]]:
+                        if "{" in text or "@v." in text:
+                            leaks += 1
+            if len(samples) < 60 and ins["kind"] in ("goal", "chance_saved", "line_break", "momentum"):
+                ctx = "; ".join(str(s.state.enriched[e].facts()) for e in ins["event_ids"] if e in s.state.enriched)
+                r = ins["renders"]["analyst"]["en"]
+                samples.append({"text": r["title"] + ". " + " ".join(x["text"] for x in r["lines"]), "context": ctx})
+    m = {
+        "matches": args.matches, "insights": n_ins, "insights_per_match": round(statistics.mean(per_match), 1),
+        "verified_rate": round(verified / n_ins, 4) if n_ins else 0, "goals": goals,
+        "goals_explained": round(goals_explained / goals, 4) if goals else 1.0, "kinds": dict(kinds.most_common()),
+        "renders_per_insight": len(PERSONAS) * len(BANKS), "template_leaks": leaks, "citation_errors": cite_err,
+        "pipeline_ms_p50": percentile(lat, 0.5), "pipeline_ms_p95": percentile(lat, 0.95),
+        "event_ms_p50": percentile(ev_lat, 0.5), "event_ms_p95": percentile(ev_lat, 0.95),
+        "exactly_once": round(statistics.mean(exactly), 3), "secs": round(time.time() - t0, 1),
+    }
+    if args.foundry:
+        m["foundry"] = foundry_groundedness(samples) or "skipped (set AZURE_OPENAI_* and install azure-ai-evaluation)"
+    fails = []
+    for k, v in GATES.items():
+        ok = m[k] <= v if k in ("template_leaks", "citation_errors", "pipeline_ms_p95", "event_ms_p95") else m[k] >= v
+        if not ok:
+            fails.append(f"{k}={m[k]} (gate {v})")
+    kinds_md = "\n".join(f"| {k} | {v} |" for k, v in m["kinds"].items())
+    (ROOT / "docs" / "EVAL.md").write_text(f"""# Evaluation
+
+`python scripts/evaluate.py --matches {args.matches} --gate` on {args.matches} unseen synthetic matches
+(seeds 5000+, half of them through a {int(args.chaos * 100)}% faulty feed), deterministic path. Runs in CI on every push.
+
+| Metric | Result | Gate |
+|---|---|---|
+| Insights verified by the FactChecker | {m['verified_rate'] * 100:.1f}% | 100% |
+| Goals explained | {m['goals_explained'] * 100:.1f}% ({m['goals']} goals) | 100% |
+| Citations resolving to a real, non-future event | {m['citation_errors']} errors | 0 |
+| Renders per insight (4 personas x 4 languages) | {m['renders_per_insight']}, {m['template_leaks']} template leaks | 0 leaks |
+| Moments explained per match | {m['insights_per_match']} | - |
+| Agent pipeline latency per moment, p50 / p95 | {m['pipeline_ms_p50']} / {m['pipeline_ms_p95']} ms | p95 < 250 ms |
+| Event -> state update, p50 / p95 | {m['event_ms_p50']} / {m['event_ms_p95']} ms | p95 < 5 ms |
+| Faulty feed recovered exactly-once, in order | {m['exactly_once'] * 100:.0f}% of matches | 100% |
+{"| Azure AI Foundry groundedness (1-5) | " + str(m["foundry"]) + " | - |" if args.foundry else ""}
+
+Moment kinds explained across the run:
+
+| Kind | Count |
+|---|---|
+{kinds_md}
+
+Gate: {"PASSED" if not fails else "FAILED: " + ", ".join(fails)}. Wall time {m['secs']} s.
+""")
+    print(m)
+    if fails:
+        print("GATE FAILED:", fails)
+        return 1 if args.gate else 0
+    print("GATE PASSED")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

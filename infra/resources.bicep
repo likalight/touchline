@@ -1,0 +1,264 @@
+param environmentName string
+param location string
+param tags object
+param modelName string
+param modelVersion string
+param modelCapacity int
+param enableEventHubs bool
+
+var token = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
+var roles = {
+  acrPull: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+  openAiUser: '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
+  azureAiUser: '53ca6127-db72-4b80-b1b0-d745d6d5456d'
+  eventHubsReceiver: 'a638d3c7-ab3a-418d-83e6-5f17a39d4fde'
+  eventHubsSender: '2b629674-e913-4c01-ae53-ef4638d8f975'
+}
+
+// ---------------------------------------------------------------- identity & observability
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'id-touchline-${token}'
+  location: location
+  tags: tags
+}
+
+resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
+  name: 'log-touchline-${token}'
+  location: location
+  tags: tags
+  properties: {
+    sku: { name: 'PerGB2018' }
+    retentionInDays: 30
+  }
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'appi-touchline-${token}'
+  location: location
+  tags: tags
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logs.id
+  }
+}
+
+// ---------------------------------------------------------------- registry
+resource registry 'Microsoft.ContainerRegistry/registries@2023-07-01' = {
+  name: 'crtouchline${token}'
+  location: location
+  tags: tags
+  sku: { name: 'Basic' }
+  properties: { adminUserEnabled: false }
+}
+
+resource acrPull 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(registry.id, identity.id, roles.acrPull)
+  scope: registry
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.acrPull)
+  }
+}
+
+// ---------------------------------------------------------------- Azure AI Foundry (account + project + model)
+resource foundry 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
+  name: 'ai-touchline-${token}'
+  location: location
+  tags: tags
+  kind: 'AIServices'
+  sku: { name: 'S0' }
+  identity: { type: 'SystemAssigned' }
+  properties: {
+    customSubDomainName: 'ai-touchline-${token}'
+    publicNetworkAccess: 'Enabled'
+    allowProjectManagement: true
+    disableLocalAuth: true // Entra ID only: the app authenticates with its managed identity
+  }
+}
+
+resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
+  parent: foundry
+  name: 'touchline'
+  location: location
+  identity: { type: 'SystemAssigned' }
+  properties: {
+    displayName: 'Touchline match intelligence'
+    description: 'Agents, evaluations and traces for the Touchline insights engine'
+  }
+}
+
+resource model 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = {
+  parent: foundry
+  name: modelName
+  sku: {
+    name: 'GlobalStandard'
+    capacity: modelCapacity
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: modelName
+      version: modelVersion
+    }
+  }
+}
+
+resource openAiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundry.id, identity.id, roles.openAiUser)
+  scope: foundry
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.openAiUser)
+  }
+}
+
+resource aiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(foundry.id, identity.id, roles.azureAiUser)
+  scope: foundry
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.azureAiUser)
+  }
+}
+
+// ---------------------------------------------------------------- Event Hubs (event-driven ingestion)
+resource hubs 'Microsoft.EventHub/namespaces@2024-01-01' = if (enableEventHubs) {
+  name: 'evh-touchline-${token}'
+  location: location
+  tags: tags
+  sku: {
+    name: 'Standard'
+    tier: 'Standard'
+    capacity: 1
+  }
+  properties: { disableLocalAuth: true }
+}
+
+resource hub 'Microsoft.EventHub/namespaces/eventhubs@2024-01-01' = if (enableEventHubs) {
+  parent: hubs
+  name: 'match-events'
+  properties: {
+    partitionCount: 2
+    messageRetentionInDays: 1
+  }
+}
+
+resource hubReceiver 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableEventHubs) {
+  name: guid(resourceGroup().id, identity.id, roles.eventHubsReceiver)
+  scope: hubs
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.eventHubsReceiver)
+  }
+}
+
+resource hubSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableEventHubs) {
+  name: guid(resourceGroup().id, identity.id, roles.eventHubsSender)
+  scope: hubs
+  properties: {
+    principalId: identity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.eventHubsSender)
+  }
+}
+
+// ---------------------------------------------------------------- Container Apps
+resource env 'Microsoft.App/managedEnvironments@2024-03-01' = {
+  name: 'cae-touchline-${token}'
+  location: location
+  tags: tags
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logs.properties.customerId
+        sharedKey: logs.listKeys().primarySharedKey
+      }
+    }
+  }
+}
+
+var webName = 'ca-touchline-${token}'
+var hubNamespaceFqdn = enableEventHubs ? '${hubs.name}.servicebus.windows.net' : ''
+
+resource web 'Microsoft.App/containerApps@2024-03-01' = {
+  name: webName
+  location: location
+  tags: union(tags, { 'azd-service-name': 'web' })
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: { '${identity.id}': {} }
+  }
+  dependsOn: [acrPull, openAiUser]
+  properties: {
+    managedEnvironmentId: env.id
+    configuration: {
+      ingress: {
+        external: true
+        targetPort: 8000
+        transport: 'auto'
+        stickySessions: { affinity: 'sticky' } // live sessions and SSE stay on one replica
+      }
+      registries: [
+        {
+          server: registry.properties.loginServer
+          identity: identity.id
+        }
+      ]
+    }
+    template: {
+      containers: [
+        {
+          name: 'web'
+          image: 'mcr.microsoft.com/azuredocs/containerapps-helloworld:latest' // replaced by `azd deploy`
+          resources: {
+            cpu: json('1.0')
+            memory: '2Gi'
+          }
+          env: [
+            { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
+            { name: 'AZURE_OPENAI_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.openai.azure.com' }
+            { name: 'AZURE_OPENAI_MODEL', value: modelName }
+            { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
+            { name: 'TOUCHLINE_PUBLIC_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
+            { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }
+          ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: { path: '/api/health', port: 8000 }
+              periodSeconds: 20
+            }
+            {
+              type: 'Readiness'
+              httpGet: { path: '/api/health', port: 8000 }
+              periodSeconds: 10
+            }
+          ]
+        }
+      ]
+      scale: {
+        minReplicas: 1 // the demo must stay live for judging
+        maxReplicas: 3
+        rules: [
+          {
+            name: 'http-concurrency'
+            http: { metadata: { concurrentRequests: '200' } }
+          }
+        ]
+      }
+    }
+  }
+}
+
+output registryLoginServer string = registry.properties.loginServer
+output webUri string = 'https://${web.properties.configuration.ingress.fqdn}'
+output openAiEndpoint string = 'https://${foundry.properties.customSubDomainName}.openai.azure.com'
+output foundryProjectEndpoint string = 'https://${foundry.properties.customSubDomainName}.services.ai.azure.com/api/projects/${project.name}'
+output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output eventHubNamespace string = hubNamespaceFqdn

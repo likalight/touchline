@@ -1,3 +1,11 @@
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Source Serif 4"; src: url("/static/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; font-display: swap; }
+
 :root {
   --turf: #0f2b20;
   --turf-2: #123426;

@@ -175,7 +175,7 @@ class MomentScout:
                     out.append(self._take(Moment("phase", 0.52, t, e.minute, side, [e.id], None, dict(ph))))
             for side in ("home", "away"):
                 w = st[side]
-                if w["pressures"] >= 12 and w["high_turnovers"] >= 3 and self._ok("press", t):
+                if w["pressures"] >= 6 and w["high_turnovers"] >= 3 and self._ok("press", t):
                     out.append(self._take(Moment("press", 0.5, t, e.minute, side, [e.id], None, dict(w))))
                     break
         # rhythm check every ~10 minutes of match time

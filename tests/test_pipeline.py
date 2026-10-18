@@ -108,3 +108,24 @@ def test_faulty_session_end_to_end():
     s = asyncio.run(run_session(21, chaos=0.1))
     assert s.guard.stats["accepted"] == len(s.events)
     assert all(i["verification"]["status"] == "verified" for i in s.insights)
+
+
+def test_event_driven_external_feed():
+    """Same pipeline fed by an external stream (as from Azure Event Hubs), no simulator in-process."""
+    meta, evs = simulate(33)
+
+    async def feed():
+        for e in evs:
+            yield e.model_dump()
+            await asyncio.sleep(0)
+
+    async def go():
+        s = MatchSession(meta=meta, feed=feed(), match_id="live")
+        s.start()
+        while not s.done:
+            await asyncio.sleep(0.02)
+        return s
+
+    s = asyncio.run(go())
+    assert len(s.events) == len(evs) and s.state.status == "full_time"
+    assert s.insights and all(i["verification"]["status"] == "verified" for i in s.insights)

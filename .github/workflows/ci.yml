@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt pytest httpx
+      - name: Unit, pipeline, API, A2A and mocked-LLM tests
+        run: pytest -q
+        env:
+          TOUCHLINE_LLM: "off"
+      - name: Evaluation gate (100% verified, every goal explained, latency, exactly-once ingest)
+        run: python scripts/evaluate.py --matches 12 --gate
+      - name: Auto-eventing from video (pass precision/recall, speed error)
+        run: python -m touchline.vision.autoevent --seed 7 --from-min 20 --minutes 3
+
+  bicep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: az bicep build --file infra/main.bicep --stdout > /dev/null
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t touchline .
+      - name: Container smoke test
+        run: |
+          docker run -d -p 8000:8000 --name t touchline
+          for i in $(seq 1 30); do curl -sf localhost:8000/api/health && break; sleep 1; done
+          curl -sf localhost:8000/.well-known/agent-card.json > /dev/null

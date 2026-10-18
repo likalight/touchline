@@ -12,7 +12,7 @@ const store = {
 };
 
 const S = {
-  sid: "demo",
+  sid: new URLSearchParams(location.search).get("session") || "demo",
   es: null,
   meta: null,
   players: {},
@@ -538,8 +538,12 @@ async function openEvidence(id) {
   if (!res.ok) return toast("That event isn't available yet.");
   const d = await res.json();
   const f = d.facts, ev = d.event;
+  const LABEL = { distance_m: "Distance (m)", ball_speed_kmh: "Ball speed (km/h)", shot_speed_kmh: "Shot speed (km/h)", speed_kmh: "Speed (km/h)",
+    pass_type: "Pass type", body_part: "Body part", xg: "xG", pass_difficulty: "Pass difficulty (0-100)", pass_completion_prob: "Completion probability (%)",
+    opponents_bypassed: "Opponents bypassed", xt_added: "Threat added (xT)", win_prob_before: "Win probability before", win_prob_after: "Win probability after",
+    minute: "Minute", type: "Event", team: "Team", player: "Player", target: "Receiver", outcome: "Outcome" };
   const rows = Object.entries(f).filter(([k]) => !["event_id"].includes(k)).map(([k, v]) =>
-    `<tr><td>${esc(k.replace(/_/g, " "))}</td><td class="num">${esc(typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a} ${b}%`).join(", ") : v)}</td></tr>`).join("");
+    `<tr><td>${esc(LABEL[k] || k.replace(/_/g, " "))}</td><td class="num">${esc(typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a === "home" ? S.meta.home.short : a === "away" ? S.meta.away.short : a} ${b}%`).join(", ") : v)}</td></tr>`).join("");
   const expl = d.xg_explain || d.pass_explain;
   const bars = expl && expl.length ? `<h4 style="margin:14px 0 4px;font:700 16px var(--display)">${d.xg_explain ? "What drove the chance quality" : "What made this pass hard or easy"}</h4>
     <p class="muted" style="margin:0 0 6px;font-size:13px">Compared with a typical ${d.xg_explain ? "shot" : "pass"} in our synthetic league. Right helps, left hurts.</p>

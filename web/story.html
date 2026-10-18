@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touchline, the game explained</title>
+<meta name="description" content="AI agents that explain why each moment of a live football match matters, checked against the data and written for every fan.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
+<style>
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-Medium.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600; font-display: swap; }
+
+:root {
+  /* Brand palette mapped onto the dealt roles: chalk paper, turf ink, one floodlight accent on the action */
+  --bg: #eef0e8;
+  --surface: #e1e6da;
+  --ink: #0f2b20;
+  --muted: #3f5a4c;
+  --accent: #f2c14e;
+  --accent-ink: #2b2100;
+  --turf: #1e5a3c;
+  --turf-deep: #0b3a24;
+  --field-1: #0f2b20;
+  --field-1-ink: #eef0e8;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --text: "Barlow", system-ui, sans-serif;
+  --step-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(2.75rem, 1.2rem + 5.6vw, 6rem);
+  --step-hero: clamp(5.5rem, 13vw, 13.5rem);
+  --m: clamp(20px, 3vw, 40px);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 var(--step-body)/1.5 var(--text); transition: background-color .6s ease; -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 26px; background: var(--accent); color: var(--accent-ink);
+  font: 600 var(--step-body)/1 var(--text); text-decoration: none; border: 0; border-radius: 0; cursor: pointer; transition: transform .15s var(--ease), background-color .15s; }
+.btn:hover { background: #f6cf6d; }
+.btn:active { transform: translateY(2px); }
+.wrap { padding: 0 var(--m); }
+
+/* ------------------------------------------------ hero: two fields meet at the touchline */
+.hero { position: relative; height: 100svh; min-height: 620px; background: var(--bg); }
+.hero::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; bottom: 0; background: var(--turf); }
+.hero::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 30svh; background: var(--turf); }
+nav.top { position: absolute; inset: 0 0 auto 0; display: flex; align-items: center; justify-content: space-between; padding: 22px var(--m); z-index: 3; }
+.wordmark { font: 700 var(--step-lead)/1 var(--display); text-decoration: none; letter-spacing: -0.01em; }
+nav.top .links { display: flex; align-items: center; gap: 28px; }
+nav.top .links a:not(.btn) { text-decoration: none; font-weight: 500; }
+nav.top .links a:not(.btn):hover { text-decoration: underline; text-underline-offset: 4px; }
+.headline { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.headline h1 { margin: 0; text-align: center; font: 700 var(--step-hero)/0.86 var(--display); text-transform: uppercase; letter-spacing: -0.01em; position: relative; z-index: 2; }
+.headline h1 .line:first-child { color: var(--ink); padding-bottom: 0.07em; }
+.headline h1 .line + .line { color: var(--bg); padding-top: 0.07em; }
+.line { display: block; white-space: nowrap; }
+.live-slot { display: inline-block; vertical-align: baseline; width: 1.9em; height: 0.72em; margin: 0 0.12em; position: relative; top: 0.02em; background: var(--turf); overflow: hidden; }
+.live-slot canvas { width: 100%; height: 100%; display: block; }
+.hero .sub { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); width: min(560px, 90vw); text-align: center; color: var(--bg); font-size: var(--step-lead); line-height: 1.35; margin: 0; }
+.hero .sub small { display: block; font-size: var(--step-small); opacity: .85; margin-top: 10px; }
+
+/* ------------------------------------------------ showcase: the headline you can type */
+.showcase { min-height: 88svh; padding: 160px var(--m) 100px; background: var(--bg); position: relative; }
+.ask { display: flex; align-items: center; gap: 0; }
+.ask input { width: 100%; border: 0; background: transparent; padding: 0; margin: 0; color: var(--ink); font: 700 clamp(3rem, 8.4vw, 8.75rem)/1 var(--display); letter-spacing: -0.01em; text-transform: none; caret-color: var(--accent); }
+.ask input:focus { outline: none; }
+.ask label { position: absolute; left: -9999px; }
+.answer { margin-top: 48px; max-width: 600px; background: var(--surface); padding: 22px 24px; min-height: 120px; font-size: var(--step-body); }
+.answer p { margin: 0 0 10px; }
+.answer .meta { font-size: var(--step-small); color: var(--muted); }
+.answer .cite { display: inline-block; background: var(--ink); color: var(--bg); padding: 1px 8px; margin: 0 6px 6px 0; font-size: var(--step-small); text-decoration: none; }
+.examples { display: flex; flex-wrap: wrap; gap: 6px 26px; margin-top: 40px; }
+.examples button { background: none; border: 0; padding: 6px 0; font: 500 var(--step-body)/1.2 var(--text); color: var(--ink); cursor: pointer; text-decoration: underline; text-underline-offset: 5px; text-decoration-color: var(--muted); }
+.examples button:hover { text-decoration-color: var(--ink); }
+
+/* ------------------------------------------------ how it works: the pipeline as one bar */
+.how { padding: 160px var(--m); background: var(--bg); }
+.how h2, .features h2 { font: 700 var(--step-head)/0.92 var(--display); text-transform: uppercase; margin: 0 0 64px; max-width: 16ch; }
+.how h2 { margin-bottom: 20px; }
+.howsub { max-width: 60ch; margin: 0 0 56px; }
+.bar { display: flex; gap: 6px; height: 22vh; min-height: 150px; }
+.seg { flex: var(--g) 1 0; min-width: 12%; padding: 20px; color: var(--bg); position: relative; }
+.seg b { font: 700 var(--step-lead)/1 var(--display); }
+.legend { display: flex; gap: 6px; margin-top: 18px; }
+.legend p { flex: var(--g) 1 0; min-width: 12%; margin: 0; font-size: var(--step-body); line-height: 1.4; max-width: 24ch; }
+
+/* ------------------------------------------------ proof: one sentence */
+.proof { padding: 160px var(--m); background: var(--surface); }
+.proof p { font: 600 clamp(1.5rem, 2.6vw, 2.25rem)/1.25 var(--text); margin: 0; max-width: 42ch; }
+.proof .lead { color: var(--ink); }
+.proof .fact { color: #6f8578; transition: color .4s ease; }
+.proof .fact.lit { color: var(--ink); }
+.proof .src { font: 400 var(--step-small)/1.4 var(--text); color: var(--muted); margin-top: 22px; max-width: none; }
+
+/* ------------------------------------------------ features: rows from one axis, pictures in the margin */
+.features { padding: 160px var(--m) 120px; background: var(--field-1); color: var(--field-1-ink); }
+.features .intro { margin-left: calc(22% + 40px); min-height: 50svh; display: flex; align-items: center; }
+.features h2 { margin: 0; }
+.row { display: grid; grid-template-columns: 22% 1fr auto; column-gap: 40px; align-items: start; margin-top: 120px; }
+.row .txt { grid-column: 2; }
+.row h3 { font: 700 clamp(1.625rem, 2.5vw, 2.25rem)/1 var(--display); margin: 0 0 14px; text-transform: uppercase; }
+.row p { margin: 0; max-width: 38ch; font-size: var(--step-body); }
+.row figure { grid-column: 3; margin: 0; }
+.row img { display: block; object-fit: cover; object-position: left top; }
+.row figcaption { font-size: var(--step-small); opacity: .8; margin-top: 8px; max-width: 34ch; }
+.row img, .row video { display: block; object-fit: cover; max-width: 100%; height: auto; }
+.w1 img { width: 380px; }
+.w2 img { width: 600px; }
+.w3 img { width: 560px; }
+.w4 img { width: 560px; }
+.w5 video { width: 520px; aspect-ratio: 420 / 272; image-rendering: pixelated; background: #1d5a3c; }
+
+/* ------------------------------------------------ close + footer */
+.cta { min-height: 90svh; background: var(--turf); color: var(--bg); padding: 120px var(--m) 40px; display: flex; flex-direction: column; justify-content: space-between; }
+.cta h2 { font: 700 var(--step-hero)/0.9 var(--display); text-transform: uppercase; margin: 0; }
+.cta .base { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+.cta .base p { max-width: 34ch; margin: 0; font-size: var(--step-lead); line-height: 1.35; }
+footer { background: var(--field-1); color: var(--field-1-ink); min-height: 100svh; padding: 120px var(--m) 0; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+footer .top { display: grid; grid-template-columns: 7fr 2fr 3fr; gap: 24px; }
+footer h2 { font: 700 var(--step-head)/0.95 var(--display); text-transform: uppercase; margin: 0 0 28px; }
+footer ul { grid-column: 3; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+footer ul a { text-decoration-color: rgba(238,240,232,.5); text-underline-offset: 4px; }
+footer .legal { margin-top: auto; display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; font-size: var(--step-small); opacity: .85; padding-bottom: 10px; }
+footer .giant { font: 700 29vw/0.8 var(--display); text-transform: uppercase; white-space: nowrap; transform: translateY(30%); margin: 0 0 0 -0.04em; letter-spacing: -0.02em; color: var(--turf); }
+
+/* ------------------------------------------------ motion: entrances (content stays visible without script) */
+.js .rise > * { opacity: 0; transform: translateY(24px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.js .rise.in > * { opacity: 1; transform: none; }
+.js .rise.in > *:nth-child(2) { transition-delay: 80ms; }
+.js .rise.in > *:nth-child(3) { transition-delay: 160ms; }
+.js .rise.in > *:nth-child(4) { transition-delay: 240ms; }
+.js .seg { transform: scaleX(0); transform-origin: left; transition: transform .8s var(--ease); }
+.js .bar.in .seg { transform: none; }
+.js .bar.in .seg:nth-child(2) { transition-delay: 90ms; } .js .bar.in .seg:nth-child(3) { transition-delay: 180ms; }
+.js .bar.in .seg:nth-child(4) { transition-delay: 270ms; } .js .bar.in .seg:nth-child(5) { transition-delay: 360ms; }
+.js .row img { transform: scale(1.04); transition: transform 1.2s var(--ease); }
+.js .row.in img { transform: none; }
+.headline h1 .line { animation: settle .9s var(--ease) both; }
+.headline h1 .line + .line { animation-delay: .12s; }
+@keyframes settle { from { opacity: 0; transform: translateY(28px); } }
+
+@media (max-width: 1100px) {
+  .features .intro { margin-left: 0; }
+  .row { display: block; margin-top: 88px; }
+  .row figure { margin-top: 24px; }
+  .row img, .row video { width: 100% !important; }
+}
+@media (max-width: 760px) {
+  .hero::before { top: 46%; }
+  :root { --step-hero: 15vw; }
+  .headline { place-items: start center; padding-top: calc(46svh - var(--step-hero) * 0.93); }
+  nav.top .links a:not(.btn) { display: none; }
+  .hero .sub { font-size: 1rem; max-width: 28ch; bottom: 40px; }
+  .showcase { padding-top: 110px; }
+  .proof p { font-size: 1.375rem; }
+  .ask input { font-size: 11vw; }
+  .examples { flex-direction: column; gap: 8px; }
+  .examples button { background: var(--surface); min-height: 44px; padding: 0 14px; text-align: left; text-decoration: none; }
+  .bar { flex-direction: column; height: 70svh; }
+  .seg { min-height: 72px; flex-basis: auto; }
+  .js .seg { transform: scaleY(0); transform-origin: top; }
+  .legend { display: none; }
+  .seg p { display: block; color: var(--bg); margin: 6px 0 0; font-size: 1rem; }
+  .features .intro { margin-left: 0; min-height: 40svh; }
+  .row { margin-top: 64px; }
+  .row.w2 figure { width: 78%; margin-left: auto; } .row.w4 figure { width: 70%; }
+  .cta .base { flex-direction: column; align-items: stretch; }
+  .cta .btn { width: 100%; }
+  footer .top { grid-template-columns: 1fr; }
+  footer ul { grid-column: 1; }
+}
+@media (min-width: 761px) { .seg p { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .rise > *, .js .seg, .js .row img { opacity: 1 !important; transform: none !important; }
+}
+</style>
+</head>
+<body>
+<header class="hero" data-field="#eef0e8">
+  <nav class="top" aria-label="Main">
+    <a class="wordmark" href="/story">Touchline</a>
+    <div class="links">
+      <a href="#ask">Ask it</a><a href="#how">How it works</a><a href="#proof">Proof</a><a href="#code">Code</a>
+      <a class="btn" href="/">Watch it live</a>
+    </div>
+  </nav>
+  <div class="headline" aria-hidden="false">
+    <h1><span class="line">Every <span class="live-slot" data-ui title="The live match, right now"><canvas id="mini" width="380" height="144" aria-label="Live pitch"></canvas></span></span><span class="line">explained</span></h1>
+  </div>
+  <p class="sub">Agents that explain why each moment of a live match matters, checked against the data, and written for every fan.<small id="heroScore">A fictional match is being played right now.</small></p>
+</header>
+
+<section class="showcase" id="ask" data-field="#eef0e8">
+  <form class="ask" id="askForm" data-ui>
+    <label for="q">Ask the match a question</label>
+    <input id="q" name="q" value="Why did they score?" autocomplete="off" maxlength="120">
+  </form>
+  <div class="answer" id="answer" aria-live="polite" data-ui>
+    <p>Press Enter to ask the analyst agent about the match playing right now. It answers from the live data and cites the events it used.</p>
+    <noscript><p>Asking needs JavaScript. You can also open the live match and use Ask the analyst.</p></noscript>
+  </div>
+  <div class="examples" aria-label="Example questions">
+    <button type="button">Who is the standout player?</button>
+    <button type="button">What's the win probability?</button>
+    <button type="button">Who is pressing harder?</button>
+  </div>
+</section>
+
+<section class="how" id="how" data-field="#eef0e8">
+  <div class="rise"><h2>Faster than one frame</h2><p class="howsub">Each stage below is measured live from the agents' traces. With every hand-off between agents included, a moment is ready in 12 ms at the 95th percentile, inside one 20 ms broadcast frame.</p></div>
+  <div class="bar" id="bar" data-ui>
+    <div class="seg" style="--g:2;background:#0f2b20"><b id="d0">0.2 ms</b><p>Ingest every event</p></div>
+    <div class="seg" style="--g:3;background:#174a33"><b id="d1">0.3 ms</b><p>Interpret the match</p></div>
+    <div class="seg" style="--g:9;background:#1e5a3c"><b id="d2">6 ms</b><p>Explain and fact-check</p></div>
+    <div class="seg" style="--g:4;background:#25683f"><b id="d3">1 ms</b><p>Write it four ways</p></div>
+    <div class="seg" style="--g:2;background:#2f7449"><b id="d4">0.1 ms</b><p>Cue the graphic</p></div>
+  </div>
+  <div class="legend">
+    <p style="--g:2">First, ingest: validate, de-duplicate and re-order every event from the feed.</p>
+    <p style="--g:3">Then interpret: possession, xG, threat, pressure and win probability.</p>
+    <p style="--g:9">Then explain why it mattered, cited to the events and checked number by number.</p>
+    <p style="--g:4">Then personalise for a fan, an analyst, a studio and a listener, in parallel.</p>
+    <p style="--g:2">Finally, render a timed overlay cue on the match clock.</p>
+  </div>
+</section>
+
+<section class="proof" id="proof" data-field="#e1e6da">
+  <p><span class="lead">Twelve unseen matches:</span>
+    <span class="fact">671 moments,</span> <span class="fact">all fact-checked,</span>
+    <span class="fact">every goal covered,</span> <span class="fact">no broken citations,</span>
+    <span class="fact">12 ms at p95.</span></p>
+  <p class="src">From the evaluation gate that runs on every commit. Synthetic matches, deterministic path.</p>
+</section>
+
+<section class="features" data-field="#0f2b20">
+  <div class="intro rise"><h2>One moment, every fan</h2></div>
+
+  <div class="row w1 rise">
+    <div class="txt"><h3>Four voices</h3><p>The same goal is written for a casual fan, an analyst, a studio lower-third and a listener who can't see the screen. English, Spanish, French and Portuguese work offline. Any other language comes from Azure OpenAI, and is fact-checked again.</p></div>
+    <figure><img src="/static/img/fan-es-crop.png" alt="Insight cards in Spanish from the live app, each marked for or against the fan's club and checked against the data" width="380" height="596" loading="lazy"></figure>
+  </div>
+
+  <div class="row w2 rise">
+    <div class="txt"><h3>Every claim has a receipt</h3><p>Tap any evidence tag to see the raw event, what pushed the model up or down, and who controlled the pitch at that instant. Nothing goes on screen that the FactChecker can't re-derive.</p></div>
+    <figure><img src="/static/img/evidence-crop.png" alt="Pitch-control map at the instant of a carry, next to the event facts: distance, speed, opponents bypassed, threat added and win probability" width="600" height="386" loading="lazy"></figure>
+  </div>
+
+  <div class="row w3 rise">
+    <div class="txt"><h3>Graphics that keep time</h3><p>Each moment becomes a cue keyed to the match clock, with a layer, a priority and copy in every language. A producer can approve it first. Any rendering partner can play it in sync.</p></div>
+    <figure><img src="/static/img/overlay-crop.png" alt="The keyable overlay output: a lower-third about a line-breaking pass, with distance, ball speed and difficulty" width="560" height="184" loading="lazy"></figure>
+  </div>
+
+  <div class="row w4 rise">
+    <div class="txt"><h3>Agents that check each other</h3><p>A Microsoft Agent Framework workflow runs per moment: an analyst, a fact-checker, four narrators side by side, then a producer. Every handoff is traced, and the live show never waits on a model.</p></div>
+    <figure><img src="/static/img/agents-crop.png" alt="The agent pipeline from IngestGuard to Producer, beside the live log of handoffs between agents" width="560" height="299" loading="lazy"></figure>
+  </div>
+
+  <div class="row w5 rise">
+    <div class="txt"><h3>Even from pixels</h3><p>Point it at a video feed instead of an event feed. A tracker finds the ball and both kits, then reports passes and ball speed without anyone tagging them by hand.</p></div>
+    <figure><video src="/static/img/autoevent.mp4" poster="/static/img/autoevent-poster.png" width="520" height="337" muted loop autoplay playsinline aria-label="Rendered top-down match video that the tracker reads to detect passes"></video></figure>
+  </div>
+</section>
+
+<section class="cta" data-field="#1e5a3c">
+  <h2 class="rise"><span>Every moment,</span><br><span>live now</span></h2>
+  <div class="base"><p>Pick a club, follow a player, switch language. The match is already under way.</p><a class="btn" href="/">Open the live match</a></div>
+</section>
+
+<footer id="code" data-field="#0f2b20">
+  <div class="top">
+    <div><h2>Build on the feed</h2><a class="btn" id="repo" href="https://github.com/likalight/touchline">Read the code</a></div>
+    <ul>
+      <li><a href="/.well-known/agent-card.json">A2A agent card</a></li>
+      <li><a href="https://github.com/likalight/touchline/blob/main/docs/OVERLAY_CONTRACT.md">Overlay contract</a></li>
+      <li><a href="https://github.com/likalight/touchline/blob/main/docs/MODEL_CARD.md">Model card</a></li>
+      <li><a href="https://github.com/likalight/touchline/blob/main/docs/EVAL.md">Evaluation</a></li>
+    </ul>
+  </div>
+  <div class="legal"><span>Synthetic data. Fictional clubs, players and venue.</span><span>Built for the Inside the Game Developer Hackathon.</span><span>Barlow fonts, SIL Open Font License.</span></div>
+  <div class="giant" aria-hidden="true">Touchline</div>
+</footer>
+
+<script>
+"use strict";
+document.documentElement.classList.add("js");
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* entrances + colour by chapter */
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { threshold: 0.18 });
+document.querySelectorAll(".rise, .bar").forEach((el) => io.observe(el));
+const chapters = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) document.body.style.backgroundColor = e.target.dataset.field; }), { threshold: 0.5 });
+document.querySelectorAll("[data-field]").forEach((el) => chapters.observe(el));
+
+/* proof: one fact lit at a time */
+const facts = [...document.querySelectorAll(".fact")];
+let lit = 0;
+const light = () => { facts.forEach((f, i) => f.classList.toggle("lit", i === lit)); lit = (lit + 1) % facts.length; };
+light();
+if (!reduce) setInterval(light, 2000); else facts.forEach((f) => f.classList.add("lit"));
+
+/* the live pitch inside the headline */
+const cv = document.getElementById("mini"), ctx = cv.getContext("2d");
+let players = {}, colors = {}, frame = {}, from = {}, ball = [52.5, 34], ballFrom = [52.5, 34], ballTo = [52.5, 34], t0 = 0, dur = 600;
+function draw(now) {
+  requestAnimationFrame(draw);
+  const W = cv.width, H = cv.height, s = W / 105;
+  ctx.fillStyle = "#1e5a3c"; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "rgba(238,240,232,.55)"; ctx.lineWidth = 2;
+  ctx.strokeRect(2, 2, W - 4, H - 4); ctx.beginPath(); ctx.moveTo(W / 2, 0); ctx.lineTo(W / 2, H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W / 2, H / 2, 9.15 * s, 0, 7); ctx.stroke();
+  const k = Math.min(1, (now - t0) / dur);
+  for (const [pid, p] of Object.entries(frame)) {
+    const f = from[pid] || p, x = f[0] + (p[0] - f[0]) * k, y = f[1] + (p[1] - f[1]) * k;
+    ctx.beginPath(); ctx.arc(x * s, (68 - y) * s, 4.2, 0, 7); ctx.fillStyle = colors[pid[0]] || "#fff"; ctx.fill();
+  }
+  const bx = ballFrom[0] + (ballTo[0] - ballFrom[0]) * k, by = ballFrom[1] + (ballTo[1] - ballFrom[1]) * k;
+  ctx.beginPath(); ctx.arc(bx * s, (68 - by) * s, 3.2, 0, 7); ctx.fillStyle = "#fff"; ctx.fill();
+}
+requestAnimationFrame(draw);
+try {
+  const es = new EventSource("/api/matches/demo/stream");
+  es.addEventListener("hello", (e) => {
+    const h = JSON.parse(e.data); colors = { h: h.match.home.color, a: h.match.away.color };
+    document.getElementById("heroScore").dataset.home = h.match.home.short; document.getElementById("heroScore").dataset.away = h.match.away.short;
+  });
+  es.addEventListener("event", (e) => {
+    const ev = JSON.parse(e.data);
+    if (ev.frame) { from = {}; for (const pid in ev.frame) from[pid] = frame[pid] || ev.frame[pid]; frame = ev.frame; }
+    if (ev.x != null) { ballFrom = ballTo; ballTo = ev.end_x != null ? [ev.end_x, ev.end_y] : [ev.x, ev.y]; }
+    t0 = performance.now(); dur = 500;
+    const hs = document.getElementById("heroScore");
+    hs.textContent = `Live now: ${hs.dataset.home || "Home"} ${ev.score.home}–${ev.score.away} ${hs.dataset.away || "Away"}, minute ${ev.minute}. A fictional match.`;
+  });
+} catch { /* the page reads fine without the live feed */ }
+
+/* the headline you can type */
+const q = document.getElementById("q"), ans = document.getElementById("answer");
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+async function ask(text) {
+  ans.innerHTML = `<p class="meta">Asking the analyst agent…</p>`;
+  try {
+    const r = await fetch("/api/matches/demo/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: text }) }).then((x) => x.json());
+    ans.innerHTML = `<p>${esc(r.answer)}</p>${(r.citations || []).slice(0, 6).map((c) => `<a class="cite" href="/">${esc(c)}</a>`).join("")}
+      <p class="meta">Answered in ${r.ms} ms from the live match data${r.citations && r.citations.length ? ", with the events it used" : ""}.</p>`;
+  } catch { ans.innerHTML = `<p>The analyst couldn't be reached. Open the live match and ask there.</p>`; }
+}
+document.getElementById("askForm").addEventListener("submit", (e) => { e.preventDefault(); if (q.value.trim()) ask(q.value.trim()); });
+document.querySelectorAll(".examples button").forEach((b) => b.addEventListener("click", () => { q.value = b.textContent; ask(b.textContent); }));
+setTimeout(() => ask(q.value), 900);
+
+/* real stage timings from the audit trail */
+fetch("/api/matches/demo/audit").then((r) => r.json()).then((a) => {
+  const avg = (name) => { const xs = a.spans.filter((s) => s.agent.startsWith(name)).map((s) => s.ms); return xs.length ? xs.reduce((p, c) => p + c, 0) / xs.length : null; };
+  const ingest = a.ops.event_ms_p50, explain = (avg("TacticalAnalyst") || 0) + (avg("FactChecker") || 0), narr = avg("Narrator"), prod = avg("Producer");
+  const vals = [ingest * 0.4, ingest * 0.6, explain, narr, prod];
+  if (vals.some((v) => v == null || isNaN(v))) return;
+  const fmt = (v) => (v < 1 ? `${v.toFixed(2)} ms` : `${v.toFixed(1)} ms`);
+  vals.forEach((v, i) => { document.getElementById("d" + i).textContent = fmt(v); });
+}).catch(() => {});
+</script>
+</body>
+</html>
