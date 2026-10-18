@@ -38,19 +38,21 @@ POSITIVE = {"goal", "chance_saved", "chance_missed", "line_break", "hard_pass", 
 def plan_reel(session, club: Optional[str] = None, player: Optional[str] = None, lang: str = "en",
               persona: str = "casual", budget_s: float = 75.0) -> dict:
     s = session.state
+    favs = {p for p in (player or "").split(",") if p}
+    both = club == "both"
     scored = []
     for ins in session.insights:
         k = ins["kind"]
         if k not in PRE_POST or PRE_POST[k] == (0, 0) or ins.get("verification", {}).get("status") != "verified":
             continue
         rel = ins["salience"]
-        if club and ins["team"] == club and k in POSITIVE:
+        if club and (both or ins["team"] == club) and k in POSITIVE:
             rel += 0.35
-        if club and ins["team"] and ins["team"] != club and k == "goal":
+        if club and not both and ins["team"] and ins["team"] != club and k == "goal":
             rel += 0.15  # a fan still wants to see the goals against
         involved = {ins.get("player_id")} | {s.events[e].player_id for e in ins["event_ids"] if e in s.events} \
             | {s.events[e].target_id for e in ins["event_ids"] if e in s.events}
-        if player and player in involved:
+        if favs & involved:
             rel += 0.5
         if k == "goal":
             rel += 1.0  # every goal makes the reel
@@ -77,11 +79,11 @@ def plan_reel(session, club: Optional[str] = None, player: Optional[str] = None,
         clips.append({"start": round(start, 2), "end": round(end, 2), "insight_id": ins["id"], "kind": ins["kind"],
                       "minute": ins["minute"], "team": ins["team"], "title": r["title"],
                       "line": line, "evidence": ins["event_ids"],
-                      "relevance": round(rel, 2), "focus": player if player in (ins.get("player_id"),) else None})
+                      "relevance": round(rel, 2), "focus": ins.get("player_id") if ins.get("player_id") in favs else None})
         used += end - start
     clips.sort(key=lambda c: c["start"])
     recap = session.get_recap(persona, lang)
-    return {"schema": "touchline.reel/1", "match_id": session.meta.match_id, "club": club, "player": player, "lang": lang,
+    return {"schema": "touchline.reel/1", "match_id": session.meta.match_id, "club": club, "player": player, "players": sorted(favs), "lang": lang,
             "persona": persona, "duration_s": round(used, 1), "clips": clips,
             "recap": {"title": recap["title"], "lines": [l["text"] for l in recap["lines"]]}}
 

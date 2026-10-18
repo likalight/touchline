@@ -24,7 +24,7 @@ highlights reel for every fan.
 **What viewers see.**
 
 - **Two views:** the match through a broadcast camera, or a tactical view.
-- **Personal controls:** pick a club, follow a player or track one metric.
+- **Personal controls:** pick your club or both, star favourite players, follow one player all match, or track one metric.
 - **Ask the analyst:** fans can question the analyst agent, which also speaks A2A to other agents.
 - **My Match:** after the whistle, every fan gets their own highlights reel, rendered with graphics in their language.
 
@@ -64,7 +64,7 @@ All data is synthetic, and the clubs and players are fictional.
 | Interpret | `MatchState`: possession, xG, xT, pass difficulty, PPDA, momentum, control vs chaos, rhythm, win probability, speeds, distances, ratings |
 | Explain | `TacticalAnalyst` (drivers, counterfactuals, swings), `StorylineKeeper` (callbacks), `FactChecker` (verification) |
 | Render | `touchline.overlay/1` cues, TV camera view, `/overlay`, CasparCG/SPX template |
-| Personalise | 4 personas x 4 languages (+ any via Azure OpenAI), favourite club, follow a player, single metric, audio description with neural voice, My Match reels |
+| Personalise | 4 personas x 4 languages (+ any via Azure OpenAI), favourite clubs (one or both), any number of favourite players, a player-focus mode that follows one player all match, single metric, audio description with neural voice, My Match reels |
 | Player identification, pass quality, ball and shot speed | Player tags with sprint threshold, 0-100 pass difficulty, speed records |
 | Auto-eventing from video | `touchline/vision`: top-down (pass precision 0.88 / recall 0.75) and broadcast camera (player localisation 0.43 m) |
 | Narratives, milestones, recaps | Storylines, brace / hat-trick / saves milestones, story-finding recaps |

@@ -296,14 +296,21 @@ REELS: dict[str, dict] = {}
 REEL_DIR = Path(os.getenv("TOUCHLINE_REEL_DIR", "/tmp/touchline-reels"))
 
 
+def _check_reel_args(s, club, player):
+    """club: home, away or both; player: one id or a comma-separated list of favourites (max 11)."""
+    ids = sorted({p for p in (player or "").split(",") if p})
+    if club not in (None, "", "home", "away", "both") or len(ids) > 11 or any(p not in s.state.players for p in ids):
+        raise HTTPException(400, "unknown club or player")
+    return ",".join(ids) or None
+
+
 @app.get("/api/matches/{sid}/reel")
 async def reel_plan(sid: str, club: Optional[str] = None, player: Optional[str] = None, lang: str = "en", persona: str = "casual"):
     """My Match: the personal highlights plan (an edit decision list on the match clock)."""
     from touchline.highlights import plan_reel
 
     s = get(sid)
-    if club not in (None, "", "home", "away") or (player and player not in s.state.players):
-        raise HTTPException(400, "unknown club or player")
+    player = _check_reel_args(s, club, player)
     edl = plan_reel(s, club or None, player or None, lang, persona)
     key = f"{sid}:{s.meta.match_id}:{len(s.insights)}:{club}:{player}:{lang}:{persona}"
     job = REELS.get(key)
@@ -321,8 +328,7 @@ async def reel_render(sid: str, club: Optional[str] = None, player: Optional[str
     from touchline.speech import speech
 
     s = get(sid)
-    if club not in (None, "", "home", "away") or (player and player not in s.state.players):
-        raise HTTPException(400, "unknown club or player")
+    player = _check_reel_args(s, club, player)
     key = f"{sid}:{s.meta.match_id}:{len(s.insights)}:{club}:{player}:{lang}:{persona}"
     if key in REELS:
         job = REELS[key]

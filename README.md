@@ -26,7 +26,7 @@ synthetic, and the clubs, players and venue are fictional.
 | **Interpret** | `MatchState` keeps a live model of the match: possession, xG, expected threat (xT), pass difficulty, progressive and line-breaking passes, PPDA, momentum, **control vs chaos**, game rhythm, win probability (stoppage time included), player speed and distance, records and ratings. |
 | **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have been 0.79 xG"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
 | **Render** | The `Producer` emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`) with layers, priorities and copy in every language. A producer can approve each one. The live app has a **broadcast TV camera** view, a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
-| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **a club**, **follow one player** or watch **one metric**. After the match, **My Match** cuts each fan a personal highlights reel: their club, their player, their language. |
+| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. After the match, **My Match** cuts each fan a personal highlights reel: their clubs, their players, their language. |
 
 Everything else in the brief is covered too:
 
@@ -188,7 +188,7 @@ plays a match onto Event Hubs, and the app serves it as session `live` at `<url>
 
 - **Stream:** `GET /api/matches/{session}/stream` (SSE): events, state, insights, cues, late renders and agent traces.
 - **Read endpoints:** `GET /insights?persona=&lang=`, `/recap`, `/players`, `/events/{id}` (facts, model drivers, pitch control), `/audit`, `/dataset.jsonl`.
-- **My Match:** `GET /reel?club=&player=&lang=` returns the edit list; `POST /reel` renders the MP4.
+- **My Match:** `GET /reel?club=home|away|both&player=h9,a7&lang=` returns the edit list; `POST /reel` renders the MP4.
 - **Voice:** `GET /api/speak?text=&lang=`.
 - **Graphics:** the [overlay contract](docs/OVERLAY_CONTRACT.md). `web/templates/touchline-graphics.html` loads in **CasparCG** (`play`, `stop`, `next`, `update`) and **SPX Graphics Controller**, or runs live with `?live=1`.
 - **A2A:** agent card at `/.well-known/agent-card.json`, JSON-RPC at `/a2a`.

@@ -80,3 +80,12 @@ def test_broadcast_template_contract():
 def test_speech_ssml_is_escaped():
     x = Speech.ssml('Varga <scores> & "wins"', "es")
     assert "&lt;scores&gt;" in x and "es-ES" in x
+
+
+def test_reel_multiple_favourites_and_both_clubs(demo):
+    one = plan_reel(demo, club="home", player="h9", lang="en")
+    many = plan_reel(demo, club="both", player="h9,a9,a7", lang="en")
+    assert many["players"] == ["a7", "a9", "h9"]
+    assert sum(c["focus"] in ("a9", "a7") for c in many["clips"]) >= sum(c["focus"] in ("a9", "a7") for c in one["clips"])
+    goals = [c for c in many["clips"] if c["kind"] == "goal"]
+    assert len(goals) == demo.state.score["home"] + demo.state.score["away"]

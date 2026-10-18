@@ -21,7 +21,7 @@ const S = {
   lastPass: null,
   i18n: null,
   llm: { backend: "offline" },
-  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", metric: "", speak: false }, store.get("prefs", {})),
+  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", favs: [], metric: "", speak: false }, store.get("prefs", {})),
   pos: {}, from: {}, to: {}, t0: 0, dur: 1,
   ball: [52.5, 34], ballFrom: [52.5, 34], ballMid: [52.5, 34], ballTo: [52.5, 34],
   lastT: 0,
@@ -40,6 +40,9 @@ const KIND_LABEL = {
   story_duel: "Storyline", story_channel: "Storyline", story_keeper: "Storyline", story_waste: "Storyline", story_fatigue: "Storyline",
 };
 const EXTRA_LANGS = { de: "Deutsch", ja: "日本語", hi: "हिन्दी", ar: "العربية", zh: "中文", ta: "தமிழ்", sw: "Kiswahili" };
+const isMine = (team) => !!team && (S.prefs.club === team || S.prefs.club === "both");
+const isFav = (pid) => !!pid && (pid === S.prefs.focus || (S.prefs.favs || []).includes(pid));
+const insPlayers = (ins) => [ins.player_id, ins.viz && ins.viz.player_id].filter(Boolean);
 const CLUB_WORDS = {
   en: { mine: "Your club", against: "Against your club", player: "Your player" },
   es: { mine: "Tu club", against: "Contra tu club", player: "Tu jugador" },
@@ -124,7 +127,7 @@ function onHello(h) {
   document.documentElement.style.setProperty("--home", home.color);
   document.documentElement.style.setProperty("--away", away.color);
   const club = $("#club");
-  club.innerHTML = `<option value="">None</option><option value="home">${esc(home.name)}</option><option value="away">${esc(away.name)}</option>`;
+  club.innerHTML = `<option value="">None</option><option value="home">${esc(home.name)}</option><option value="away">${esc(away.name)}</option><option value="both">Both clubs</option>`;
   club.value = S.prefs.club;
   const focus = $("#focus");
   focus.innerHTML = `<option value="">Nobody</option>` + [home, away].map((t) =>
@@ -241,9 +244,10 @@ function onInsight(ins, replayed) {
 
 function clubFlag(ins) {
   const words = CLUB_WORDS[S.prefs.lang] || CLUB_WORDS.en;
-  if (S.prefs.focus && (ins.player_id === S.prefs.focus || (ins.viz && ins.viz.player_id === S.prefs.focus))) return words.player;
+  if (insPlayers(ins).some(isFav)) return words.player;
   if (!S.prefs.club || !ins.team) return "";
-  if (ins.team === S.prefs.club) return POSITIVE.has(ins.kind) ? words.mine : words.mine;
+  if (isMine(ins.team)) return words.mine;
+  if (S.prefs.club === "both") return "";
   return ["goal", "chance_saved", "chance_missed", "momentum", "press", "phase", "wp_swing", "line_break"].includes(ins.kind) ? words.against : "";
 }
 
@@ -252,8 +256,8 @@ function renderCard(ins) {
   const el = document.createElement("article");
   el.className = "card " + (ins.team || "");
   el.dataset.id = ins.id;
-  if (S.prefs.club && ins.team === S.prefs.club) el.classList.add("mine");
-  if (S.prefs.focus && ins.player_id === S.prefs.focus) el.classList.add("focus");
+  if (isMine(ins.team)) el.classList.add("mine");
+  if (insPlayers(ins).some(isFav)) el.classList.add("focus");
   if (!r) { el.innerHTML = `<div class="meta">${ins.minute}' ${esc(KIND_LABEL[ins.kind] || ins.kind)}</div>`; return el; }
   const flag = clubFlag(ins);
   const v = ins.verification || {};
@@ -357,7 +361,7 @@ function sidePanelViz(viz) {
 function showTag(pid, html, ms) {
   if (!pid) return;
   const el = document.createElement("div");
-  el.className = "player-tag" + (pid === S.prefs.focus ? " focus" : "");
+  el.className = "player-tag" + (isFav(pid) ? " focus" : "");
   el.innerHTML = html;
   $("#overlay").appendChild(el);
   const tag = { pid, el, until: performance.now() + ms };
@@ -418,7 +422,7 @@ function frame(now) {
   for (const [pid, p] of Object.entries(S.pos)) {
     const pl = S.players[pid];
     if (!pl) continue;
-    const focus = pid === S.prefs.focus;
+    const focus = isFav(pid);
     ctx.beginPath(); ctx.arc(X(p[0]), Y(p[1]), r, 0, Math.PI * 2);
     ctx.fillStyle = pl.position === "GK" ? (pl.team === "home" ? "#7cc4ff" : "#ffb36b") : pl.color;
     ctx.fill();
@@ -556,8 +560,8 @@ function drawTV(now) {
     ctx.fillStyle = shirt; ctx.beginPath(); ctx.roundRect(fx_ - w * 0.55, fy_ - h * 0.86, w * 1.1, h * 0.33, Math.max(1, w * 0.25)); ctx.fill();
     ctx.fillStyle = "#c4967a"; ctx.beginPath(); ctx.ellipse(fx_, fy_ - h * 0.92, w * 0.26, h * 0.08, 0, 0, 7); ctx.fill();
     if (h > 40) { ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(h * 0.17)}px Barlow Condensed, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(pl.number, fx_, fy_ - h * 0.7); }
-    if (o.pid === S.prefs.focus) {
-      ctx.strokeStyle = "#f2c14e"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(fx_, fy_, w * 1.3, w * 0.4, 0, 0, 7); ctx.stroke();
+    if (isFav(o.pid)) {
+      ctx.strokeStyle = o.pid === S.prefs.focus ? "#f2c14e" : "#eef0e8"; ctx.lineWidth = 3; ctx.beginPath(); ctx.ellipse(fx_, fy_, w * 1.3, w * 0.4, 0, 0, 7); ctx.stroke();
       ctx.fillStyle = "#f2c14e"; ctx.font = `600 ${Math.max(12, Math.round(h * 0.2))}px Barlow, sans-serif`; ctx.textAlign = "center";
       ctx.fillText(pl.name.split(" ").slice(-1)[0], fx_, o.head[1] - Math.max(10, h * 0.15));
     }
@@ -650,7 +654,7 @@ function updateMetric() {
   const m = S.prefs.metric, s = S.snap;
   $("#metricBox").hidden = !m;
   if (!m || !s) return;
-  const meta = S.meta, side = S.prefs.club || "home";
+  const meta = S.meta, side = ["home", "away"].includes(S.prefs.club) ? S.prefs.club : "home";
   let label = "", val = "–", sub = "";
   if (m === "wp") { label = `${meta[side].short} win probability`; val = Math.round(s.win_prob[side] * 100) + "%"; sub = `draw ${Math.round(s.win_prob.draw * 100)}%`; }
   if (m === "xg") { label = "xG race"; val = `${s.home.xg} – ${s.away.xg}`; sub = `${s.home.shots} v ${s.away.shots} shots`; }
@@ -766,7 +770,8 @@ function renderPlayers() {
     return `<tr><td>${p.number}</td><td><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</td><td>${p.position}</td>
       <td class="num">${p.rating}</td><td class="num">${p.passes}</td><td class="num">${acc}</td><td class="num">${p.xt}</td><td class="num">${p.xg}</td>
       <td class="num">${p.top_speed_kmh}</td><td class="num">${p.distance_km}</td>
-      <td><button class="btn small" data-follow="${p.pid}">${S.prefs.focus === p.pid ? "Following" : "Follow"}</button></td></tr>`;
+      <td class="acts"><button class="btn small" data-fav="${p.pid}" aria-pressed="${(S.prefs.favs || []).includes(p.pid)}">${(S.prefs.favs || []).includes(p.pid) ? "Favourite" : "Add favourite"}</button>
+      <button class="btn small" data-follow="${p.pid}">${S.prefs.focus === p.pid ? "Following" : "Follow"}</button></td></tr>`;
   }).join("");
 }
 
@@ -857,14 +862,17 @@ async function loadModels() {
 function reelQuery() {
   const p = new URLSearchParams({ lang: S.prefs.lang, persona: S.prefs.persona === "analyst" ? "analyst" : "casual" });
   if (S.prefs.club) p.set("club", S.prefs.club);
-  if (S.prefs.focus) p.set("player", S.prefs.focus);
+  const pl = [...new Set([S.prefs.focus, ...(S.prefs.favs || [])].filter((x) => x && S.players[x]))];
+  if (pl.length) p.set("player", pl.join(","));
   return p.toString();
 }
 const fmtClock = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 async function loadReelPlan() {
   try {
     const plan = await fetch(`/api/matches/${S.sid}/reel?${reelQuery()}`).then((r) => r.json());
-    const who = [S.prefs.club && S.meta ? S.meta[S.prefs.club].name : "", S.prefs.focus && S.players[S.prefs.focus] ? S.players[S.prefs.focus].name : ""].filter(Boolean).join(" and ");
+    const clubName = S.prefs.club === "both" ? "" : S.prefs.club && S.meta ? S.meta[S.prefs.club].name : "";
+    const names = [...new Set([S.prefs.focus, ...(S.prefs.favs || [])].filter((x) => x && S.players[x]))].map((x) => S.players[x].name);
+    const who = [clubName, names.length > 2 ? `${names.length} favourite players` : names.join(" and ")].filter(Boolean).join(" and ");
     $("#mineTitle").textContent = who ? `Highlights for ${who}` : "The match in highlights";
     $("#mineIntro").textContent = plan.clips.length ? `${plan.clips.length} moments, ${Math.round(plan.duration_s)} seconds of action, picked for you and checked against the match data.` : "Highlights appear here as the match produces them.";
     $("#clips").innerHTML = plan.clips.map((c) => `<li><span class="m">${c.minute}'</span><span><span class="t">${esc(c.title)}</span><br><span class="l">${esc(c.line)}</span></span>
@@ -905,8 +913,8 @@ function applyPrefs() {
   $("#club").value = S.prefs.club; $("#metric").value = S.prefs.metric; $("#speak").checked = S.prefs.speak;
   if ($("#lang").querySelector(`option[value="${S.prefs.lang}"]:not([disabled])`)) $("#lang").value = S.prefs.lang;
   if (S.meta) $("#focus").value = S.prefs.focus;
-  $("#homeBug").classList.toggle("fav", S.prefs.club === "home");
-  $("#awayBug").classList.toggle("fav", S.prefs.club === "away");
+  $("#homeBug").classList.toggle("fav", isMine("home"));
+  $("#awayBug").classList.toggle("fav", isMine("away"));
   document.documentElement.lang = S.prefs.lang;
   rerenderCards();
   updateMetric();
@@ -954,6 +962,7 @@ function bindControls() {
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
     const say = e.target.closest("[data-say]"); if (say) { const i = S.insights.find((x) => x.id === say.dataset.say); if (i) queueSpeech({ ...i, salience: 1 }); return; }
     const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q);
+    const fv = e.target.closest("[data-fav]"); if (fv) { const f = new Set(S.prefs.favs || []); f.has(fv.dataset.fav) ? f.delete(fv.dataset.fav) : f.add(fv.dataset.fav); S.prefs.favs = [...f]; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const fol = e.target.closest("[data-follow]"); if (fol) { S.prefs.focus = S.prefs.focus === fol.dataset.follow ? "" : fol.dataset.follow; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const ap = e.target.closest("[data-approve]"); if (ap) return decide(ap.dataset.approve, true);
     const rj = e.target.closest("[data-reject]"); if (rj) return decide(rj.dataset.reject, false);

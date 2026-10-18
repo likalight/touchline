@@ -326,3 +326,6 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+#playersTable td.acts { white-space: nowrap; display: flex; gap: 6px; }
+#playersTable [data-fav][aria-pressed="true"] { background: var(--sodium); color: #1a1405; border-color: var(--sodium); }
