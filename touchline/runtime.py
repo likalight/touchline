@@ -110,7 +110,7 @@ class MatchSession:
     # ------------------------------------------------------------------ views
     def describe(self) -> dict:
         return {"session_id": self.id, "match": self.meta.model_dump(), "seed": self.seed, "speed": self.speed,
-                "chaos": self.chaos, "mode": self.producer.mode, "total_events": len(self.events),
+                "chaos": self.chaos, "mode": self.producer.mode, "total_events": len(self.events), "done": self.done,
                 "topology": MomentPipeline.topology(), "llm": get_llm().status(),
                 "models": {"version": get_models().params["version"], "trained_on": get_models().params["trained_on"]}}
 

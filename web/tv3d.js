@@ -24,7 +24,7 @@ const canvas = document.getElementById("pitch3d");
 const box = document.getElementById("pitchBox");
 let renderer;
 try {
-  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: !!qs.get("capture") });
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance", preserveDrawingBuffer: !!qs.get("capture") || !!window.TV3D_PRESERVE });
 } catch (e) {
   console.warn("WebGL unavailable, keeping the 2D broadcast view", e);
 }
@@ -371,7 +371,7 @@ function init() {
     if (cam.mode === "main") {
       const tx = Math.max(-L / 2 + 22, Math.min(L / 2 - 22, bx));
       cam.tx += (tx - cam.tx) * follow; cam.tz += ((bz * 0.35 - 2) - cam.tz) * follow;
-      const want = 27 - (W / 2 - bz) * 0.06; cam.fov += (want - cam.fov) * follow * 0.5;
+      const want = (27 - (W / 2 - bz) * 0.06) * (S.tight || 1); cam.fov += (want - cam.fov) * follow * 0.5;
       camera.position.set(cam.tx * 0.92, 23, W / 2 + 40);
       camera.lookAt(cam.tx, 0, cam.tz);
     } else if (cam.mode === "player") {
@@ -419,6 +419,7 @@ function init() {
 
   /* ---------- per frame */
   const q = { avg: 1 / 60, at: performance.now(), level: 0 };
+  let snap = false;
   let lastNow = performance.now(), ballRoll = 0, lastBall = null, excite = 0;
   api.render = (now) => {
     const dt = Math.max(0, Math.min(0.1, (now - lastNow) / 1000)); lastNow = Math.max(lastNow, now);
@@ -437,7 +438,7 @@ function init() {
       let P = players[pid];
       if (!P) { P = players[pid] = makePlayer(pid); if (!P) continue; P.root.position.set(wx(p[0]), 0, wz(p[1])); }
       const nx = wx(p[0]), nz = wz(p[1]), dx = nx - P.root.position.x, dz = nz - P.root.position.z;
-      const inst = Math.hypot(dx, dz) / Math.max(dt, 1e-3);
+      const inst = snap ? 0 : Math.hypot(dx, dz) / Math.max(dt, 1e-3);
       P.speed += (Math.min(inst, 9) - P.speed) * (1 - Math.pow(0.02, dt));
       P.root.position.set(nx, 0, nz);
       let yaw = P.yaw;
@@ -476,6 +477,7 @@ function init() {
     const live = new Set();
     for (const d of S.draws || []) { const gq = vizFor(d); live.add(gq); const life = (d.until - now) / 1000; gq.traverse((o) => { if (o.material) o.material.opacity = Math.max(0, Math.min(0.8, life / 1.5)); }); }
     for (const gq of [...vizGroup.children]) if (!live.has(gq)) { vizGroup.remove(gq); gq.traverse((o) => { o.geometry && o.geometry.dispose(); o.material && o.material.dispose(); }); }
+    snap = false;
     aim(now, dt);
     api.frames = (api.frames || 0) + 1; api.lastNow = Math.round(now);
     composer.render(dt);
@@ -513,6 +515,14 @@ function init() {
   };
   api.debug = () => ({ frames: api.frames, until: Math.round(cam.until), cam: camera.position.toArray().map((v) => +v.toFixed(1)), mode: cam.mode, look: cam.look && cam.look.toArray().map((v) => +v.toFixed(1)), fov: camera.fov, n: Object.keys(players).length, focus: S.prefs.focus, camMode: S.camMode, sample: Object.values(players).slice(0, 2).map((P) => [P.pid, P.root.position.toArray().map((v) => +v.toFixed(1)), +P.yaw.toFixed(2), +P.speed.toFixed(1)]) });
   api.board = (text, accent) => { ledText = text; drawLed(text.toUpperCase(), accent); };
+  // hard cut (new clip): snap the camera and stop players reading the jump as a sprint
+  api.cut = () => {
+    snap = true;
+    const tx = Math.max(-L / 2 + 22, Math.min(L / 2 - 22, wx(S.ball[0])));
+    cam.tx = tx; cam.tz = wz(S.ball[1]) * 0.35 - 2; cam.mode = "main"; cam.look = null; lastBall = null;
+    for (const P of Object.values(players)) { P.speed = 0; if (P.oneShot) { P.oneShot.a.stop(); P.oneShot = null; } }
+  };
+  api.replaying = () => cam.mode === "replay";
   api.reset = () => { for (const P of Object.values(players)) { scene.remove(P.root); } for (const k in players) delete players[k]; excite = 0; cam.mode = "main"; };
   api.teams = (meta) => {
     homeCol.set(meta.home.color); awayCol.set(meta.away.color);

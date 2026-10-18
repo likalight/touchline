@@ -139,6 +139,11 @@ async def story():
     return FileResponse(WEB / "story.html")
 
 
+@app.get("/reel", include_in_schema=False)
+async def reel_page():
+    return FileResponse(WEB / "reel.html")
+
+
 @app.get("/overlay", include_in_schema=False)
 async def overlay():
     return FileResponse(WEB / "overlay.html")
@@ -290,6 +295,34 @@ async def event(sid: str, eid: str):
     if en.pass_features:
         out["pass_explain"] = s.state.models.pass_.explain(en.pass_features, s.state.models.pass_baseline)
     return out
+
+
+@app.get("/api/matches/{sid}/window")
+async def window(sid: str, start: float, end: float):
+    """Events (with player positions) for one slice of the match clock, for replays and 3D reels.
+    Only events that have already happened are returned."""
+    from touchline.runtime import Q_EVENT_KEYS
+
+    s = get(sid)
+    if end - start > 180 or end < start:
+        raise HTTPException(400, "window must be 0-180 s of match time")
+    score, out = {"home": 0, "away": 0}, []
+    names = {pid: p.name for pid, p in s.state.players.items()}
+    for ev in s.events:
+        if ev.id not in s.state.enriched:
+            break
+        if ev.type == "goal" and ev.team:
+            score[ev.team] += 1
+        if ev.t < start:
+            continue
+        if ev.t > end:
+            break
+        out.append({"id": ev.id, "t": ev.t, "minute": ev.minute, "etype": ev.type, "team": ev.team,
+                    "player_id": ev.player_id, "player": names.get(ev.player_id), "target_id": ev.target_id,
+                    "x": ev.x, "y": ev.y, "end_x": ev.end_x, "end_y": ev.end_y, "outcome": ev.outcome,
+                    "q": {k: ev.qualifiers[k] for k in Q_EVENT_KEYS if k in ev.qualifiers}, "frame": ev.frame,
+                    "score": dict(score)})
+    return {"start": start, "end": end, "events": out}
 
 
 REELS: dict[str, dict] = {}

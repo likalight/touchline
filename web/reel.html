@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Match reel</title>
+<link rel="preload" href="/static/fonts/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; }
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-SemiBold.woff2") format("woff2"); font-weight: 600; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600; }
+@font-face { font-family: "Source Serif 4"; src: url("/static/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; }
+:root { --turf: #0f2b20; --ink: #eef0e8; --sodium: #f2c14e; --muted: #a9b8a8; }
+html, body { margin: 0; background: #07140e; color: var(--ink); font: 16px/1.5 Barlow, system-ui, sans-serif; }
+main { max-width: 1280px; margin: 0 auto; padding: 20px 16px 40px; }
+h1 { font: 700 34px/1.05 "Barlow Condensed", sans-serif; margin: 0 0 4px; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.stage { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #0b1d15; border-radius: 10px; overflow: hidden; }
+#pitchBox { position: absolute; inset: 0; }
+#pitch3d, #comp { position: absolute; inset: 0; width: 100%; height: 100%; }
+#pitch3d { visibility: hidden; }
+.bar { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+button, a.btn { font: 600 15px Barlow, sans-serif; background: #1c3a2c; color: var(--ink); border: 1px solid #2f5a44; border-radius: 6px; padding: 9px 14px; cursor: pointer; text-decoration: none; }
+button.primary, a.primary { background: var(--sodium); color: #1a1405; border-color: var(--sodium); }
+button:focus-visible, a.btn:focus-visible { outline: 2px solid var(--sodium); outline-offset: 2px; }
+#status { color: var(--muted); }
+.prog { flex: 1 1 200px; height: 4px; background: #1c3a2c; border-radius: 2px; overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--sodium); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title">Your highlights</h1>
+  <p class="sub" id="sub">Cut from the broadcast camera, with graphics checked against the match data.</p>
+  <div class="stage">
+    <div id="pitchBox"><canvas id="pitch3d" aria-hidden="true"></canvas></div>
+    <canvas id="comp" width="1280" height="720" role="img" aria-label="Highlights reel"></canvas>
+  </div>
+  <div class="bar">
+    <button class="primary" id="play">Play and record</button>
+    <a class="btn" id="save" hidden download="my-match.webm">Save the video</a>
+    <div class="prog" aria-hidden="true"><i id="progBar"></i></div>
+    <span id="status" aria-live="polite">Loading the stadium…</span>
+  </div>
+</main>
+<script type="importmap">{ "imports": { "three": "/static/vendor/three/three.module.min.js", "three/addons/": "/static/vendor/three/addons/" } }</script>
+<script src="/static/reel.js"></script>
+</body>
+</html>

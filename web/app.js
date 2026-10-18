@@ -898,6 +898,7 @@ async function loadReelPlan() {
     $("#clips").innerHTML = plan.clips.map((c) => `<li><span class="m">${c.minute}'</span><span><span class="t">${esc(c.title)}</span><br><span class="l">${esc(c.line)}</span></span>
       <span class="d">${fmtClock(c.start)} to ${fmtClock(c.end)}</span></li>`).join("");
     $("#edlLink").href = `/api/matches/${S.sid}/reel?${reelQuery()}`;
+    $("#reel3d").href = `/reel?session=${encodeURIComponent(S.sid)}&${reelQuery()}`;
     if (plan.video && plan.video.url) showReel(plan.video.url);
   } catch { /* keep previous */ }
 }
