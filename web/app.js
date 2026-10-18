@@ -277,7 +277,8 @@ function renderCard(ins) {
     <h3>${esc(r.title)}</h3>
     ${r.lines.length ? `<ul>${r.lines.map((l) => `<li>${esc(l.text)}</li>`).join("")}</ul>` : ""}
     <div class="chips">${(ins.event_ids || []).slice(-4).map((id) => `<button class="chip" data-ev="${id}" title="Show the evidence">${id}</button>`).join("")}
-      ${S.prefs.persona === "access" ? `<button class="chip speak" data-say="${ins.id}">Read aloud</button>` : ""}</div>`;
+      ${S.prefs.persona === "access" ? `<button class="chip speak" data-say="${ins.id}">Read aloud</button>` : ""}
+      <span class="fb" role="group" aria-label="Was this useful?"><button class="chip" data-fb="${ins.id}" data-up="1" aria-pressed="${S.fb[ins.id] === 1}">Useful</button><button class="chip" data-fb="${ins.id}" data-up="0" aria-pressed="${S.fb[ins.id] === 0}">Not for me</button></span></div>`;
   return el;
 }
 
@@ -866,7 +867,8 @@ function onTrace(sp) {
 
 async function renderServices() {
   try {
-    const [h, d] = await Promise.all([fetch("/api/health").then((r) => r.json()), fetch("/api/downstream").then((r) => r.json())]);
+    const [h, d, fb] = await Promise.all([fetch("/api/health").then((r) => r.json()), fetch("/api/downstream").then((r) => r.json()),
+      fetch(`/api/matches/${S.sid}/feedback`).then((r) => r.json())]);
     const llm = h.llm || {}, cs = h.content_safety || {}, sp = h.speech || {};
     const row = (on, name, detail) => `<div class="${on ? "on" : "off"}"><b>${esc(name)}</b><span>${esc(detail)}</span></div>`;
     $("#svcList").innerHTML = [
@@ -875,6 +877,7 @@ async function renderServices() {
       row(cs.mode === "azure", "Azure AI Content Safety", cs.mode === "azure" ? `${cs.checked} checks, ${cs.blocked} blocked, ${cs.shield_attacks} prompt attacks refused` : `local screen: ${cs.shield_attacks || 0} prompt attacks refused`),
       row(sp.available, "Azure AI Speech", sp.available ? `${sp.mode} auth, ${sp.calls} syntheses` : "browser voices in use"),
       row(h.auth === "entra", "Microsoft Entra ID", h.auth === "entra" ? "producer tools need the Producer role" : "open demo: producer tools unlocked, actions audited"),
+      row(fb.votes > 0, "Viewer feedback", fb.votes ? `${Math.round(fb.useful_rate * 100)}% of ${fb.votes} votes say the graphic was useful` : "no votes yet: press Useful or Not for me on any card"),
       row(d.outbound && d.outbound.enabled, "Azure Event Hubs", d.outbound && d.outbound.enabled ? `${d.outbound.sent} insights streamed to ${d.outbound.hub}` : "not configured here"),
     ].join("");
     const p = d.packages;
@@ -883,6 +886,14 @@ async function renderServices() {
         row(true, "Social cards", `${(p.recent_social_cards || []).length} recent`) + row(true, "Watchdog", "health check every 5 minutes")
       : row(false, "Azure Functions", p && p.error ? "unreachable: " + p.error : "deployed with azd up; the package endpoint is /api/matches/{id}/package");
   } catch (e) { /* offline */ }
+}
+
+S.fb = {};
+async function feedback(id, up) {
+  S.fb[id] = up;
+  $$(`[data-fb="${id}"]`).forEach((b) => b.setAttribute("aria-pressed", String(Number(b.dataset.up) === up)));
+  fetch(`/api/matches/${S.sid}/feedback`, { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ insight_id: id, useful: up === 1, persona: S.prefs.persona, lang: S.prefs.lang }) }).catch(() => {});
 }
 
 S.drills = {};
@@ -1068,6 +1079,7 @@ function bindControls() {
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
     const say = e.target.closest("[data-say]"); if (say) { const i = S.insights.find((x) => x.id === say.dataset.say); if (i) queueSpeech({ ...i, salience: 1 }); return; }
     const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q);
+    const fbb = e.target.closest("[data-fb]"); if (fbb) { feedback(fbb.dataset.fb, Number(fbb.dataset.up)); return; }
     const dr = e.target.closest("[data-drill]"); if (dr) { runDrill(dr.dataset.drill); return; }
     const fv = e.target.closest("[data-fav]"); if (fv) { const f = new Set(S.prefs.favs || []); f.has(fv.dataset.fav) ? f.delete(fv.dataset.fav) : f.add(fv.dataset.fav); S.prefs.favs = [...f]; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const fol = e.target.closest("[data-follow]"); if (fol) { S.prefs.focus = S.prefs.focus === fol.dataset.follow ? "" : fol.dataset.follow; savePrefs(); applyPrefs(); renderPlayers(); return; }

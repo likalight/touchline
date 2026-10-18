@@ -132,6 +132,13 @@ class Decision(BaseModel):
     approve: bool
 
 
+class Feedback(BaseModel):
+    insight_id: str = Field(..., max_length=40)
+    useful: bool
+    persona: str = Field("casual", max_length=12)
+    lang: str = Field("en", max_length=8)
+
+
 @app.get("/", include_in_schema=False)
 async def index():
     return FileResponse(WEB / "index.html")
@@ -442,6 +449,17 @@ async def speak(text: str, lang: str = "en", voice: str = "lead"):
     if not audio:
         raise HTTPException(503, "speech unavailable")
     return Response(audio, media_type="audio/mpeg")
+
+
+@app.post("/api/matches/{sid}/feedback")
+async def feedback(sid: str, body: Feedback):
+    """A viewer says whether a graphic was useful: the evidence behind the impact claims."""
+    return get(sid).add_feedback(body.insight_id, body.useful, body.persona, body.lang)
+
+
+@app.get("/api/matches/{sid}/feedback")
+async def feedback_summary(sid: str):
+    return get(sid).feedback_summary()
 
 
 @app.get("/api/matches/{sid}/package")

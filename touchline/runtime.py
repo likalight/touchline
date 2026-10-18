@@ -76,6 +76,7 @@ class MatchSession:
         self.deps.on_fault = self._on_fault
         self.drills: list[dict] = []
         self.actions: list[dict] = []  # producer actions, with who did them (audit)
+        self.feedback: dict[str, dict] = {}  # insight id -> latest vote per viewer view
         self._storm_left = 0
         self.subscribers: set[asyncio.Queue] = set()
         self.recent_events: deque = deque(maxlen=40)
@@ -193,6 +194,31 @@ class MatchSession:
     def _emit_full_time(self) -> None:
         outbound.emit({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
                        "score": dict(self.state.score), "insights": len(self.insights)})
+
+    def add_feedback(self, insight_id: str, useful: bool, persona: str, lang: str) -> dict:
+        ins = next((i for i in self.insights if i["id"] == insight_id), None)
+        if ins is None:
+            return {"ok": False}
+        f = self.feedback.setdefault(insight_id, {"kind": ins["kind"], "up": 0, "down": 0, "by_persona": {}})
+        f["up" if useful else "down"] += 1
+        bp = f["by_persona"].setdefault(persona, {"up": 0, "down": 0})
+        bp["up" if useful else "down"] += 1
+        return {"ok": True}
+
+    def feedback_summary(self) -> dict:
+        up = sum(f["up"] for f in self.feedback.values())
+        down = sum(f["down"] for f in self.feedback.values())
+        per, kind = {}, {}
+        for f in self.feedback.values():
+            for p, v in f["by_persona"].items():
+                per.setdefault(p, {"up": 0, "down": 0})
+                per[p]["up"] += v["up"]
+                per[p]["down"] += v["down"]
+            kind.setdefault(f["kind"], {"up": 0, "down": 0})
+            kind[f["kind"]]["up"] += f["up"]
+            kind[f["kind"]]["down"] += f["down"]
+        return {"votes": up + down, "useful_rate": round(up / (up + down), 3) if up + down else None,
+                "by_persona": per, "by_kind": kind}
 
     def package(self) -> dict:
         """The post-match package: final score, recaps in every built-in language and persona, the highlights
@@ -398,7 +424,7 @@ class MatchSession:
         return {"session": self.id, "match_id": self.meta.match_id, "synthetic": True, "seed": self.seed,
                 "ops": self.ops(), "quarantine": self.guard.quarantine[-20:], "spans": list(self.trace.spans)[-200:],
                 "producer_actions": self.actions[-200:], "drills": [self._public_drill(d) for d in self.drills],
-                "editorial_decisions": list(self.producer.rundown),
+                "editorial_decisions": list(self.producer.rundown), "viewer_feedback": self.feedback_summary(),
                 "insights": [{"id": i["id"], "kind": i["kind"], "minute": i["minute"], "verification": i["verification"],
                               "evidence": i["event_ids"], "latency_ms": i["latency_ms"],
                               "cue": i["cue"]["approval"] if i.get("cue") else None} for i in self.insights]}

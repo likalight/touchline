@@ -75,3 +75,16 @@ def test_functions_app_registers():
     spec = importlib.util.spec_from_file_location("function_app", p)
     m = importlib.util.module_from_spec(spec); sys.modules["function_app"] = m; spec.loader.exec_module(m)
     assert {f.get_function_name() for f in m.app.get_functions()} == {"on_insight", "packages", "watchdog"}
+
+
+def test_viewer_feedback_is_counted(monkeypatch):
+    with client(monkeypatch, "open") as c:
+        ins = c.get("/api/matches/demo/insights").json()
+        ins = ins if isinstance(ins, list) else ins.get("insights", [])
+        if not ins:
+            return
+        iid = ins[-1]["id"]
+        c.post("/api/matches/demo/feedback", json={"insight_id": iid, "useful": True, "persona": "casual"})
+        c.post("/api/matches/demo/feedback", json={"insight_id": iid, "useful": False, "persona": "analyst"})
+        f = c.get("/api/matches/demo/feedback").json()
+        assert f["votes"] >= 2 and 0 < f["useful_rate"] < 1 and "casual" in f["by_persona"]

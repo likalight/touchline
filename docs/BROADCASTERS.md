@@ -25,8 +25,8 @@ frame; language-model work never sits on the hot path.
 
 | Stage | Measured (p50 / p95) |
 |---|---|
-| Event to updated match state | 0.14 / 0.24 ms |
-| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, producer) | 8 / 12 ms |
+| Event to updated match state | about 0.15 / under 1 ms |
+| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, editorial producer, commentary) | about 2.5 / under 5 ms |
 | Extra language via Azure OpenAI (async; arrives as a `render` update) | model-bound, typically sub-second |
 | Personal highlights reel (75 s, 1280x720, H.264) | about 45 s on 1 vCPU |
 
@@ -36,8 +36,8 @@ Measured by `scripts/evaluate.py` on 12 unseen matches (see `docs/EVAL.md`).
 
 - **Every number is re-derived.** The FactChecker recomputes xG, pass difficulty, speeds,
   distances, win probability and every storyline count from the raw events before a
-  graphic can air. 671 of 671 insights verified in evaluation; tampered or invented
-  numbers are blocked (tested).
+  graphic can air. 735 of 735 insights verified in evaluation; tampered or invented
+  numbers are blocked (tested, and demonstrated live by the resilience drills).
 - **No future leakage.** Analysis runs in step with the feed, so an insight can only use
   what had happened when it was written. The checker rejects any citation to a later event.
 - **Language models are optional and contained.** They rewrite or translate verified
@@ -77,6 +77,10 @@ from verified phrase banks.
 - One match is one session. Sticky sessions keep a viewer's stream on one replica;
   replicas scale on HTTP concurrency; `minReplicas: 1` keeps the demo live.
 - Event Hubs partitions by match ID, so many concurrent matches ingest independently.
+- Every verified insight also streams out on a second hub; the `packages` Azure Function
+  (Flex Consumption) builds social cards and the post-match package for your CMS.
+- Producer tools sit behind Microsoft Entra ID sign-in with a Producer role; fan questions
+  pass Azure AI Content Safety Prompt Shields. See [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Rollout we would propose
 
