@@ -5,6 +5,7 @@ param modelName string
 param modelVersion string
 param modelCapacity int
 param enableEventHubs bool
+param principalId string = ''
 
 var token = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var roles = {
@@ -126,6 +127,31 @@ resource aiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
+// the person running azd can publish agents and run Foundry evaluations
+resource deployerAiUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (!empty(principalId)) {
+  name: guid(foundry.id, principalId, roles.azureAiUser)
+  scope: foundry
+  properties: {
+    principalId: principalId
+    principalType: 'User'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roles.azureAiUser)
+  }
+}
+
+// Foundry tracing: connect the project to Application Insights so agent runs appear in the Foundry portal
+resource tracing 'Microsoft.CognitiveServices/accounts/projects/connections@2025-06-01' = {
+  parent: project
+  name: 'appinsights-touchline'
+  properties: {
+    category: 'AppInsights'
+    target: appInsights.id
+    authType: 'ApiKey'
+    isSharedToAll: false
+    credentials: { key: appInsights.properties.ConnectionString }
+    metadata: { ApiType: 'Azure', ResourceId: appInsights.id }
+  }
+}
+
 resource speechUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(foundry.id, identity.id, roles.speechUser)
   scope: foundry
@@ -205,7 +231,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
-  dependsOn: [acrPull, openAiUser, speechUser]
+  dependsOn: [acrPull, openAiUser, aiUser, speechUser]
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -235,6 +261,9 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
             { name: 'AZURE_OPENAI_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.openai.azure.com' }
             { name: 'AZURE_OPENAI_MODEL', value: modelName }
+            { name: 'FOUNDRY_PROJECT_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.services.ai.azure.com/api/projects/${project.name}' }
+            { name: 'FOUNDRY_MODEL', value: modelName }
+            { name: 'TOUCHLINE_FOUNDRY_AGENTS', value: 'on' } // use the agents published by the postprovision hook
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
             { name: 'TOUCHLINE_PUBLIC_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
             { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }

@@ -67,6 +67,8 @@ class LLM:
         self.errors = 0
         self.total_ms = 0.0
         self._agents: dict[str, Any] = {}
+        self.hosted: dict[str, bool] = {}
+        self.fallbacks = 0
         if os.getenv("TOUCHLINE_LLM", "").lower() in ("off", "offline", "0"):
             return
         try:
@@ -114,7 +116,11 @@ class LLM:
         if name not in self._agents:
             from agent_framework import Agent
 
-            self._agents[name] = Agent(self.client, instructions, name=name, tools=tools or None)
+            from touchline.foundry_agents import hosted_agent
+
+            hosted = hosted_agent(name, tools) if self.backend == "foundry" else None
+            self._agents[name] = hosted or Agent(self.client, instructions, name=name, tools=tools or None)
+            self.hosted[name] = hosted is not None
         return self._agents[name]
 
     async def run(self, name: str, instructions: str, prompt: str, timeout: float = 6.0,
@@ -130,8 +136,16 @@ class LLM:
             return resp.text
         except Exception as exc:
             self.errors += 1
-            self.breaker.fail()
             log.warning("agent %s failed: %s", name, exc)
+            if self.hosted.get(name):
+                # the published Foundry agent is unreachable: fall back to the same agent run locally, once
+                from agent_framework import Agent
+
+                self._agents[name] = Agent(self.client, instructions, name=name, tools=tools or None)
+                self.hosted[name] = False
+                self.fallbacks += 1
+                return await self.run(name, instructions, prompt, timeout, tools)
+            self.breaker.fail()
             return None
         finally:
             self.total_ms += (time.perf_counter() - t0) * 1000
@@ -148,7 +162,7 @@ class LLM:
 
     def status(self) -> dict:
         return {"backend": self.backend, "model": self.model, "breaker_open": self.breaker.open,
-                "calls": self.calls, "errors": self.errors,
+                "calls": self.calls, "errors": self.errors, "hosted_agents": [k for k, v in self.hosted.items() if v], "hosted_fallbacks": self.fallbacks,
                 "avg_ms": round(self.total_ms / self.calls, 1) if self.calls else None}
 
 

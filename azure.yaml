@@ -13,3 +13,14 @@ services:
 infra:
   provider: bicep
   path: infra
+hooks:
+  postprovision:
+    # publish Touchline's agents to Foundry Agent Service (new version per run, content policy attached)
+    posix:
+      shell: sh
+      run: python3 -m pip install -q -r requirements.txt && python3 scripts/foundry_publish.py
+      continueOnError: true
+    windows:
+      shell: pwsh
+      run: python -m pip install -q -r requirements.txt; python scripts/foundry_publish.py
+      continueOnError: true

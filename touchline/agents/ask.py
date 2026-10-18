@@ -68,7 +68,32 @@ class AskTheAnalyst:
             log.append(out)
             return out
 
-        return [get_scoreboard, get_player_stats, list_key_moments, explain_event]
+        def get_events(minute_from: int, minute_to: int, event_type: str = "") -> str:
+            """Raw match events between two minutes (inclusive), optionally one type (pass, shot, tackle, goal, card...).
+            Returns at most 15, newest first, each with its event ID for citation."""
+            out_l = []
+            for e in reversed(list(s.events.values())):
+                if minute_from <= e.minute <= minute_to and (not event_type or e.type == event_type):
+                    out_l.append({"id": e.id, "minute": e.minute, "type": e.type, "team": e.team, "outcome": e.outcome,
+                                  "player": s.players[e.player_id].name if e.player_id in s.players else None})
+                    if len(out_l) >= 15:
+                        break
+            out = json.dumps(out_l)
+            log.append(out)
+            return out
+
+        def get_team_report(side: str) -> str:
+            """Tactical picture for one team ('home' or 'away'): pressing (PPDA, pressures, high turnovers), xG, shots, possession."""
+            side = side if side in ("home", "away") else "home"
+            t = s.team[side]
+            out = json.dumps({"team": s.meta.home.name if side == "home" else s.meta.away.name, "ppda": s.ppda(side),
+                              "pressures": int(t["pressures"]), "high_turnovers": int(t["high_turnovers"]),
+                              "xg": round(t["xg"], 2), "shots": int(t["shots"]), "possession_pct": s.possession_pct()[side],
+                              "phase": s.phase()})
+            log.append(out)
+            return out
+
+        return [get_scoreboard, get_player_stats, list_key_moments, explain_event, get_events, get_team_report]
 
     def _find_player(self, name: str) -> Optional[str]:
         names = {p.name.lower(): pid for pid, p in self.s.players.items()}

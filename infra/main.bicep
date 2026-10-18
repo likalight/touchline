@@ -15,6 +15,9 @@ param modelName string = 'gpt-4.1-mini'
 param modelVersion string = '2025-04-14'
 param modelCapacity int = 50
 
+@description('Object ID of the person running azd (set automatically); lets the postprovision hook publish agents to Foundry')
+param principalId string = ''
+
 @description('Provision Azure Event Hubs for event-driven match ingestion')
 param enableEventHubs bool = true
 
@@ -37,6 +40,7 @@ module resources 'resources.bicep' = {
     modelVersion: modelVersion
     modelCapacity: modelCapacity
     enableEventHubs: enableEventHubs
+    principalId: principalId
   }
 }
 
@@ -46,5 +50,6 @@ output SERVICE_WEB_URI string = resources.outputs.webUri
 output AZURE_OPENAI_ENDPOINT string = resources.outputs.openAiEndpoint
 output AZURE_OPENAI_MODEL string = modelName
 output FOUNDRY_PROJECT_ENDPOINT string = resources.outputs.foundryProjectEndpoint
+output FOUNDRY_MODEL string = modelName
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.appInsightsConnectionString
 output TOUCHLINE_EVENTHUB_NAMESPACE string = resources.outputs.eventHubNamespace
