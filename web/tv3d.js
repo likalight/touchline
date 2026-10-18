@@ -421,7 +421,7 @@ function init() {
   const q = { avg: 1 / 60, at: performance.now(), level: 0 };
   let lastNow = performance.now(), ballRoll = 0, lastBall = null, excite = 0;
   api.render = (now) => {
-    const dt = Math.min(0.1, (now - lastNow) / 1000); lastNow = now;
+    const dt = Math.max(0, Math.min(0.1, (now - lastNow) / 1000)); lastNow = Math.max(lastNow, now);
     if (!api.ready) return;
     // adaptive quality: if frames run slow for two seconds, step down resolution, then bloom
     q.avg = q.avg * 0.95 + dt * 0.05;
