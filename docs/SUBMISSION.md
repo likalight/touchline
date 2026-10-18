@@ -83,10 +83,10 @@ red card comes at 29'.
 | 0:00 to 0:08 | TV camera, scorebug, cards streaming | "This is Touchline: AI agents on Azure that explain why football moments matter, live, for every kind of fan." |
 | 0:08 to 0:20 | 29' red card lower-third; win probability drops | "Kestrel Bay go down to ten men. Win probability falls, and every number on screen has been checked against the match data." |
 | 0:20 to 0:35 | Jump to 36'. Ironmoor goal; the card shows "It began with a loss of possession by Ravi Varga" | "The agents remember. This goal started with Varga giving the ball away, twenty-four seconds earlier." |
-| 0:35 to 0:50 | Jump to 75'. Varga equaliser, with "Redemption for Varga" | "Forty minutes later, the storyline agent calls back: redemption for Varga." |
+| 0:35 to 0:50 | Jump to 75'. Varga equaliser; switch the persona to Analyst to show "Redemption for Ravi Varga: he gave the ball away for their goal in minute 36" | "Forty minutes later, the storyline agent calls back: redemption for Varga." |
 | 0:50 to 1:05 | Jump to 93'. The 94' winner banner, hat-trick panel, "down to 2% win probability" | "Down to two percent. Then, in the ninety-fourth minute, a hat-trick." |
 | 1:05 to 1:15 | Click an evidence chip: the drawer shows facts, model drivers and the pitch-control map | "Every claim links to the raw events, the factors behind it, and who controlled the pitch at that instant." |
-| 1:15 to 1:28 | Switch Analyst, then Audio description (voice plays), then Español | "One moment, four audiences and any language: fan, analyst, studio, and audio description for blind fans." |
+| 1:15 to 1:28 | Switch to Studio, then Audio description (voice plays), then Español | "One moment, four audiences and any language: fan, analyst, studio, and audio description for blind fans." |
 | 1:28 to 1:40 | My Match tab: choose Kestrel Bay and follow Varga, then play the rendered reel | "After the whistle, every fan gets their own highlights, cut from the broadcast camera in their language." |
 | 1:40 to 1:50 | Agents at work: workflow graph, live handoffs, 735 of 735 verified | "Under the hood: a Microsoft Agent Framework workflow, with every handoff traced and every claim verified." |
 | 1:50 to 1:58 | The CasparCG template, then the story page | "And it drops straight into a broadcaster's graphics system. Touchline: the game, explained." |
