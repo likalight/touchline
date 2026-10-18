@@ -302,8 +302,10 @@ function playCue(ins) {
   }
   let el;
   if (cue.layer === "lower_third") {
-    el = layerEl("lower_third", "lower-third" + (cue.template === "full_banner" ? " banner" : ""));
-    el.innerHTML = `<div class="bar"></div><div class="body"><div class="ttl">${esc(r.title)}</div>
+    el = layerEl("lower_third", "lower-third" + (cue.template === "full_banner" ? " banner" : "") + (ins.kind.startsWith("story") ? " story" : ""));
+    el.style.setProperty("--team", ins.team && S.meta ? S.meta[ins.team].color : "var(--sodium)");
+    const kick = { en: "Checked against the match data", es: "Verificado con los datos del partido", fr: "Vérifié avec les données du match", pt: "Verificado com os dados do jogo" };
+    el.innerHTML = `<div class="bar"></div><div class="body"><span class="strap"></span><div class="kick"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>${kick[S.prefs.lang] || kick.en}</div><div class="ttl">${esc(r.title)}</div>
       ${r.lines[0] ? `<div class="ln">${esc(r.lines[0].text)}</div>` : ""}
       ${persona !== "casual" && r.lines[1] ? `<div class="ln">${esc(r.lines[1].text)}</div>` : ""}</div>`;
   } else if (cue.layer === "side_panel") {

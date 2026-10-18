@@ -131,7 +131,12 @@ a { color: var(--sodium); }
 }
 .lower-third.out { animation: lt-out .3s ease forwards; }
 .lower-third .bar { background: var(--sodium); }
-.lower-third .body { background: rgba(12, 36, 27, .94); padding: 8px 14px 9px; }
+.lower-third .body { background: rgba(12, 36, 27, .94); padding: 8px 14px 9px; position: relative; }
+.lower-third .strap { position: absolute; left: 0; right: 0; top: 0; height: 4px; background: var(--team, var(--sodium)); transform-origin: left; animation: strap .5s .12s cubic-bezier(.16,.84,.24,1) both; }
+.lower-third .kick { font: 600 11.5px/1 var(--ui); color: var(--sodium); display: flex; gap: 6px; align-items: center; margin: 3px 0 2px; }
+.lower-third.banner .kick { color: #8a5a00; }
+.lower-third.story .bar { background: var(--chalk); }
+@keyframes strap { from { transform: scaleX(0); } }
 .lower-third .ttl { font: 700 clamp(17px, 2.1vw, 26px)/1.1 var(--display); letter-spacing: .01em; }
 .lower-third .ln { font: 400 clamp(13px, 1.2vw, 16px)/1.35 var(--prose); color: var(--chalk); margin-top: 3px; }
 .lower-third .tag { font: 600 12px var(--ui); color: var(--sodium); margin-top: 4px; display: flex; gap: 8px; align-items: center; }

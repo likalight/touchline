@@ -174,7 +174,7 @@ class BroadcastRenderer:
             x0, x1 = k * PITCH_L / n, (k + 1) * PITCH_L / n
             col = (31, 92, 61) if k % 2 else (28, 84, 56)
             self._poly(d, [(x0, 0, 0), (x1, 0, 0), (x1, PITCH_W, 0), (x0, PITCH_W, 0)], fill=col)
-        chalk = (226, 232, 220)
+        chalk = (208, 216, 202)
         self._line(d, [(0, 0, 0), (PITCH_L, 0, 0), (PITCH_L, PITCH_W, 0), (0, PITCH_W, 0), (0, 0, 0)], chalk, 2)
         self._line(d, [(PITCH_L / 2, 0, 0), (PITCH_L / 2, PITCH_W, 0)], chalk, 2)
         circ = [(PITCH_L / 2 + 9.15 * math.cos(a), PITCH_W / 2 + 9.15 * math.sin(a), 0) for a in np.linspace(0, 2 * math.pi, 48)]

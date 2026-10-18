@@ -127,6 +127,8 @@ class Detection:
 class AutoEventer:
     """Pixels in, events out."""
 
+    FLIGHT_SPEED = False  # top-down: median in-flight speed; angled camera: distance / flight time (robust to ball height)
+
     def __init__(self, lineup: dict[str, list[float]]):
         self.ids = {"h": [p for p in lineup if p[0] == "h"], "a": [p for p in lineup if p[0] == "a"]}
         self.pos = {p: np.array(v, float) for p, v in lineup.items()}
@@ -154,15 +156,18 @@ class AutoEventer:
     def _assign(self, side: str, cents: list[np.ndarray]) -> None:
         ids = list(self.ids[side])
         if not cents:
-            return
+            return []
         pairs = sorted(((np.linalg.norm(self.pos[p] - c), p, j) for p in ids for j, c in enumerate(cents)))
         used_p, used_c = set(), set()
+        assigned = []
         for d, p, j in pairs:
             if p in used_p or j in used_c or d > 6.0:
                 continue
             self.pos[p] = cents[j]
             used_p.add(p)
             used_c.add(j)
+            assigned.append(p)
+        return assigned
 
     def observe(self, t: float, img: np.ndarray) -> None:
         f = img.astype(np.int16)
@@ -203,7 +208,7 @@ class AutoEventer:
             flight = max(tb - ta, 1 / FPS)
             if d < 4 or flight > 4.5:
                 continue
-            spd = self._peak_speed(ta, tb) or d / flight
+            spd = (d / flight) if self.FLIGHT_SPEED else (self._peak_speed(ta, tb) or d / flight)
             out.append(Detection("pass", ta, a, b, "home" if a[0] == "h" else "away", float(pa[0]), float(pa[1]),
                                  float(pb[0]), float(pb[1]), round(d, 1), round(spd * 3.6, 1)))
         # shots: a fast ball arriving at a goal line inside the posts
@@ -235,6 +240,21 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 10, gif: Opti
         ae.observe(t, img)
         if gif and len(frames) < 200 and t > first.t + 2:
             frames.append(img)
+    res = evaluate_detections(ae, events, first.t, t1)
+    res = {"seed": seed, "window_min": [from_min, from_min + minutes], "frames": len(ae.ball_track), "fps": FPS,
+           "resolution": f"{Wd}x{H}", "noise_sigma": noise, **res}
+    if gif and frames:
+        import imageio.v2 as imageio
+
+        imageio.mimsave(gif, [f[::2, ::2] for f in frames[:120:2]], duration=0.2, loop=0)
+    return res
+
+
+def evaluate_detections(ae: "AutoEventer", events: list, t_start: float, t1: float) -> dict:
+    """Match detected passes / shots against the simulator's ground truth."""
+    class _F:  # keep the original variable names below
+        t = t_start
+    first = _F()
     det = ae.events()
     gt_pass = [e for e in events if e.type == "pass" and e.outcome == "complete" and first.t + 1 <= e.t < t1 - 3]
     gt_shot = [e for e in events if e.type == "shot" and e.outcome in ("goal", "saved", "off_target") and first.t + 1 <= e.t < t1 - 3]
@@ -256,8 +276,6 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 10, gif: Opti
     ds = [d for d in det if d.kind == "shot"]
     shot_hits = sum(1 for g in gt_shot if any(abs(d.t - g.t) < 2.5 for d in ds))
     res = {
-        "seed": seed, "window_min": [from_min, from_min + minutes], "frames": len(ae.ball_track), "fps": FPS,
-        "resolution": f"{Wd}x{H}", "noise_sigma": noise,
         "passes": {"ground_truth": len(gt_pass), "detected": len(dp), "matched": matched,
                    "precision": round(matched / len(dp), 3) if dp else None,
                    "recall": round(matched / len(gt_pass), 3) if gt_pass else None,
@@ -267,10 +285,6 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 10, gif: Opti
         "shots": {"ground_truth": len(gt_shot), "detected": len(ds), "recall": round(shot_hits / len(gt_shot), 3) if gt_shot else None},
         "ball_visible": round(sum(1 for _, p in ae.ball_track if p is not None) / max(1, len(ae.ball_track)), 3),
     }
-    if gif and frames:
-        import imageio.v2 as imageio
-
-        imageio.mimsave(gif, [f[::2, ::2] for f in frames[:120:2]], duration=0.2, loop=0)
     return res
 
 
