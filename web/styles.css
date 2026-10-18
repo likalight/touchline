@@ -285,7 +285,12 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
   .meters { justify-self: start; }
   .top { grid-template-columns: 1fr; }
 }
+.more { display: none; }
 @media (max-width: 640px) {
+  .more { display: inline-flex; }
+  .top { position: static; }
+  .prefs:not(.open) > .field, .prefs:not(.open) > .spacer { display: none; }
+  .meter .phase small { display: none; }
   .top, .stage, .tabs-wrap { padding-left: 16px; padding-right: 16px; }
   .meter { min-width: 140px; }
   .trace div { grid-template-columns: 110px 1fr; }

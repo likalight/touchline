@@ -658,6 +658,7 @@ function onCueUpdate(cue) {
 
 function drawTopology(topo) {
   const svg = $("#topology");
+  svg.setAttribute("viewBox", "0 0 590 300");
   const nodes = {
     "IngestGuard": [10, 20], "MatchState": [10, 80], "MomentScout": [10, 140], "TacticalAnalyst": [10, 200], "FactChecker": [190, 200],
     "Narrator[casual]": [370, 20], "Narrator[analyst]": [370, 80], "Narrator[studio]": [370, 140], "Narrator[access]": [370, 200], "Producer": [370, 260],
@@ -669,8 +670,11 @@ function drawTopology(topo) {
     const sx = x1 + (x2 > x1 ? w : w / 2), sy = y1 + (x2 > x1 ? h / 2 : h), ex = x2 + (x2 > x1 ? 0 : w / 2), ey = y2 + (x2 > x1 ? h / 2 : 0);
     return `<path d="M${sx},${sy} C${(sx + ex) / 2},${sy} ${(sx + ex) / 2},${ey} ${ex},${ey}" fill="none" stroke="#2a5242" stroke-width="1.5"/>`;
   };
-  const edges = (topo ? topo.edges : []).map(edge).join("") +
-    ["casual", "analyst", "studio", "access"].map((p) => `<path d="M${370 + w / 2 + 70},${nodes[`Narrator[${p}]`][1] + h} L${370 + w / 2 + 70},260" stroke="#2a5242" fill="none"/>`).slice(-1).join("");
+  const fanIn = ["casual", "analyst", "studio", "access"].map((p) => {
+    const [x, y] = nodes[`Narrator[${p}]`];
+    return `<path d="M${x + w},${y + h / 2} C${x + w + 30},${y + h / 2} ${x + w + 30},${277} ${x + w},${277}" fill="none" stroke="#2a5242" stroke-width="1.5"/>`;
+  }).join("");
+  const edges = (topo ? topo.edges : []).filter(([a, b]) => b !== "Producer").map(edge).join("") + fanIn;
   svg.innerHTML = edges + Object.entries(nodes).map(([n, [x, y]]) =>
     `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="5" fill="${n === "FactChecker" ? "#3d3415" : "#184232"}" stroke="${n === "FactChecker" ? "#f2c14e" : "#2a5242"}"/>
      <text x="${x + w / 2}" y="${y + h / 2 + 5}" text-anchor="middle" fill="#eef0e8" font-family="Barlow Condensed" font-weight="600" font-size="16">${n}</text></g>`).join("");
@@ -708,6 +712,11 @@ async function control(action, value) {
 function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; }
 
 function bindControls() {
+  $("#moreBtn").addEventListener("click", () => {
+    const open = $(".prefs").classList.toggle("open");
+    $("#moreBtn").setAttribute("aria-expanded", String(open));
+    $("#moreBtn").textContent = open ? "Fewer options" : "More options";
+  });
   $("#personaSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
     S.prefs.persona = b.dataset.persona; savePrefs(); applyPrefs();

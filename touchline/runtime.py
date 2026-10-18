@@ -93,6 +93,8 @@ class MatchSession:
         q.put_nowait({"type": "state", **self.snapshot()})
         for e in list(self.recent_events)[-20:]:
             q.put_nowait(e)
+        for span in list(self.trace.spans)[-30:]:
+            q.put_nowait({"type": "trace", **span})
         for ins in self.insights[-30:]:
             q.put_nowait({"type": "insight", "insight": ins, "replayed": True})  # history: feed only, no graphics
         return q
