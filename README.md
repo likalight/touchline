@@ -122,7 +122,7 @@ matches, half of them through a 10% faulty feed. Full report: [docs/EVAL.md](doc
 | Goals explained | **100%** |
 | Citations resolving to a real, non-future event | **0 errors** |
 | Renders per insight (4 personas x 4 languages) | 16, **0 template leaks** |
-| Agent pipeline per moment, p50 / p95 | **2.5 / 4.4 ms** (inside one 20 ms broadcast frame) |
+| Agent pipeline per moment, p50 / p95 | **2.5 / 4.8 ms** (inside one 20 ms broadcast frame) |
 | Event to state update, p95 | **0.5 ms** |
 | Faulty feed recovered exactly once and in order | **100%** |
 
