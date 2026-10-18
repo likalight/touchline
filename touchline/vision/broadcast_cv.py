@@ -37,8 +37,11 @@ class BroadcastAutoEventer(AutoEventer):
         away = (r > 170) & (g < 150) & (r - g > 70) & (b < 150)
         ball = (r > 238) & (g > 238) & (b > 238)
         visible = []
+        self.last_feet = {}
         for side, mask in (("h", home), ("a", away)):
-            visible += self._assign(side, self._feet(mask, cam)) or []
+            feet = self._feet(mask, cam)
+            self.last_feet[side] = feet
+            visible += self._assign(side, feet) or []
         # white blobs touching a kit are shirt numbers, not the ball
         kits = ndimage.binary_dilation(home | away, iterations=1)
         ball = ball & ~kits
@@ -114,6 +117,8 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 5, width: int
     scene = Scene(events)
     ae = BroadcastAutoEventer({k: list(v) for k, v in first.frame.items()})
     cams: list = []
+    loc_err: list = []
+    ball_err: list = []
     t = first.t
     pl, b, _ = scene.at(t)
     rend.cam.tx, rend.cam.ty = b[0] if b else 52.5, 30.0
@@ -125,6 +130,14 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 5, width: int
         telemetry = Camera(width=width, height=height, tx=rend.cam.tx, ty=rend.cam.ty)  # pan target only
         ae.observe_broadcast(t, img, telemetry)
         cams.append((t, telemetry))
+        # localisation accuracy: every detected foot point vs the nearest true player of that team
+        for side, feet in ae.last_feet.items():
+            truth = [np.array(p) for pid, p in pl.items() if pid[0] == side]
+            for ft in feet:
+                loc_err.append(float(min(np.linalg.norm(ft - tr) for tr in truth)))
+        bp = ae.ball_track[-1][1]
+        if bp is not None and b and b[2] < 0.5:
+            ball_err.append(float(np.linalg.norm(bp - np.array(b[:2]))))
         t += 0.1
     res = evaluate_detections(ae, events, first.t, t1)
     # recall on passes that happen entirely in shot (a single broadcast camera cannot see the rest)
@@ -141,6 +154,12 @@ def evaluate(seed: int = 7, from_min: float = 20, minutes: float = 5, width: int
     gt = [e for e in events if e.type == "pass" and e.outcome == "complete" and first.t + 1 <= e.t < t1 - 3]
     vis = [e for e in gt if in_shot(e.x, e.y, e.t) and in_shot(e.end_x, e.end_y, e.t + e.qualifiers["distance_m"] / (e.qualifiers["ball_speed_kmh"] / 3.6))]
     hit = sum(1 for e in vis if any(abs(d.t - e.t) < 1.2 and d.team == e.team for d in det))
+    res["localisation"] = {
+        "player_detections": len(loc_err),
+        "player_error_m_p50": round(float(np.median(loc_err)), 2), "player_error_m_p90": round(float(np.percentile(loc_err, 90)), 2),
+        "ball_on_ground_error_m_p50": round(float(np.median(ball_err)), 2) if ball_err else None,
+        "ball_on_ground_within_1m": round(float(np.mean(np.array(ball_err) < 1.0)), 3) if ball_err else None,
+    }
     res["passes"]["in_shot"] = len(vis)
     res["passes"]["recall_in_shot"] = round(hit / len(vis), 3) if vis else None
     res.update({"seed": seed, "window_min": [from_min, from_min + minutes], "view": "broadcast camera", "resolution": f"{width}x{height}",

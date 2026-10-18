@@ -30,11 +30,13 @@ function show(ins) {
   if (!cue || !r || !["auto", "approved"].includes(cue.approval) || cue.layer === "player_tag") return;
   const name = cue.layer, prev = layers[name];
   if (prev) prev.remove();
+  const story = r.lines.filter((l) => (l.k || "").startsWith("s."));
+  const lead = story.length ? story[story.length - 1] : r.lines[0];
   const el = document.createElement("div");
   el.className = name === "lower_third" ? "lower-third" + (cue.template === "full_banner" ? " banner" : "")
     : name === "side_panel" ? "side-panel" : "full-screen";
   el.innerHTML = name === "lower_third"
-    ? `<div class="bar"></div><div class="body"><div class="ttl">${esc(r.title)}</div>${r.lines[0] ? `<div class="ln">${esc(r.lines[0].text)}</div>` : ""}</div>`
+    ? `<div class="bar"></div><div class="body"><div class="ttl">${esc(r.title)}</div>${lead ? `<div class="ln">${esc(lead.text)}</div>` : ""}</div>`
     : `<div class="ttl">${esc(r.title)}</div>${r.lines.slice(0, name === "full_screen" ? 6 : 2).map((l) => `<div class="ln">${esc(l.text)}</div>`).join("")}`;
   document.getElementById("overlay").appendChild(el);
   layers[name] = el;

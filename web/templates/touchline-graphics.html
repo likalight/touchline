@@ -144,7 +144,9 @@ if (qs.get("live")) {
   const show = (ins, cue) => {
     if (!cue || cue.layer !== "lower_third" || !["auto", "approved"].includes(cue.approval)) return;
     const r = ((ins.renders || {})[PERSONA] || {})[LANG] || ((ins.renders || {})[PERSONA] || {}).en;
-    window.update({ title: r ? r.title : cue.kind, line: r && r.lines[0] ? r.lines[0].text : "", style: ins.kind === "goal" ? "goal" : ins.kind.startsWith("story") ? "story" : "insight",
+    const story = r ? r.lines.filter((l) => (l.k || "").startsWith("s.")) : [];
+    const lead = story.length ? story[story.length - 1] : r && r.lines[0];
+    window.update({ title: r ? r.title : cue.kind, line: lead ? lead.text : "", style: ins.kind === "goal" ? "goal" : ins.kind.startsWith("story") ? "story" : "insight",
                     team: ins.team, hold: cue.duration_s });
     window.play();
     clearTimeout(outTimer);

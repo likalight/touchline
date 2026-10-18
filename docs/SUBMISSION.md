@@ -5,71 +5,88 @@ Touchline
 
 ## Elevator pitch (project page)
 
-Football graphics today say *what* happened. Touchline explains *why it mattered*, live, and
-the explanation is different for every viewer.
+Football graphics today say *what* happened. Touchline explains *why it mattered*: live,
+across the whole story of the match, checked number by number, and told differently to
+every fan.
 
-**What it is.** An AI insights engine running on Azure. It turns a live stream of synthetic
-football events into explained moments, timed broadcast overlays and automated recaps.
+**What it is.** An AI insights engine on Azure. It turns a live stream of synthetic football
+events into explained moments, storylines, timed broadcast graphics, recaps and a personal
+highlights reel for every fan.
 
-**How it works.** Microsoft Agent Framework runs a workflow for every moment:
+**How it works.** A Microsoft Agent Framework workflow runs for every moment:
 
-- A Moment Scout spots what deserves airtime.
-- A Tactical Analyst explains it with glass-box models. These are xG, pass difficulty, expected threat and win probability, all trained on our own synthetic league. It answers "what would have changed it?" with a counterfactual and cites every claim to an event ID.
-- A FactChecker re-derives every number from the match data and blocks anything it can't verify, including LLM copy.
-- Four Narrators work in parallel and write the same moment for a casual fan, an analyst, a studio lower-third, and an audio description for blind and low-vision fans. They write in English, Spanish, French and Portuguese, plus any language via Azure OpenAI in Microsoft Foundry.
-- A Producer turns it into a timed overlay cue. A human can approve each cue first.
+- An analyst explains it with glass-box models (xG, pass difficulty, expected threat, win probability) trained on our own synthetic league. That includes a counterfactual: "five metres closer, it was a 67% chance".
+- A storyline agent with match-long memory adds callbacks: "it began with a loss of possession by Varga", then later "redemption for Varga".
+- A fact-checker re-derives every number from the raw events and blocks anything it can't verify, including language-model copy.
+- Four narrators work in parallel and write it for a casual fan, an analyst, a studio lower-third and an audio description, in English, Spanish, French and Portuguese, plus any language through Azure OpenAI in Microsoft Foundry.
+- A producer turns it into a timed graphics cue that a human can approve.
 
-**What else it does.**
+**What viewers see.**
 
-- **Personalisation:** fans pick a club, follow one player, or track one metric.
-- **Ask the analyst:** questions go to an Agent Framework agent with tool-grounded, cited answers. The same agent is exposed to other agents over **A2A**.
-- **Auto-eventing:** a computer-vision tracker generates pass and ball-speed data from video pixels.
-- **Resilience:** an Ingest Guard repairs corrupt, duplicated and out-of-order feed events exactly once.
+- **Two views:** the match through a broadcast camera, or a tactical view.
+- **Personal controls:** pick a club, follow a player or track one metric.
+- **Ask the analyst:** fans can question the analyst agent, which also speaks A2A to other agents.
+- **My Match:** after the whistle, every fan gets their own highlights reel, rendered with graphics in their language.
+
+**What broadcasters get.**
+
+- **A drop-in graphics template:** it loads in CasparCG and SPX, the open playout tools broadcasters use.
+- **An editor-ready edit list:** for the highlights package.
+- **A full audit trail:** every graphic and every handoff traced.
 
 **Microsoft and Azure technology.**
 
 - Microsoft Agent Framework: workflows with fan-out and fan-in, agents, and tool calling
-- Microsoft Foundry: project, Azure OpenAI model deployment, and evaluations
+- Microsoft Foundry: project, Azure OpenAI deployment, and evaluations
+- Azure AI Speech
 - A2A protocol
 - Azure Container Apps
 - Azure Event Hubs
 - Azure Monitor and Application Insights through OpenTelemetry
-- Managed Identity, Azure Container Registry, and Bicep with `azd`
-- GitHub Actions: tests, an evaluation gate and Bicep compilation on every push
+- Managed Identity, Container Registry, and Bicep with `azd`
+- GitHub Actions: CI with an evaluation gate
 
-**The problem it solves.** Broadcasters and streamers need graphics that are fast, correct and
-relevant to millions of different fans. Touchline makes every explanation:
+**The problem it solves.** Studios and streamers need graphics that are fast, correct and
+relevant to millions of different fans. In our evaluation on 12 unseen matches, Touchline:
 
-- verifiable: 100% fact-checked across 671 insights in our evaluation
-- quick: p95 of 12 ms per moment on the deterministic path
-- personal: 16 renders of every moment
+- fact-checked 735 of 735 insights, with no broken citations
+- explained every goal
+- produced each graphic in under 5 ms at p95, inside one broadcast frame
+- recovered a faulty feed exactly once
 
 All data is synthetic, and the clubs and players are fictional.
 
-## Category fit (the five required stages)
+## Category fit
 
-| Stage | Where |
+| Brief | Where |
 |---|---|
-| Ingest | `IngestGuard`: schema validation, dedupe, re-ordering. Inputs are the in-process simulator, an Event Hubs feed, or auto-eventing from video. |
-| Interpret | `MatchState`: possession, xG, xT, pass difficulty, PPDA, momentum, control vs chaos, win probability, speeds, distance, records, ratings |
-| Explain | `TacticalAnalyst`: model drivers, counterfactuals, win-probability swings, build-up chains, evidence IDs. `FactChecker` verifies all of it. |
-| Render | `Producer` emits `touchline.overlay/1` cues on the match clock. Renderers are the live UI and the transparent `/overlay` output. |
-| Personalise | 4 personas x 4 languages (plus any language via LLM), favourite club, follow a player, single-metric mode, read-aloud audio description |
+| Ingest | `IngestGuard` (validation, dedupe, re-ordering); sources are the simulator, Event Hubs, or video auto-eventing |
+| Interpret | `MatchState`: possession, xG, xT, pass difficulty, PPDA, momentum, control vs chaos, rhythm, win probability, speeds, distances, ratings |
+| Explain | `TacticalAnalyst` (drivers, counterfactuals, swings), `StorylineKeeper` (callbacks), `FactChecker` (verification) |
+| Render | `touchline.overlay/1` cues, TV camera view, `/overlay`, CasparCG/SPX template |
+| Personalise | 4 personas x 4 languages (+ any via Azure OpenAI), favourite club, follow a player, single metric, audio description with neural voice, My Match reels |
+| Player identification, pass quality, ball and shot speed | Player tags with sprint threshold, 0-100 pass difficulty, speed records |
+| Auto-eventing from video | `touchline/vision`: top-down (pass precision 0.88 / recall 0.75) and broadcast camera (player localisation 0.43 m) |
+| Narratives, milestones, recaps | Storylines, brace / hat-trick / saves milestones, story-finding recaps |
+| Control vs chaos, pressure changes, rhythm | Phase detector, pressing spells with PPDA, rhythm checks |
+| Data innovation | Calibrated simulator, downloadable dataset, model card, demo-seed search |
+| Multi-language | Phrase banks in 4 languages; any language via LLM, re-verified |
 
-## Demo video script (under 2 minutes, no music)
+## Demo video script (under 2:00, no music, no third-party marks)
 
-Record at 1920x1080 with the app at `/`. Pre-roll: open the app, set speed to 10x, and use
-Jump to 30'.
+**Setup.** Record at 1920x1080 on the deployed URL (or locally). The demo match is seed 221.
+Open the live app in Fan mode with the TV camera view, speed 10x, and jump to minute 28. The
+red card comes at 29'.
 
 | Time | On screen | Voice-over |
 |---|---|---|
-| 0:00 to 0:10 | Live pitch, scorebug, cards streaming in | "This is Touchline: an AI insights engine on Azure that explains why football moments matter, live, for every kind of fan." |
-| 0:10 to 0:30 | Wait for or jump to a goal. The banner lower-third appears with the xG bubble and assist arrow. | "A goal. The agents don't just report it. A 38% chance, the biggest factor was distance, five metres closer it was 79%, and it swung win probability from 43% to 75%." |
-| 0:30 to 0:45 | Click an evidence chip. The drawer shows facts and model drivers, and the pitch-control map appears. | "Every claim is cited to the raw event. A fact-checker re-derives every number before anything goes on air. Here's who controlled the pitch at that instant." |
-| 0:45 to 1:05 | Toggle Fan, Analyst, Studio, then Audio description (speech plays), then Spanish | "One moment, four audiences: casual fan, analyst, studio lower-third, and audio description for blind fans. In any language." |
-| 1:05 to 1:20 | My club = Ironmoor, Follow player = the #9, One metric = Top speed | "Pick your club, follow one player through the match, or track a single number you care about." |
-| 1:20 to 1:35 | Agents at work tab: topology, live handoffs, latency, verified/blocked counts | "Under the hood it's a Microsoft Agent Framework workflow: analyst, fact-checker, four narrators in parallel, producer. About ten milliseconds per moment, all traced to Application Insights." |
-| 1:35 to 1:50 | Producer console in Review mode: approve a graphic. Then the `/overlay` page. | "Producers can approve graphics, and every cue is timed, machine-readable JSON a rendering partner can play in sync." |
-| 1:50 to 1:58 | Ask the analyst: "Why did they score?" | "Fans and other agents, over A2A, can just ask. Touchline: the game, explained." |
-
-Stay under 2:00. Keep the club names visible (they are fictional) and use no music.
+| 0:00 to 0:08 | TV camera, scorebug, cards streaming | "This is Touchline: AI agents on Azure that explain why football moments matter, live, for every kind of fan." |
+| 0:08 to 0:20 | 29' red card lower-third; win probability drops | "Kestrel Bay go down to ten men. Win probability falls, and every number on screen has been checked against the match data." |
+| 0:20 to 0:35 | Jump to 36'. Ironmoor goal; the card shows "It began with a loss of possession by Ravi Varga" | "The agents remember. This goal started with Varga giving the ball away, twenty-four seconds earlier." |
+| 0:35 to 0:50 | Jump to 75'. Varga equaliser, with "Redemption for Varga" | "Forty minutes later, the storyline agent calls back: redemption for Varga." |
+| 0:50 to 1:05 | Jump to 93'. The 94' winner banner, hat-trick panel, "down to 2% win probability" | "Down to two percent. Then, in the ninety-fourth minute, a hat-trick." |
+| 1:05 to 1:15 | Click an evidence chip: the drawer shows facts, model drivers and the pitch-control map | "Every claim links to the raw events, the factors behind it, and who controlled the pitch at that instant." |
+| 1:15 to 1:28 | Switch Analyst, then Audio description (voice plays), then Español | "One moment, four audiences and any language: fan, analyst, studio, and audio description for blind fans." |
+| 1:28 to 1:40 | My Match tab: choose Kestrel Bay and follow Varga, then play the rendered reel | "After the whistle, every fan gets their own highlights, cut from the broadcast camera in their language." |
+| 1:40 to 1:50 | Agents at work: workflow graph, live handoffs, 735 of 735 verified | "Under the hood: a Microsoft Agent Framework workflow, with every handoff traced and every claim verified." |
+| 1:50 to 1:58 | The CasparCG template, then the story page | "And it drops straight into a broadcaster's graphics system. Touchline: the game, explained." |

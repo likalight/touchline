@@ -51,8 +51,9 @@ class MatchSimulator:
         self.seed = seed
         self.rng = random.Random(seed)
         self.match_id = match_id or f"SYN-{seed:05d}"
-        self.home = build_team("home", self.rng)
-        self.away = build_team("away", self.rng)
+        names: set[str] = set()
+        self.home = build_team("home", self.rng, names)
+        self.away = build_team("away", self.rng, names)
         self.meta = MatchMeta(
             match_id=self.match_id, competition="Synthetic Premier Cup (simulated)",
             venue="Estuary Park (fictional)", home=self.home, away=self.away, seed=seed,

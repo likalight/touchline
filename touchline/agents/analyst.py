@@ -166,9 +166,11 @@ class TacticalAnalyst:
         elif k in ("line_break", "hard_pass"):
             head = F(f"h.{k}", [ev.id], player=self.pname(ev.player_id))
             q = ev.qualifiers
-            reasons.append(F("r.pass_stats", [ev.id], distance_m=q.get("distance_m"), ball_speed_kmh=q.get("ball_speed_kmh"),
-                             difficulty=self.pct(en.difficulty), prob_pct=self.pct(en.pass_prob)))
-            if en.bypassed:
+            reasons.append(F("r.pass_stats", [ev.id], ["analyst", "studio", "access"], distance_m=q.get("distance_m"),
+                             ball_speed_kmh=q.get("ball_speed_kmh"), difficulty=self.pct(en.difficulty), prob_pct=self.pct(en.pass_prob)))
+            if en.pass_prob <= 0.45:
+                reasons.append(F("r.pass_rarity", [ev.id], ["casual"], prob_pct=self.pct(en.pass_prob)))
+            if en.bypassed >= 2:
                 reasons.append(F("r.bypassed", [ev.id], bypassed=en.bypassed))
             xb, xa = self.m.xt(ev.x, ev.y, ev.team), self.m.xt(ev.end_x, ev.end_y, ev.team)
             if en.xt_added > 0.005:

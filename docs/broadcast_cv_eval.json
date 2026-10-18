@@ -1,0 +1,36 @@
+{
+ "passes": {
+  "ground_truth": 23,
+  "detected": 4,
+  "matched": 4,
+  "precision": 1.0,
+  "recall": 0.174,
+  "passer_and_receiver_correct": 1.0,
+  "ball_speed_mae_kmh": 6.95,
+  "distance_mae_m": 2.65,
+  "in_shot": 17,
+  "recall_in_shot": 0.235
+ },
+ "shots": {
+  "ground_truth": 1,
+  "detected": 0,
+  "recall": 0.0
+ },
+ "ball_visible": 0.863,
+ "localisation": {
+  "player_detections": 17194,
+  "player_error_m_p50": 0.43,
+  "player_error_m_p90": 1.09,
+  "ball_on_ground_error_m_p50": 11.17,
+  "ball_on_ground_within_1m": 0.459
+ },
+ "seed": 7,
+ "window_min": [
+  20.0,
+  22.0
+ ],
+ "view": "broadcast camera",
+ "resolution": "960x540",
+ "noise_sigma": 5.0,
+ "frames": 1185
+}

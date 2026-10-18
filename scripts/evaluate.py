@@ -67,6 +67,51 @@ def foundry_groundedness(samples: list[dict]) -> dict | None:
     return {"groundedness_mean_1to5": round(statistics.mean(scores), 2), "n": len(scores)}
 
 
+def video_sections() -> str:
+    import json
+
+    out = ""
+    p = ROOT / "docs" / "autoevent_eval.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        pa, sh = d["passes"], d["shots"]
+        out += f"""
+## Auto-eventing from video (top-down feed)
+
+`python -m touchline.vision.autoevent --seed {d['seed']} --from-min {d['window_min'][0]:g} --minutes {d['window_min'][1] - d['window_min'][0]:g}`
+renders the match as a noisy {d['resolution']} feed at {d['fps']} fps ({d['frames']:,} frames). The detector sees only pixels.
+
+| Metric | Result |
+|---|---|
+| Passes: precision / recall | {pa['precision']} / {pa['recall']} ({pa['matched']} of {pa['ground_truth']}) |
+| Passer and receiver both identified | {round(pa['passer_and_receiver_correct'] * 100)}% |
+| Ball-speed error (mean absolute) | {pa['ball_speed_mae_kmh']} km/h |
+| Pass-distance error (mean absolute) | {pa['distance_mae_m']} m |
+| Shots: recall | {sh['recall']} ({round(sh['recall'] * sh['ground_truth'])} of {sh['ground_truth']}) |
+"""
+    p = ROOT / "docs" / "broadcast_cv_eval.json"
+    if p.exists():
+        d = json.loads(p.read_text())
+        lo, pa = d["localisation"], d["passes"]
+        out += f"""
+## Computer vision from the broadcast camera (experimental)
+
+`python -m touchline.vision.broadcast_cv` renders the angled TV view ({d['resolution']}, {d['frames']:,} frames) and maps
+pixels back to the pitch through the calibrated camera (pan telemetry only).
+
+| Metric | Result |
+|---|---|
+| Player localisation error, p50 / p90 | **{lo['player_error_m_p50']} m / {lo['player_error_m_p90']} m** over {lo['player_detections']:,} detections |
+| Ball on the ground located within 1 m | {round(lo['ball_on_ground_within_1m'] * 100)}% of frames |
+| Passes detected: precision / recall (recall on passes fully in shot) | {pa['precision']} / {pa['recall']} ({pa['recall_in_shot']}) |
+
+Player positions from the angled camera are reliable. Ball tracking from that angle (small, fast, often
+airborne or occluded) is the open problem, so pass detection from the broadcast view is experimental; the
+top-down detector above is the one we rely on.
+"""
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--matches", type=int, default=12)
@@ -77,6 +122,7 @@ def main() -> int:
     t0 = time.time()
     n_ins, verified, goals, goals_explained, leaks, cite_err = 0, 0, 0, 0, 0, 0
     kinds: Counter = Counter()
+    callbacks: Counter = Counter()
     lat, ev_lat, per_match, exactly = [], [], [], []
     samples = []
     for i in range(args.matches):
@@ -88,6 +134,7 @@ def main() -> int:
         per_match.append(len(s.insights))
         lat += list(s.latencies)
         ev_lat += list(s.event_latency)
+        callbacks.update(k for ins in s.insights for k in ins.get("storyline", []))
         for ins in s.insights:
             n_ins += 1
             kinds[ins["kind"]] += 1
@@ -146,8 +193,10 @@ Moment kinds explained across the run:
 |---|---|
 {kinds_md}
 
+Storyline callbacks woven into live insights (match-long memory): {", ".join(f"{k} {v}" for k, v in callbacks.most_common()) or "none"}.
+
 Gate: {"PASSED" if not fails else "FAILED: " + ", ".join(fails)}. Wall time {m['secs']} s.
-""")
+""" + video_sections())
     print(m)
     if fails:
         print("GATE FAILED:", fails)

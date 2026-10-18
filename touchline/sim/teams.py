@@ -49,9 +49,10 @@ PROFILE = {
 }
 
 
-def build_team(side: str, rng: random.Random) -> Team:
+def build_team(side: str, rng: random.Random, used: set[str] | None = None) -> Team:
+    """`used` is shared by both squads so no two players in a match share a name."""
     club = CLUBS[side]
-    used: set[str] = set()
+    used = used if used is not None else set()
     players = []
     for pos, num, _ in FORMATION_433:
         while True:

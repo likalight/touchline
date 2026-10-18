@@ -71,6 +71,10 @@ class FactChecker:
                 checks += 1
                 if en.xg is None or abs(round(en.xg, 2) - p["xg"]) > 0.006:
                     issues.append(f"xg mismatch on {ev.id}")
+            if fr["k"] == "r.pass_rarity" and en.pass_prob is not None:
+                checks += 1
+                if round(en.pass_prob * 100) != p["prob_pct"]:
+                    issues.append(f"pass probability mismatch on {ev.id}")
             if "difficulty" in p and fr["k"] == "r.pass_stats":
                 checks += 1
                 if en.difficulty is None or abs(round(en.difficulty * 100) - p["difficulty"]) > 0:

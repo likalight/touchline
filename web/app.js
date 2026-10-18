@@ -136,8 +136,17 @@ function onHello(h) {
   applyPrefs();
 }
 
+function tvBug(s) {
+  let el = $("#tvbug");
+  if (!el) { el = document.createElement("div"); el.id = "tvbug"; el.className = "tvbug"; $("#pitchBox").appendChild(el); }
+  if (!S.meta) return;
+  const clock = s.status === "half_time" ? "HT" : s.status === "full_time" ? "FT" : `${s.minute}'`;
+  el.innerHTML = `<span class="c" style="--k:${S.meta.home.color}">${S.meta.home.short}</span><span class="sc">${s.score.home}-${s.score.away}</span><span class="c" style="--k:${S.meta.away.color}">${S.meta.away.short}</span><span class="clk">${clock}</span>`;
+}
+
 function onState(s) {
   S.snap = s;
+  tvBug(s);
   const sc = s.score;
   $("#score").textContent = `${sc.home}–${sc.away}`;
   $("#clock").textContent = s.status === "half_time" ? "HT" : s.status === "full_time" ? "FT" : `${s.minute}'`;
@@ -301,13 +310,17 @@ function playCue(ins) {
     return;
   }
   let el;
+  // on air, the storyline is the line worth saying
+  const story = r.lines.filter((l) => (l.k || "").startsWith("s."));
+  const lead = story.length ? story[story.length - 1] : r.lines[0];
+  const second = r.lines.find((l) => l !== lead);
   if (cue.layer === "lower_third") {
     el = layerEl("lower_third", "lower-third" + (cue.template === "full_banner" ? " banner" : "") + (ins.kind.startsWith("story") ? " story" : ""));
     el.style.setProperty("--team", ins.team && S.meta ? S.meta[ins.team].color : "var(--sodium)");
     const kick = { en: "Checked against the match data", es: "Verificado con los datos del partido", fr: "Vérifié avec les données du match", pt: "Verificado com os dados do jogo" };
     el.innerHTML = `<div class="bar"></div><div class="body"><span class="strap"></span><div class="kick"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>${kick[S.prefs.lang] || kick.en}</div><div class="ttl">${esc(r.title)}</div>
-      ${r.lines[0] ? `<div class="ln">${esc(r.lines[0].text)}</div>` : ""}
-      ${persona !== "casual" && r.lines[1] ? `<div class="ln">${esc(r.lines[1].text)}</div>` : ""}</div>`;
+      ${lead ? `<div class="ln">${esc(lead.text)}</div>` : ""}
+      ${persona !== "casual" && second ? `<div class="ln">${esc(second.text)}</div>` : ""}</div>`;
   } else if (cue.layer === "side_panel") {
     el = layerEl("side_panel", "side-panel");
     el.innerHTML = `<div class="ttl">${esc(r.title)}</div>${r.lines.slice(0, 2).map((l) => `<div class="ln">${esc(l.text)}</div>`).join("")}${sidePanelViz(viz)}`;
@@ -489,8 +502,22 @@ function drawTV(now) {
   TV.tx += (bx - TV.tx) * 0.035; TV.ty += ((30 + (S.ball[1] - 34) * 0.18) - TV.ty) * 0.035;
   const B = tvBasis(), lw = Math.max(1.5, cv.width / 700);
   ctx.fillStyle = "#102c21"; ctx.fillRect(0, 0, cv.width, cv.height);
-  tvPoly(B, [[-30, 78, 0], [135, 78, 0], [135, 78, 14], [-30, 78, 14]], "#0b1f17");
-  tvPoly(B, [[-30, 78, 14], [135, 78, 14], [135, 92, 26], [-30, 92, 26]], "#142821");
+  // the stand: tiers of seats with a crowd, and a perimeter board
+  tvPoly(B, [[-30, 78, 0], [135, 78, 0], [135, 78, 14], [-30, 78, 14]], "#0d241b");
+  tvPoly(B, [[-30, 78, 14], [135, 78, 14], [135, 92, 26], [-30, 92, 26]], "#132b22");
+  if (!TV.crowd) { // deterministic crowd: one dot per seat block, team-coloured by end
+    TV.crowd = []; let r = 7;
+    for (let i = 0; i < 900; i++) { r = (r * 9301 + 49297) % 233280; const u = r / 233280; r = (r * 9301 + 49297) % 233280; const v = r / 233280;
+      TV.crowd.push([-25 + u * 155, 78 + v * 13, 14 * (v) + 1.2 + (v * 13 > 0 ? (v * 12) : 0), u < 0.5 ? 0 : 1, (i * 37) % 5]); }
+  }
+  const tint = [S.meta ? S.meta.home.color : "#2f7cf6", S.meta ? S.meta.away.color : "#e5484d"];
+  for (const [x, y, z, end, shade] of TV.crowd) {
+    const [px, py, d] = tvProject(B, x, y, z);
+    if (px < -5 || px > cv.width + 5) continue;
+    ctx.fillStyle = shade < 2 ? tint[end] : shade < 4 ? "#2a3f36" : "#c9d3c4";
+    ctx.globalAlpha = 0.55; ctx.fillRect(px, py, Math.max(1.5, 40 / d), Math.max(1.5, 40 / d)); ctx.globalAlpha = 1;
+  }
+  tvPoly(B, [[-30, 77, 0], [135, 77, 0], [135, 77, 1.0], [-30, 77, 1.0]], "#0f3a29");
   tvPoly(B, [[-6, -6], [L + 6, -6], [L + 6, W + 6], [-6, W + 6]], "#184a32");
   for (let k = 0; k < 18; k++) tvPoly(B, [[k * L / 18, 0], [(k + 1) * L / 18, 0], [(k + 1) * L / 18, W], [k * L / 18, W]], k % 2 ? "#1f5c3d" : "#1c5438");
   const chalk = "rgba(232,238,226,.9)";
@@ -609,12 +636,14 @@ function drawTimeline() {
   const last = x(tl[tl.length - 1].minute), first = x(tl[0].minute);
   const goals = S.insights.filter((i) => i.kind === "goal").map((g) =>
     `<line x1="${x(g.minute)}" x2="${x(g.minute)}" y1="0" y2="${h}" style="stroke:${g.team === "home" ? "var(--home)" : "var(--away)"}" stroke-width="2" vector-effect="non-scaling-stroke"/>`).join("");
+  const ticks = [15, 30, 45, 60, 75, 90].map((m) => `<text x="${x(m)}" y="${h - 4}" fill="#6f8a7b" font-size="10" text-anchor="middle" font-family="Barlow">${m}'</text>`).join("");
   svg.innerHTML = `
     <line x1="${x(45)}" x2="${x(45)}" y1="0" y2="${h}" stroke="#2a5242" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+    <line x1="0" x2="${w}" y1="${h / 2}" y2="${h / 2}" stroke="#2a5242" vector-effect="non-scaling-stroke"/>
     <polygon points="${first},${h} ${home} ${last},${h}" style="fill:var(--home)" opacity=".35"/>
     <polygon points="${first},0 ${away} ${last},0" style="fill:var(--away)" opacity=".35"/>
     ${goals}
-    <polyline points="${mom}" fill="none" stroke="#f2c14e" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+    <polyline points="${mom}" fill="none" stroke="#f2c14e" stroke-width="2" vector-effect="non-scaling-stroke"/>${ticks}`;
 }
 
 function updateMetric() {

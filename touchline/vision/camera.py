@@ -167,6 +167,25 @@ class BroadcastRenderer:
         # far stand
         self._poly(d, [(-30, 78, 0), (135, 78, 0), (135, 78, 14), (-30, 78, 14)], fill=(11, 31, 23))
         self._poly(d, [(-30, 78, 14), (135, 78, 14), (135, 92, 26), (-30, 92, 26)], fill=(20, 40, 33))
+        # crowd: deterministic seat dots, tinted by the two ends
+        r = 7
+        pts, cols = [], []
+        tint = [self._hex(self.meta.home.color), self._hex(self.meta.away.color)]
+        for i in range(900):
+            r = (r * 9301 + 49297) % 233280
+            u = r / 233280
+            r = (r * 9301 + 49297) % 233280
+            v = r / 233280
+            pts.append((-25 + u * 155, 78 + v * 13, 14 * v + 1.2 + v * 12))
+            shade = (i * 37) % 5
+            base = tint[0 if u < 0.5 else 1] if shade < 2 else ((42, 63, 54) if shade < 4 else (201, 211, 196))
+            cols.append(tuple(int(c * 0.55 + 19 * 0.45) for c in base))
+        px, z = self.cam.project(np.array(pts))
+        for (u_, v_), zz, col in zip(px, z, cols):
+            if zz > 0.5 and -5 < u_ < W + 5:
+                sz = max(1.5, 40 / zz)
+                d.rectangle([u_, v_, u_ + sz, v_ + sz], fill=col)
+        self._poly(d, [(-30, 77, 0), (135, 77, 0), (135, 77, 1.0), (-30, 77, 1.0)], fill=(15, 58, 41))
         # run-off and stripes
         self._poly(d, [(-6, -6, 0), (PITCH_L + 6, -6, 0), (PITCH_L + 6, PITCH_W + 6, 0), (-6, PITCH_W + 6, 0)], fill=(24, 74, 50))
         n = 18
@@ -250,7 +269,7 @@ class BroadcastRenderer:
         wclip = tw * min(1.0, alpha)
         d.rectangle([x0, y0, x0 + 10, y0 + 104], fill=(242, 193, 78))
         d.rectangle([x0 + 10, y0, x0 + 10 + wclip, y0 + 104], fill=(12, 36, 27))
-        if alpha >= 0.6:
+        if alpha >= 0.999:  # text only once the panel has fully wiped in
             d.text((x0 + 32, y0 + 14), title, fill=(238, 240, 232), font=self.f_lt)
             if line:
                 d.text((x0 + 32, y0 + 64), line, fill=(222, 228, 214), font=self.f_ln)
