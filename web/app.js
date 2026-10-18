@@ -891,7 +891,7 @@ function renderDrills() {
   const list = Object.values(S.drills).sort((a, b) => b.started - a.started);
   $("#drillLog").innerHTML = list.map((d) => {
     const det = d.detected ? `caught by <b>${esc(d.detected_by)}</b> after ${Math.max(0, Math.round((d.detected - d.started) * 1000))} ms` : "waiting for the fault to hit…";
-    const rec = d.recovered ? `recovered in ${(d.ms / 1000).toFixed(1)} s` : d.detected ? "recovering…" : "";
+    const rec = d.recovered ? `recovered in ${(d.ms / 1000).toFixed(1)} s` : d.detected ? "recovering" : "";
     return `<li class="${d.recovered ? "ok" : d.detected ? "busy" : ""}"><div class="t">${esc(d.label)} <span class="muted">${d.minute}'</span></div>
       <div class="s">${det}${rec ? `, ${rec}` : ""}.</div>${d.notes.length ? `<div class="s">${d.notes.map((n) => esc(n.charAt(0).toUpperCase() + n.slice(1))).join(". ")}.</div>` : ""}</li>`;
   }).join("") || `<li class="muted">No drills run yet.</li>`;
