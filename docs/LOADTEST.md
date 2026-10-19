@@ -15,6 +15,9 @@ itself queueing; **server CPU is the capacity signal**, and it stays well below 
 | 500 | 500 | 100% | 59.3 / 443.2 ms | 24% | 151 MiB |
 | 1,000 | 1,000 | 100% | 153.1 / 3521.1 ms | 47% | 177 MiB |
 
+p95 fan-out lag reaches 3.5 s at 1,000 fans, largely the co-located load generator. Events in
+the last two seconds of each run are left out of "received every event", and each run lasts 30 seconds, not a whole match.
+
 **One replica serves at least 1,000 live fans** with every fan receiving every event and the server under 70% of one
 vCPU, at ten times the real event rate. Container Apps adds replicas on HTTP load (`maxReplicas` in
 `infra/resources.bicep`).

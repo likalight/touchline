@@ -29,7 +29,7 @@ highlights reel for every fan.
 - **Ask the analyst:** a Foundry agent with match-data tools. Fan questions pass Azure AI Content Safety Prompt Shields first, and the agent also speaks A2A to other agents.
 - **My Match:** after the whistle, each fan's own highlights replay in the 3D stadium and record in their browser, with graphics in their language.
 - **What if:** change one moment (a red card that never happened, a goal ruled out) and replay the rest of the match 1,000 times.
-- **A phone second screen:** your player's numbers, ask by voice, and a buzz when your club scores.
+- **A phone second screen:** your player's numbers, ask by voice, and a buzz when their club scores (Android).
 
 **What broadcasters get.**
 
@@ -59,7 +59,7 @@ relevant to millions of different fans. In our evaluation on 12 unseen matches, 
 - produced each graphic in under 5 ms at p95, inside one broadcast frame
 - recovered a faulty feed exactly once
 
-Switching each agent off proves its worth (docs/ABLATION.md): without the fact-checker every corrupted line airs, and with it 99.7% are blocked with zero false alarms. Without the ingest guard a faulty feed counts 786 duplicate events. In a four-match studio the editor airs 95 of 99 big moments against 85 for first come, first served. The study also found and fixed four gaps in our own fact-checker. One replica streams to 1,000 live fans, about $0.22 per 1,000 fans a match (docs/LOADTEST.md).
+Switching each agent off proves its worth (docs/ABLATION.md): without the fact-checker every corrupted line airs, and with it 99.7% of numeric and name errors are blocked with zero false alarms. Without the ingest guard a faulty feed counts 786 duplicate events. In a four-match studio the editor airs 95 of 99 big moments against 85 for first come, first served. The study also found and fixed four gaps in our own fact-checker. One replica streams to 1,000 live fans, about $0.22 per 1,000 fans a match (docs/LOADTEST.md).
 
 All data is synthetic, and the clubs and players are fictional.
 

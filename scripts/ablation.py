@@ -30,7 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 os.environ.setdefault("TOUCHLINE_LLM", "off")
 
-from touchline.agents.ingest import FaultInjector  # noqa: E402
+from touchline.agents.ingest import FaultInjector, IngestGuard  # noqa: E402
 from touchline.agents.producer import ALWAYS_AIR, HOLD_S, KIND_FAMILY, LAYER, TEMPLATES, Producer  # noqa: E402
 from touchline.analytics.state import MatchState  # noqa: E402
 from touchline.runtime import MatchSession  # noqa: E402
@@ -73,6 +73,32 @@ def without_guard(seed: int, truth: MatchSession) -> dict:
             "goal_error": abs(sum(n.score.values()) - sum(t.score.values())),
             "pass_count_error": abs(sum(n.team[s]["passes"] for s in ("home", "away")) - sum(t.team[s]["passes"] for s in ("home", "away"))),
             "xg_error": round(abs(sum(n.team[s]["xg"] for s in ("home", "away")) - sum(t.team[s]["xg"] for s in ("home", "away"))), 3)}
+
+
+def with_guard(seed: int, truth: MatchSession) -> dict:
+    """The same faulty feed through the IngestGuard: the baseline the 'without' numbers are compared to."""
+    sim = MatchSimulator(seed)
+    events = list(sim.run())
+    state, guard = MatchState(sim.meta), IngestGuard()
+    seen, dup, out_of_order, last_seq = set(), 0, 0, -1
+
+    def apply(ev):
+        nonlocal dup, out_of_order, last_seq
+        dup += ev.id in seen
+        out_of_order += ev.seq < last_seq
+        state.apply(ev)
+        seen.add(ev.id)
+        last_seq = max(last_seq, ev.seq)
+    for payload in FaultInjector(0.10, seed).apply(events):
+        for ev in guard.push(payload):
+            apply(ev)
+    for ev in guard.flush():
+        apply(ev)
+    t, n = truth.state, state
+    return {"duplicates_applied": dup, "out_of_order_applied": out_of_order,
+            "goal_error": abs(sum(n.score.values()) - sum(t.score.values())),
+            "pass_count_error": abs(sum(n.team[s]["passes"] for s in ("home", "away")) - sum(t.team[s]["passes"] for s in ("home", "away"))),
+            "quarantined": guard.stats["quarantined"]}
 
 
 # ---------------------------------------------------------------- FactChecker
@@ -176,12 +202,13 @@ def main() -> int:
     ap.add_argument("--matches", type=int, default=12)
     a = ap.parse_args()
     rng = random.Random(7)
-    guard, scout, story, check, prod, streams = [], [], [], defaultdict(Counter), [], []
+    guard, guarded, scout, story, check, prod, streams = [], [], [], [], defaultdict(Counter), [], []
     clean_total = false_alarms = 0
     for i in range(a.matches):
         seed = 5000 + i
         s = asyncio.run(full_run(seed))
         guard.append(without_guard(seed, s))
+        guarded.append(with_guard(seed, s))
         minutes = max(90, s.state.minute)
         scout.append({"events_per_min": len(s.events) / minutes, "graphics_per_min": len(s.insights) / minutes})
         goals = [x for x in s.insights if x["kind"] == "goal"]
@@ -196,12 +223,13 @@ def main() -> int:
         print(f"match {seed} done", flush=True)
 
     # a studio covering four matches at once on one graphics output (a weekend round-up)
-    for g in range(0, len(streams) - 3, 4):
+    for g in range(0, max(1, len(streams) - 3), 4):
         prod.append(producer_ablation([i for st in streams[g:g + 4] for i in st]))
     single = [producer_ablation(st) for st in streams]
     tot = lambda rows, k: sum(r[k] for r in rows)  # noqa: E731
     mean = lambda rows, k: statistics.mean(r[k] for r in rows)  # noqa: E731
     gd = {k: tot(guard, k) for k in guard[0]}
+    wg = {k: tot(guarded, k) for k in guarded[0]}
     ed = {k: tot([p["editor"] for p in prod], k) for k in ("aired", "news_aired", "news_total", "repeats")}
     ff = {k: tot([p["fifo"] for p in prod], k) for k in ("aired", "news_aired", "news_total", "repeats")}
     ed_skew = mean([p["editor"] for p in prod], "team_skew")
@@ -216,22 +244,23 @@ def main() -> int:
 
 `python scripts/ablation.py --matches {a.matches}` switches off one specialist at a time on {a.matches} unseen
 synthetic matches (seeds 5000+) and measures what a viewer or broadcaster would suffer. Everything below is
-measured, not estimated; the FactChecker row uses deliberately corrupted copy, the kind of mistake a
+measured on this run, not estimated (the list of gaps at the end records what building the study found); the
+FactChecker row uses deliberately corrupted copy, the kind of mistake a
 language model makes, because the deterministic narrators do not make mistakes to catch.
 
 ## Summary
 
 | Without | What goes wrong (totals over {a.matches} matches) |
 |---|---|
-| **IngestGuard** | A 10%-faulty feed applied directly: {gd['duplicates_applied']} duplicate events counted twice, {gd['out_of_order_applied']} events applied out of order, {gd['rejected_or_crashed']} malformed events that would have crashed or corrupted the state; goal count off by {gd['goal_error']}, pass count off by {gd['pass_count_error']}, xG off by {gd['xg_error']:.2f}. With the guard: 0, 0, 0 and exact. |
+| **IngestGuard** | A 10%-faulty feed applied directly: {gd['duplicates_applied']} duplicate events counted twice, {gd['out_of_order_applied']} events applied out of order, {gd['rejected_or_crashed']} malformed events that would have crashed or corrupted the state; goal count off by {gd['goal_error']}, pass count off by {gd['pass_count_error']}, xG off by {gd['xg_error']:.2f}. The same feed through the guard: {wg['duplicates_applied']} duplicates, {wg['out_of_order_applied']} out of order, {wg['quarantined']} quarantined, goal count off by {wg['goal_error']}, pass count off by {wg['pass_count_error']}. |
 | **MomentScout** | Every event becomes a graphic: about **{mean(scout, 'events_per_min'):.0f} graphics a minute** instead of {mean(scout, 'graphics_per_min'):.1f}. Unwatchable. |
 | **StorylineKeeper** | {tot(story, 'callbacks')} callbacks lost, and {tot(story, 'goals_with_context')} of {tot(story, 'goals')} goals lose their match context ("it began with a loss of possession by..."). |
 | **FactChecker** | Every corrupted line airs. With it, **{numeric / numeric_tried * 100:.1f}%** of numeric and name errors are blocked ({numeric} of {numeric_tried}), with {false_alarms} false alarms on {clean_total} correct lines. |
-| **Producer (editor)** | Studio covering four matches on one graphics output ({len(prod)} round-ups): a first-come, first-served scheduler airs {ff['news_aired']} of {ff['news_total']} big moments (goals, cards, high-value chances) and {ff['repeats']} near-repeats of the same kind of graphic; the editor airs **{ed['news_aired']} of {ed['news_total']}** with {ed['repeats']}. The busiest match takes {ff_skew:.0%} of airtime first-come, {ed_skew:.0%} with the editor. In a single match moments rarely collide, and both air almost everything ({s_ed['news_aired']} vs {s_ff['news_aired']} of {s_ed['news_total']} big moments): the editor matters when the screen is contested. |
+| **Producer (editor)** | Studio covering four matches on one graphics output ({len(prod)} round-ups): a first-come, first-served scheduler airs {ff['news_aired']} of {ff['news_total']} big moments (goals, cards, high-value chances) and {ff['repeats']} near-repeats of the same kind of graphic; the editor airs **{ed['news_aired']} of {ed['news_total']}** with {ed['repeats']}. The busiest match takes {ff_skew:.0%} of the graphics aired first-come, {ed_skew:.0%} with the editor. In a single match moments rarely collide, and both air almost everything ({s_ed['news_aired']} vs {s_ff['news_aired']} of {s_ed['news_total']} big moments): the editor matters when the screen is contested. |
 
 ## FactChecker detail
 
-| Corruption | Lines tried | Blocked with FactChecker | Aired without it |
+| Corruption | Lines tried | Blocked with FactChecker | Aired without it (by definition) |
 |---|---|---|---|
 {rows_check}
 
@@ -241,7 +270,7 @@ record" pass only when a verified frame makes them.
 
 ## What the ablation found
 
-Running this study exposed four real weaknesses, all fixed and covered by tests:
+Building this study exposed four real weaknesses, all fixed and covered by tests (figures from when they were found):
 
 * correct storyline copy was rejected because the checker ignored names and numbers that come from storyline callbacks (18 false alarms on 463 lines, now 0);
 * a fixed list of "structural" numbers (1, 2, 3, 5, 10) let a changed count slip through; window lengths now come from the verified templates;

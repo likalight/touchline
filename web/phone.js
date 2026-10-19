@@ -10,7 +10,7 @@
   const store = { get(k, d) { try { return JSON.parse(localStorage.getItem("tl-phone-" + k)) ?? d; } catch { return d; } },
                   set(k, v) { try { localStorage.setItem("tl-phone-" + k, JSON.stringify(v)); } catch { /* private mode */ } } };
   const S = { meta: null, players: {}, insights: [], persona: store.get("persona", "casual"), lang: qs.get("lang") || store.get("lang", "en"),
-              player: store.get("player", ""), booth: false, q: [], speaking: false, myClub: store.get("club", "") };
+              player: store.get("player", ""), booth: false, q: [], speaking: false };
 
   function render(ins) {
     const by = (ins.renders || {})[S.persona] || (ins.renders || {}).casual || {};

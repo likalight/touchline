@@ -10,7 +10,7 @@ before-and-after for this project. The line counts are from this repository.
 | **Knowing whether the agent is good** | Write and maintain your own judges for relevance, coherence, tool use and safety. | Eight built-in Foundry evaluators (quality, intent, tool-call accuracy, tool-output use, hate and violence) run next to Touchline's three domain checks, with results in the portal. | `scripts/foundry_eval.py` (127 lines, most of it the domain checks) |
 | **Seeing what agents did** | Build a trace store and viewer. | One Bicep resource connects the project to Application Insights; every agent run and workflow superstep appears in Foundry's tracing view. | `infra/resources.bicep` (`tracing` connection) |
 | **Safety** | Wire a moderation service, prompt-injection detection and policies separately. | The same Foundry (AI Services) account serves the model, Content Safety (Prompt Shields and moderation) and Speech; the agents carry a Responsible-AI policy. | `touchline/safety.py`, `touchline/speech.py` |
-| **Security** | API keys per service, rotated by hand. | One managed identity, local auth disabled, four least-privilege roles on one account. No keys. | `infra/resources.bicep` |
+| **Security** | API keys per service, rotated by hand. | One managed identity, local auth disabled, four least-privilege roles on the one AI account (OpenAI User, Azure AI User, Speech User, Cognitive Services User for Content Safety), plus AcrPull on the registry. No keys. | `infra/resources.bicep` |
 
 ## What it means for a broadcaster
 

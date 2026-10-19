@@ -71,7 +71,7 @@ Graphics on a live broadcast say *what* happened. Working out *why it mattered*,
 - Favourite clubs and players, one-metric mode, any language
 - Two-voice captioned commentary, Ask the analyst, 3D My Match reels
 - What if: change one moment and replay the rest 1,000 times
-- A phone second screen: ask by voice, buzz on your club's goals
+- A phone second screen: your player's numbers, ask by voice, a buzz when their club scores (Android)
 
 </td>
 <td valign="top">
@@ -282,7 +282,7 @@ Switching each specialist off on 12 unseen matches ([docs/ABLATION.md](docs/ABLA
 | IngestGuard | A 10%-faulty feed corrupts the match: 786 duplicate events counted twice, pass counts off by 453 |
 | MomentScout | About 21 graphics a minute instead of 0.7 |
 | StorylineKeeper | 20 of 28 goals lose their match context |
-| FactChecker | Every corrupted line airs; with it, 99.7% are blocked with zero false alarms |
+| FactChecker | Every corrupted line airs; with it, 99.7% of numeric and name errors are blocked, with zero false alarms |
 | Producer (editor) | In a four-match studio, 85 of 99 big moments air instead of 95, with more repeats |
 
 Building the study found and fixed four real gaps in the fact-checker. At scale, one replica streams to

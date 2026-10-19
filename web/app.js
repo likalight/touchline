@@ -931,7 +931,7 @@ const TOUR = [
     go: () => { $('[data-tab="ops"]').click(); runDrill("hallucination"); } },
   { sel: '[data-tab="mine"]', title: "Your match, your reel", text: "After the whistle, every fan gets their own highlights, replayed in the 3D stadium and saved from the browser.",
     go: () => $('[data-tab="mine"]').click() },
-  { sel: ".phone-link", title: "And on your phone", text: "Open Touchline as a second screen: your player's numbers, ask by voice, and a buzz when your club scores." },
+  { sel: ".phone-link", title: "And on your phone", text: "Open Touchline as a second screen: your player's numbers, ask by voice, and a buzz when their club scores." },
 ];
 let tourAt = -1, tourPersona = null;
 async function tourShow(i) {
