@@ -70,3 +70,14 @@ def test_card_outranks_waits_for_its_turn_instead_of_dropping():
     c.t += 10
     aired = [u for u in p.tick() if u["insight_id"] == "I2"]
     assert card["decision"]["action"] == "bump" or (aired and aired[0]["approval"] == "auto")
+
+
+def test_variety_rule_drops_routine_repeat_but_never_news():
+    c = Clock(); p = Producer("M", clock=c)
+    p.schedule(ins(1, kind="line_break", sal=0.5, player="h4"), 600)
+    c.t += 20
+    rep = p.schedule(ins(2, kind="hard_pass", sal=0.5, player="h8"), 640)       # same family, same team, 40 s later
+    assert rep["decision"]["action"] == "drop" and "same kind" in rep["decision"]["reason"]
+    c.t += 20
+    goal = p.schedule(ins(3, kind="goal", sal=1.0, player="h9"), 660)
+    assert goal["decision"]["action"] in ("air", "bump")

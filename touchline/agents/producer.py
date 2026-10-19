@@ -45,6 +45,8 @@ ALWAYS_AIR = {"goal", "card_red", "half_time", "full_time", "hat_trick"}
 HOLD_S = (4.5, 9.0)        # how long a graphic stays up, in real seconds
 BUMP_MARGIN = 0.18         # a challenger must beat the on-air score by this much to cut it
 MAX_WAIT_S = 3.0           # longest a queued graphic may wait for its slot
+VARIETY_S = 90.0           # a routine graphic is not repeated for the same team inside this window (match seconds)
+NEWS_SCORE = 0.75          # at or above this, a moment is news and the variety rule does not apply
 QUEUE_MIN = 0.45           # below this, a busy slot means drop rather than queue
 KIND_FAMILY = {"chance_saved": "chance", "chance_missed": "chance", "chance_blocked": "chance",
                "line_break": "pass", "hard_pass": "pass", "momentum": "flow", "phase": "flow", "wp_swing": "flow"}
@@ -168,6 +170,14 @@ class Producer:
             self.pending[cue["cue_id"]] = cue
             self._decide(cue, "queue", f, None)
             cue["decision"]["reason"] = "Waiting for the producer's approval."
+            return self._public(cue)
+        fam = KIND_FAMILY.get(ins["kind"], ins["kind"])
+        repeat = [h for h in self.history if now_t - h[0] < VARIETY_S and h[1] == fam and h[2] == ins.get("team")]
+        if repeat and score < NEWS_SCORE and ins["kind"] not in ALWAYS_AIR and self.mode != "review":
+            cue["approval"] = "skipped"
+            self.dropped += 1
+            self._decide(cue, "drop", f, None)
+            cue["decision"]["reason"] = "Dropped: the same kind of graphic for this team aired moments ago."
             return self._public(cue)
         if busy and score < cur["score"] + BUMP_MARGIN:
             waiting = self.queue.get(layer) or []

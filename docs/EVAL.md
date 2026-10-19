@@ -10,8 +10,8 @@
 | Citations resolving to a real, non-future event | 0 errors | 0 |
 | Renders per insight (4 personas x 4 languages) | 16, 0 template leaks | 0 leaks |
 | Moments explained per match | 61.2 | - |
-| Agent pipeline latency per moment, p50 / p95 | 2.41 / 4.28 ms | p95 < 250 ms |
-| Event -> state update, p50 / p95 | 0.14 / 0.49 ms | p95 < 5 ms |
+| Agent pipeline latency per moment, p50 / p95 | 2.63 / 4.43 ms | p95 < 250 ms |
+| Event -> state update, p50 / p95 | 0.16 / 0.48 ms | p95 < 5 ms |
 | Faulty feed recovered exactly-once, in order | 100% of matches | 100% |
 
 
@@ -47,7 +47,7 @@ Moment kinds explained across the run:
 
 Storyline callbacks woven into live insights (match-long memory): s.error 11, s.comeback 11, s.keeper 3, s.run_of_play 2.
 
-Gate: PASSED. Wall time 11.7 s.
+Gate: PASSED. Wall time 12.1 s.
 
 ## Auto-eventing from video (top-down feed)
 

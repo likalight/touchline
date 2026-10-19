@@ -43,3 +43,17 @@ def test_fact_checker_catches_ordinals_and_shared_surnames():
     issues = s.checker.check_text(ins, [title + ", his 99th goal of the season"])
     assert any("99" in i for i in issues)
     assert not s.checker.check_text(ins, [title])
+
+
+def test_checker_binds_rewrites_and_catches_superlatives():
+    s = run_with([], at_seq=10**9)
+    ins = next(i for i in s.insights if i["kind"] == "goal")
+    r = ins["renders"]["casual"]["en"]
+    base = [r["title"]] + [l["text"] for l in r["lines"]]
+    assert not s.checker.check_text(ins, base) and not s.checker.check_rewrite(base, base)
+    assert s.checker.check_text(ins, [r["title"] + ", the best goal of the season"])
+    line = next((t for t in base if any(ch.isdigit() for ch in t)), None)
+    if line:
+        import re
+        n = re.search(r"\d+", line).group(0)
+        assert s.checker.check_rewrite([line], [line.replace(n, str(int(n) + 1), 1)])

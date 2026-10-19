@@ -91,6 +91,8 @@ class Narrator:
                 return None
             texts = [data["title"]] + list(data.get("lines", []))
             issues = self.checker.check_text(ins, texts)
+            # bind each rewritten or translated line to the verified line it replaces (numbers don't change with language)
+            issues += self.checker.check_rewrite([base["title"]] + [l["text"] for l in base["lines"]], texts)
             if not issues:
                 from touchline.safety import safety
 
