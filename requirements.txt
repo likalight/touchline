@@ -14,3 +14,4 @@ imageio>=2.34
 httpx>=0.27
 azure-ai-projects>=2.0
 pillow>=10
+mcp>=1.30,<2

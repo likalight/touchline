@@ -13,6 +13,7 @@ from typing import Optional
 from fastapi import FastAPI, HTTPException, Request
 
 from touchline.auth import actor, can_produce, principal, require_producer
+from touchline.mcp_server import build as build_mcp
 from touchline.auth import mode as auth_mode
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -86,14 +87,33 @@ async def demo_keeper():
         await asyncio.sleep(5)
 
 
+class _MCPApp:
+    """The MCP endpoint, rebuilt on each app start (its session manager can only run once per instance)."""
+
+    def __init__(self) -> None:
+        self.app = None
+
+    async def __call__(self, scope, receive, send):
+        if self.app is None:
+            raise HTTPException(503, "starting")
+        await self.app(scope, receive, send)
+
+
+MCP_APP = _MCPApp()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from touchline.feeds import eventhub_enabled
+
     setup_telemetry()
     tasks = [asyncio.create_task(demo_keeper())]
-    from touchline.feeds import eventhub_enabled
     if eventhub_enabled():
         tasks.append(asyncio.create_task(hub_consumer()))
-    yield
+    mcp = build_mcp(lambda: sessions)
+    MCP_APP.app = mcp.streamable_http_app()
+    async with mcp.session_manager.run():
+        yield
     for t in tasks:
         t.cancel()
 
@@ -511,3 +531,7 @@ async def models():
 async def on_error(request: Request, exc: Exception):  # pragma: no cover
     log.exception("unhandled error")
     return JSONResponse({"error": "internal error"}, status_code=500)
+
+
+# MCP for GitHub Copilot and other agents, at /mcp. Mounted last so every route above takes precedence.
+app.mount("/", MCP_APP)
