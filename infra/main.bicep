@@ -23,6 +23,10 @@ param authClientId string = ''
 @secure()
 param authClientSecret string = ''
 
+@secure()
+@description('Optional Microsoft Teams Workflows webhook for the full-time card')
+param teamsWebhookUrl string = ''
+
 @description('Provision Azure Event Hubs for event-driven match ingestion')
 param enableEventHubs bool = true
 
@@ -48,6 +52,7 @@ module resources 'resources.bicep' = {
     principalId: principalId
     authClientId: authClientId
     authClientSecret: authClientSecret
+    teamsWebhookUrl: teamsWebhookUrl
   }
 }
 

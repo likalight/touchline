@@ -5,6 +5,8 @@
                  (recaps in four languages and two personas, highlights edit list, top players,
                  verification summary), written to Blob Storage for a CMS or social tool to pick up.
 * `packages`     HTTP: the latest packages, for the ops panel and partners.
+* Teams          At full time, an Adaptive Card with the result, the match story and the top players is
+                 posted to a Microsoft Teams channel (TEAMS_WEBHOOK_URL, a Teams Workflows webhook).
 * `watchdog`     Timer, every 5 minutes: checks the live demo is healthy and logs it to
                  Application Insights (alert on `touchline_up == 0`).
 
@@ -39,6 +41,25 @@ def _put(c, name: str, data: dict) -> None:
                   content_settings=ContentSettings(content_type="application/json"))
 
 
+def teams_card(pkg: dict, app_url: str = "") -> dict:
+    """An Adaptive Card for the full-time package, in the Teams Workflows webhook format."""
+    recap = (pkg.get("recaps", {}).get("casual", {}).get("en") or {})
+    facts = [{"title": p["name"], "value": f"rating {p['rating']}"} for p in pkg.get("top_players", [])[:3]]
+    body = [
+        {"type": "TextBlock", "text": "Full time", "weight": "Bolder", "color": "Accent", "size": "Small"},
+        {"type": "TextBlock", "text": f"{pkg['home']} {pkg['score']['home']}-{pkg['score']['away']} {pkg['away']}", "weight": "Bolder", "size": "ExtraLarge", "wrap": True},
+        {"type": "TextBlock", "text": recap.get("title", ""), "weight": "Bolder", "wrap": True, "spacing": "Medium"},
+        *[{"type": "TextBlock", "text": f"• {l['text'] if isinstance(l, dict) else l}", "wrap": True, "spacing": "Small"} for l in recap.get("lines", [])[:4]],
+        {"type": "FactSet", "facts": facts, "spacing": "Medium"},
+        {"type": "TextBlock", "text": f"{pkg['verification']['verified']} of {pkg['verification']['insights']} insights checked against the match data. Synthetic match, fictional clubs.",
+         "isSubtle": True, "size": "Small", "wrap": True},
+    ]
+    actions = [{"type": "Action.OpenUrl", "title": "Open the match", "url": f"{app_url}/?session={pkg['session']}"}] if app_url else []
+    return {"type": "message", "attachments": [{"contentType": "application/vnd.microsoft.card.adaptive", "content": {
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json", "type": "AdaptiveCard", "version": "1.4",
+        "body": body, "actions": actions}}]}
+
+
 @app.event_hub_message_trigger(arg_name="events", event_hub_name="touchline-insights", connection="EventHubConnection",
                                consumer_group="packages", cardinality=func.Cardinality.MANY)
 def on_insight(events: list[func.EventHubEvent]) -> None:
@@ -65,6 +86,13 @@ def on_insight(events: list[func.EventHubEvent]) -> None:
             _put(c, "latest.json", {"match_id": mid, "score": pkg["score"], "home": pkg["home"], "away": pkg["away"],
                                     "built_at": pkg["built_at"], "blob": f"{mid}/latest.json"})
             log.info("post-match package %s %s", mid, pkg["score"])
+            hook = os.environ.get("TEAMS_WEBHOOK_URL")
+            if hook:
+                try:
+                    httpx.post(hook, json=teams_card(pkg, WEB), timeout=15).raise_for_status()
+                    log.info("posted full-time card to Teams for %s", mid)
+                except Exception as exc:
+                    log.warning("Teams post failed: %s", exc)
 
 
 @app.route(route="packages", auth_level=func.AuthLevel.ANONYMOUS, methods=["GET"])

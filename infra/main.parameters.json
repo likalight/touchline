@@ -16,6 +16,9 @@
     },
     "authClientSecret": {
       "value": "${AUTH_CLIENT_SECRET=}"
+    },
+    "teamsWebhookUrl": {
+      "value": "${TEAMS_WEBHOOK_URL=}"
     }
   }
 }

@@ -10,6 +10,9 @@ param principalId string = ''
 param authClientId string = ''
 @secure()
 param authClientSecret string = ''
+@secure()
+@description('Optional Microsoft Teams Workflows webhook: the full-time card is posted there')
+param teamsWebhookUrl string = ''
 
 var token = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var roles = {
@@ -354,6 +357,7 @@ resource packagesFn 'Microsoft.Web/sites@2024-04-01' = if (enableEventHubs) {
         { name: 'AZURE_CLIENT_ID', value: identity.properties.clientId }
         { name: 'PACKAGES_STORAGE_ACCOUNT', value: storage.name }
         { name: 'TOUCHLINE_WEB_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
+        { name: 'TEAMS_WEBHOOK_URL', value: teamsWebhookUrl }
       ]
     }
   }

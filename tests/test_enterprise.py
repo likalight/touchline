@@ -102,3 +102,19 @@ def test_what_if_counterfactuals():
     assert out["what_if"]["result"][side] <= out["as_it_was"]["result"][side]   # losing a goal can't help you
     assert abs(sum(out["what_if"]["result"].values()) - 1) < 0.01 and out["replays"] == 1000
     assert run(s, "nonsense") is None
+
+
+def test_teams_full_time_card():
+    import pytest
+    pytest.importorskip("azure.functions")
+    import sys
+    from tests.test_drills import run_with
+    s = run_with([], at_seq=10**9)
+    if "function_app" not in sys.modules:
+        test_functions_app_registers()
+    card = sys.modules["function_app"].teams_card(s.package(), "https://touchline.example")
+    content = card["attachments"][0]["content"]
+    assert content["type"] == "AdaptiveCard"
+    text = str(content["body"])
+    assert f"{s.package()['score']['home']}-{s.package()['score']['away']}" in text and "Synthetic match" in text
+    assert content["actions"][0]["url"].startswith("https://touchline.example/?session=")
