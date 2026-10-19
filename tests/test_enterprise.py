@@ -88,3 +88,17 @@ def test_viewer_feedback_is_counted(monkeypatch):
         c.post("/api/matches/demo/feedback", json={"insight_id": iid, "useful": False, "persona": "analyst"})
         f = c.get("/api/matches/demo/feedback").json()
         assert f["votes"] >= 2 and 0 < f["useful_rate"] < 1 and "casual" in f["by_persona"]
+
+
+def test_what_if_counterfactuals():
+    from tests.test_drills import run_with
+    from touchline.whatif import run, scenarios
+    s = run_with([], at_seq=10**9)
+    sc = scenarios(s)
+    assert any(x["kind"] == "remove_goal" for x in sc)
+    last_goal = [x for x in sc if x["kind"] == "remove_goal"][-1]
+    out = run(s, last_goal["id"])
+    side = last_goal["team"]
+    assert out["what_if"]["result"][side] <= out["as_it_was"]["result"][side]   # losing a goal can't help you
+    assert abs(sum(out["what_if"]["result"].values()) - 1) < 0.01 and out["replays"] == 1000
+    assert run(s, "nonsense") is None

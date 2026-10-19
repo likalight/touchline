@@ -471,6 +471,32 @@ async def speak(text: str, lang: str = "en", voice: str = "lead"):
     return Response(audio, media_type="audio/mpeg")
 
 
+class WhatIf(BaseModel):
+    scenario: str = Field(..., max_length=60)
+
+
+@app.get("/api/matches/{sid}/whatif")
+async def whatif_scenarios(sid: str):
+    """Suggested counterfactuals from this match: every goal and red card so far, plus an extra goal for either side."""
+    from touchline.whatif import scenarios
+
+    return {"scenarios": scenarios(get(sid))}
+
+
+@app.post("/api/matches/{sid}/whatif")
+async def whatif_run(sid: str, body: WhatIf):
+    """Replay the rest of the match 1,000 times with one thing changed, and compare."""
+    from touchline.whatif import run
+
+    s = get(sid)
+    t0 = time.perf_counter()
+    out = await asyncio.to_thread(run, s, body.scenario)
+    if out is None:
+        raise HTTPException(404, "unknown scenario")
+    s.trace.record("WhatIf", body.scenario, (time.perf_counter() - t0) * 1000, note=out["summary"][:90])
+    return out
+
+
 @app.post("/api/matches/{sid}/feedback")
 async def feedback(sid: str, body: Feedback):
     """A viewer says whether a graphic was useful: the evidence behind the impact claims."""

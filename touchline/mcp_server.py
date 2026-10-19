@@ -82,6 +82,18 @@ def build(sessions: Callable[[], dict]) -> FastMCP:
         return json.dumps(get(session).get_recap(persona if persona in ("casual", "analyst") else "casual", lang), ensure_ascii=False)
 
     @mcp.tool()
+    def what_if(scenario: str = "", session: str = "demo") -> str:
+        """Counterfactual: replay the rest of the match 1,000 times with one thing changed (a goal ruled out, a red card
+        not given, an extra goal). Call with no scenario to list the options for this match."""
+        from touchline.whatif import run, scenarios
+
+        s = get(session)
+        if not scenario:
+            return json.dumps([{"id": x["id"], "label": x["label"]} for x in scenarios(s)])
+        out = run(s, scenario)
+        return json.dumps(out if out else {"error": "unknown scenario; call what_if with no scenario to list them"})
+
+    @mcp.tool()
     async def ask_analyst(question: str, session: str = "demo", lang: str = "en") -> str:
         """Ask Touchline's analyst agent anything about the match; the answer cites event IDs."""
         from touchline.safety import safety

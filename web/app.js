@@ -888,6 +888,32 @@ async function renderServices() {
   } catch (e) { /* offline */ }
 }
 
+/* ------------------------------------------------------------------ what if */
+async function loadWhatIf() {
+  try {
+    const d = await fetch(`/api/matches/${S.sid}/whatif`).then((r) => r.json());
+    $("#wiList").innerHTML = d.scenarios.map((x) => `<button class="btn small wi" data-wi="${esc(x.id)}">${esc(x.label)}</button>`).join("") || `<p class="muted">Nothing to change yet.</p>`;
+  } catch (e) { /* offline */ }
+}
+function wiBar(label, r) {
+  const h = S.meta ? S.meta.home : { short: "Home", color: "#1f6feb" }, a = S.meta ? S.meta.away : { short: "Away", color: "#e5484d" };
+  const seg = (v, c, t) => v > 0.001 ? `<span style="width:${v * 100}%;background:${c}" title="${t} ${Math.round(v * 100)}%">${v >= 0.08 ? Math.round(v * 100) + "%" : ""}</span>` : "";
+  return `<div class="wi-row"><b>${esc(label)}</b><div class="wi-bar" role="img" aria-label="${esc(label)}: ${h.short} ${Math.round(r.home * 100)}%, draw ${Math.round(r.draw * 100)}%, ${a.short} ${Math.round(r.away * 100)}%">${seg(r.home, h.color, h.short)}${seg(r.draw, "#5b6b62", "Draw")}${seg(r.away, a.color, a.short)}</div></div>`;
+}
+async function runWhatIf(id) {
+  $$("[data-wi]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.wi === id)));
+  $("#wiOut").innerHTML = `<p class="muted">Replaying the rest of the match 1,000 times…</p>`;
+  const r = await fetch(`/api/matches/${S.sid}/whatif`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: id }) });
+  if (!r.ok) { $("#wiOut").innerHTML = `<p class="muted">That moment isn't available any more.</p>`; return; }
+  const d = await r.json();
+  $("#wiTitle").textContent = d.scenario.label;
+  const h = S.meta ? S.meta.home.short : "H", a = S.meta ? S.meta.away.short : "A";
+  $("#wiOut").innerHTML = `${wiBar("As it was", d.as_it_was.result)}${wiBar("What if", d.what_if.result)}
+    <p class="wi-sum">${esc(d.summary)}</p>
+    <p class="muted">Likeliest final scores if it had happened: ${d.what_if.scorelines.map((x) => `${h} ${x.home}-${x.away} ${a} (${Math.round(x.share * 100)}%)`).join(", ")}.</p>
+    <p class="muted small">${esc(d.note)}</p>`;
+}
+
 S.fb = {};
 async function feedback(id, up) {
   S.fb[id] = up;
@@ -1079,6 +1105,7 @@ function bindControls() {
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
     const say = e.target.closest("[data-say]"); if (say) { const i = S.insights.find((x) => x.id === say.dataset.say); if (i) queueSpeech({ ...i, salience: 1 }); return; }
     const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q);
+    const wib = e.target.closest("[data-wi]"); if (wib) { runWhatIf(wib.dataset.wi); return; }
     const fbb = e.target.closest("[data-fb]"); if (fbb) { feedback(fbb.dataset.fb, Number(fbb.dataset.up)); return; }
     const dr = e.target.closest("[data-drill]"); if (dr) { runDrill(dr.dataset.drill); return; }
     const fv = e.target.closest("[data-fav]"); if (fv) { const f = new Set(S.prefs.favs || []); f.has(fv.dataset.fav) ? f.delete(fv.dataset.fav) : f.add(fv.dataset.fav); S.prefs.favs = [...f]; savePrefs(); applyPrefs(); renderPlayers(); return; }
@@ -1100,6 +1127,7 @@ function bindControls() {
     if (t.dataset.tab === "ops") renderOps();
     if (t.dataset.tab === "recap") loadRecap();
     if (t.dataset.tab === "mine") loadReelPlan();
+    if (t.dataset.tab === "whatif") loadWhatIf();
   }));
   $("#modeSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;

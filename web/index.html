@@ -91,6 +91,7 @@
   <div class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="mine">My match</button>
     <button role="tab" aria-selected="false" data-tab="ask">Ask the analyst</button>
+    <button role="tab" aria-selected="false" data-tab="whatif">What if</button>
     <button role="tab" aria-selected="false" data-tab="recap">Recap</button>
     <button role="tab" aria-selected="false" data-tab="players">Players</button>
     <button role="tab" aria-selected="false" data-tab="producer">Producer console</button>
@@ -111,6 +112,20 @@
         <h3>Your reel</h3>
         <video id="reelVideo" controls playsinline hidden style="width:100%;border-radius:6px;background:#0c241b"></video>
         <p class="muted" id="reelStatus">"Watch and save in 3D" replays each moment in the stadium view and records it in your browser. "Quick video" renders a lighter version on the server in about a minute.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabpanel" id="tab-whatif" role="tabpanel" hidden>
+    <div class="two">
+      <div class="box">
+        <h3>Change one thing</h3>
+        <p class="muted">Pick a moment. Touchline rebuilds the match at that minute, changes it, and replays the rest 1,000 times with the same goal model behind the live win probability.</p>
+        <div class="wi-list" id="wiList"></div>
+      </div>
+      <div class="box">
+        <h3 id="wiTitle">The other ending</h3>
+        <div id="wiOut"><p class="muted">Choose a moment on the left.</p></div>
       </div>
     </div>
   </div>

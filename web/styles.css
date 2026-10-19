@@ -366,3 +366,10 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 .chips .fb { margin-left: auto; display: inline-flex; gap: 4px; }
 .chips .fb .chip { opacity: .7; }
 .chips .fb .chip[aria-pressed="true"] { opacity: 1; background: #1f4d36; border-color: #4fbf7f; }
+
+.wi-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.wi-list .wi[aria-pressed="true"] { background: var(--sodium); color: #1a1405; border-color: var(--sodium); }
+.wi-row { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: center; margin: 8px 0; }
+.wi-bar { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: #102a1f; }
+.wi-bar span { display: flex; align-items: center; justify-content: center; color: #fff; font: 600 13px Barlow, sans-serif; }
+.wi-sum { font-size: 17px; line-height: 1.45; margin: 14px 0 8px; }
