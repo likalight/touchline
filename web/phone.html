@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f2b20">
+<title>Touchline on your phone</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
+<style>
+@font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; }
+@font-face { font-family: "Barlow"; src: url("/static/fonts/Barlow-SemiBold.woff2") format("woff2"); font-weight: 600; }
+@font-face { font-family: "Source Serif 4"; src: url("/static/fonts/SourceSerif4.woff2") format("woff2"); font-weight: 200 900; }
+:root { --turf: #0f2b20; --deep: #0a1f17; --card: #133426; --ink: #eef0e8; --muted: #a9b8a8; --sodium: #f2c14e; --home: #1f6feb; --away: #e5484d; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--deep); color: var(--ink); font: 16px/1.45 Barlow, system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+header { position: sticky; top: 0; z-index: 5; background: var(--turf); padding: calc(10px + env(safe-area-inset-top)) 16px 10px; box-shadow: 0 1px 0 #1d4433; }
+.bug { display: grid; grid-template-columns: 1fr auto 1fr auto; align-items: center; gap: 8px; font: 700 28px/1 "Barlow Condensed", sans-serif; }
+.bug .t { display: flex; align-items: center; gap: 8px; }
+.bug .t.a { justify-content: flex-end; }
+.bug .t i { width: 5px; height: 26px; border-radius: 2px; }
+.bug .sc { background: var(--ink); color: var(--turf); padding: 4px 12px; border-radius: 4px; }
+.bug .min { background: var(--sodium); color: #1a1405; padding: 4px 8px; border-radius: 4px; font-size: 22px; }
+.wp { display: flex; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 10px; background: #1d4433; }
+.wp span { transition: width .6s; }
+.wpl { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+main { padding: 14px 16px; display: grid; gap: 12px; }
+.card { background: var(--card); border-radius: 12px; padding: 14px 16px; }
+.k { font-size: 13px; color: var(--sodium); display: flex; gap: 8px; align-items: center; }
+.k .ok { color: #7fd6a1; }
+h2 { font: 700 26px/1.08 "Barlow Condensed", sans-serif; margin: 6px 0 6px; }
+.line { font: 400 17px/1.45 "Source Serif 4", serif; color: #dfe5da; margin: 4px 0 0; }
+.feed { display: grid; gap: 8px; }
+.feed .row { display: grid; grid-template-columns: 34px 1fr; gap: 8px; font-size: 15px; padding: 8px 0; border-top: 1px solid #1d4433; }
+.feed .row b { color: var(--muted); font-weight: 600; }
+.me { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.me div { background: var(--deep); border-radius: 8px; padding: 8px; text-align: center; }
+.me b { display: block; font: 700 24px/1 "Barlow Condensed", sans-serif; }
+.me span { font-size: 12px; color: var(--muted); }
+select { width: 100%; font: 600 16px Barlow, sans-serif; background: var(--deep); color: var(--ink); border: 1px solid #2f5a44; border-radius: 8px; padding: 10px; margin-top: 8px; }
+.answer { font: 400 17px/1.45 "Source Serif 4", serif; margin-top: 8px; min-height: 1.4em; }
+nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--turf); display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); box-shadow: 0 -1px 0 #1d4433; }
+nav button { font: 600 15px Barlow, sans-serif; color: var(--ink); background: #1c3a2c; border: 0; border-radius: 12px; padding: 14px 6px; }
+nav button[aria-pressed="true"] { background: var(--sodium); color: #1a1405; }
+nav button.hold { background: #2b4f8f; }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--sodium); outline-offset: 2px; }
+.muted { color: var(--muted); font-size: 14px; }
+.goal-flash { animation: flash 1.2s ease-out; }
+@keyframes flash { 0% { background: var(--sodium); } 100% { background: var(--card); } }
+@media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } .wp span { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="bug" aria-live="polite">
+    <div class="t"><i id="hc"></i><span id="hs">HOM</span></div>
+    <div class="sc" id="score">0-0</div>
+    <div class="t a"><span id="as">AWY</span><i id="ac"></i></div>
+    <div class="min" id="min">0'</div>
+  </div>
+  <div class="wp" role="img" id="wpbar" aria-label="Win probability"><span id="wph"></span><span id="wpd" style="background:#5b6b62"></span><span id="wpa"></span></div>
+  <div class="wpl"><span id="wphl">–</span><span id="wpdl">draw –</span><span id="wpal">–</span></div>
+</header>
+<main>
+  <section class="card" id="latest" aria-live="polite">
+    <div class="k"><span id="lmin">–</span><span id="lkind">Waiting for the first moment</span><span class="ok" id="lok"></span></div>
+    <h2 id="ltitle">The game, explained</h2>
+    <div id="llines"></div>
+  </section>
+  <section class="card">
+    <div class="k">Your player</div>
+    <select id="player" aria-label="Choose your player"></select>
+    <div class="me" id="me"></div>
+  </section>
+  <section class="card">
+    <div class="k">Ask</div>
+    <form id="askForm" style="margin-top:8px"><input id="askInput" enterkeyhint="send" autocomplete="off" maxlength="300" aria-label="Ask about this match"
+      placeholder="Why did they score?" style="width:100%;font:400 17px Barlow,sans-serif;background:var(--deep);color:var(--ink);border:1px solid #2f5a44;border-radius:8px;padding:10px"></form>
+    <div class="answer" id="answer">Hold <b>Ask</b> and speak, or type your question.</div>
+  </section>
+  <section class="card">
+    <div class="k">Earlier</div>
+    <div class="feed" id="feed"></div>
+  </section>
+  <p class="muted" style="text-align:center">Synthetic match, fictional clubs. <a href="/" style="color:var(--sodium)">Open the full app</a></p>
+</main>
+<nav>
+  <button id="booth" aria-pressed="false">Commentary</button>
+  <button id="ask" class="hold">Ask</button>
+  <button id="persona" aria-pressed="false">Analyst view</button>
+</nav>
+<script src="/static/phone.js"></script>
+</body>
+</html>

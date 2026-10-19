@@ -60,6 +60,7 @@ async function boot() {
   } catch { S.i18n = { languages: { en: "English" }, banks: { en: {} } }; }
   buildLangSelect();
   bindControls();
+  bindTour();
   loadMe();
   applyPrefs();
   applyView();
@@ -912,6 +913,52 @@ async function runWhatIf(id) {
     <p class="wi-sum">${esc(d.summary)}</p>
     <p class="muted">Likeliest final scores if it had happened: ${d.what_if.scorelines.map((x) => `${h} ${x.home}-${x.away} ${a} (${Math.round(x.share * 100)}%)`).join(", ")}.</p>
     <p class="muted small">${esc(d.note)}</p>`;
+}
+
+/* ------------------------------------------------------------------ guided tour */
+const TOUR = [
+  { sel: "#pitchBox", title: "The match, in a 3D stadium", text: "Every graphic on screen was checked against the raw match data by a fact-checking agent before it aired.",
+    go: () => { S.prefs.view = "tv"; applyView(); } },
+  { sel: "#cards", title: "Why it matters", text: "Each moment is explained, not just reported. Tap an event ID on a card to see the evidence and what drove the model." },
+  { sel: "#personaSeg", title: "Four voices for every moment", text: "The same moment, written for an analyst. Fan, Studio and Audio description get their own versions, in any language.",
+    go: () => $('[data-persona="analyst"]').click() },
+  { sel: "label:has(#booth)", title: "Two-voice commentary", text: "Tick Commentary: a lead commentator calls the moment and an analyst explains it, with captions. Every number spoken has been checked." },
+  { sel: '[data-tab="whatif"]', title: "What if?", text: "Change one thing, like a red card that never happened, and replay the rest of the match 1,000 times.",
+    go: async () => { $('[data-tab="whatif"]').click(); await loadWhatIf(); const b = $('[data-wi^="nored"]') || $("[data-wi]"); if (b) runWhatIf(b.dataset.wi); } },
+  { sel: '[data-tab="producer"]', title: "An editor, not a pipe", text: "A producer agent decides what goes on air: it airs, cuts in, queues or drops each graphic, and says why. A human can approve every one.",
+    go: () => $('[data-tab="producer"]').click() },
+  { sel: '[data-tab="ops"]', title: "Break it on purpose", text: "We just slipped a made-up number into the copy. Watch the fact-checker block it, while the match keeps playing.",
+    go: () => { $('[data-tab="ops"]').click(); runDrill("hallucination"); } },
+  { sel: '[data-tab="mine"]', title: "Your match, your reel", text: "After the whistle, every fan gets their own highlights, replayed in the 3D stadium and saved from the browser.",
+    go: () => $('[data-tab="mine"]').click() },
+  { sel: ".phone-link", title: "And on your phone", text: "Open Touchline as a second screen: your player's numbers, ask by voice, and a buzz when your club scores." },
+];
+let tourAt = -1, tourPersona = null;
+async function tourShow(i) {
+  $$(".tour-focus").forEach((x) => x.classList.remove("tour-focus"));
+  if (i < 0 || i >= TOUR.length) return tourEnd();
+  tourAt = i;
+  const st = TOUR[i];
+  if (st.go) await st.go();
+  const el = $(st.sel);
+  if (el) { el.classList.add("tour-focus"); el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" }); }
+  $("#tourStep").textContent = `${i + 1} of ${TOUR.length}`;
+  $("#tourTitle").textContent = st.title; $("#tourText").textContent = st.text;
+  $("#tourBack").disabled = i === 0; $("#tourNext").textContent = i === TOUR.length - 1 ? "Done" : "Next";
+  $("#tour").hidden = false; $("#tourNext").focus({ preventScroll: true });
+}
+function tourEnd() {
+  $$(".tour-focus").forEach((x) => x.classList.remove("tour-focus"));
+  $("#tour").hidden = true; tourAt = -1;
+  if (tourPersona && tourPersona !== S.prefs.persona) $(`[data-persona="${tourPersona}"]`)?.click();
+}
+function bindTour() {
+  $("#tourBtn").addEventListener("click", () => { tourPersona = S.prefs.persona; tourShow(0); });
+  $("#tourNext").addEventListener("click", () => tourShow(tourAt + 1));
+  $("#tourBack").addEventListener("click", () => tourShow(tourAt - 1));
+  $("#tourClose").addEventListener("click", tourEnd);
+  document.addEventListener("keydown", (e) => { if (tourAt >= 0 && e.key === "Escape") tourEnd(); });
+  if (new URLSearchParams(location.search).get("tour")) setTimeout(() => $("#tourBtn").click(), 2500);
 }
 
 S.fb = {};

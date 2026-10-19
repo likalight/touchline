@@ -13,6 +13,7 @@
   <div class="brand">
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#184232"/><path d="M4 26h24M16 6v20" stroke="#eef0e8" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="#f2c14e" stroke-width="2.5"/></svg>
     <div>Touchline <small id="matchLabel">Connecting to the live match…</small></div>
+    <button class="btn small primary tour-btn" id="tourBtn">Show me around</button>
   </div>
   <div class="meters">
     <div class="scorebug" aria-live="polite">
@@ -67,7 +68,8 @@
 <main class="stage">
   <section class="pitch-wrap" aria-label="Live pitch">
     <div class="view-bar"><div class="seg" id="viewSeg" role="group" aria-label="Camera">
-      <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="player" aria-pressed="false" title="Follows your focus player, or whoever has the ball">Player cam</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div></div>
+      <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="player" aria-pressed="false" title="Follows your focus player, or whoever has the ball">Player cam</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div>
+      <a class="btn small phone-link" href="/phone" target="_blank" rel="noopener" title="A second screen for your phone">On your phone</a></div>
     <div class="pitch-box" id="pitchBox">
       <canvas id="pitch3d" aria-hidden="true"></canvas>
       <canvas id="pitch"></canvas>
@@ -227,6 +229,12 @@
 </aside>
 
 <script type="importmap">{ "imports": { "three": "/static/vendor/three/three.module.min.js", "three/addons/": "/static/vendor/three/addons/" } }</script>
+<div class="tour" id="tour" role="dialog" aria-live="polite" aria-label="Guided tour" hidden>
+  <div class="tour-step" id="tourStep"></div>
+  <h3 id="tourTitle"></h3>
+  <p id="tourText"></p>
+  <div class="tour-ctl"><button class="btn small" id="tourBack">Back</button><button class="btn small primary" id="tourNext">Next</button><button class="btn small ghost" id="tourClose">Close</button></div>
+</div>
 <script src="/static/app.js"></script>
 <script type="module" src="/static/tv3d.js"></script>
 </body>

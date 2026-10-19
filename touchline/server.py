@@ -169,6 +169,11 @@ async def story():
     return FileResponse(WEB / "story.html")
 
 
+@app.get("/phone", include_in_schema=False)
+async def phone_page():
+    return FileResponse(WEB / "phone.html")
+
+
 @app.get("/reel", include_in_schema=False)
 async def reel_page():
     return FileResponse(WEB / "reel.html")
