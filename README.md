@@ -1,46 +1,134 @@
+<div align="center">
+
+<img src="docs/logo.svg" width="88" alt="Touchline logo">
+
 # Touchline
 
-**The game, explained.** Touchline is a multi-agent AI insights engine on Azure. It turns a live
-stream of football events into explained moments, storylines that run across the whole match,
-timed broadcast graphics chosen by an editorial agent, two-voice commentary, automated recaps and
-personal 3D highlight reels. Each one is rendered differently for every viewer, and every number
-is checked before it airs.
+**The game, explained.**
 
-Built for the Microsoft x Premier League *Inside the Game: Developer Hackathon*, for the
-challenge *The Synthetic Match Insights Engine for Premier League Studio*. All data is
-synthetic, and the clubs, players and venue are fictional.
+Multi-agent AI that turns a live football event feed into explained moments, match-long storylines,
+broadcast graphics, two-voice commentary and a personal 3D highlights reel for every fan.
+Every number is checked before it airs.
+
+[![CI](https://github.com/likalight/touchline/actions/workflows/ci.yml/badge.svg)](https://github.com/likalight/touchline/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-f2c14e.svg)](LICENSE)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-0f2b20.svg)
+![Microsoft Agent Framework](https://img.shields.io/badge/Microsoft%20Agent%20Framework-1.22-0f6cbd.svg)
+![Microsoft Foundry](https://img.shields.io/badge/Microsoft%20Foundry-Agent%20Service-0f6cbd.svg)
+![Azure](https://img.shields.io/badge/deploy-azd%20up-0f6cbd.svg)
+![Tests](https://img.shields.io/badge/tests-46%20passing-2e7d4f.svg)
+
+[Quick start](#quick-start) · [Deploy](#deploy-to-azure) · [How it works](#how-it-works) · [Evaluation](#evaluation) · [Docs](#documentation)
+
+<img src="docs/demo.gif" width="720" alt="A personal highlights reel playing in Touchline's 3D broadcast view: floodlit stands in both club colours, players in kit, a pass drawn on the grass">
+
+</div>
+
+> Built for the Microsoft x Premier League *Inside the Game: Developer Hackathon*. All data is synthetic; the clubs, players and venue are fictional.
+
+## Why Touchline
+
+Graphics on a live broadcast say *what* happened. Working out *why it mattered*, correctly and in time, is still done by hand, and every viewer gets the same version of the story. Touchline gives that job to a team of AI agents:
+
+- **Explains, not just counts.** Why a chance was big, which pass broke the press, how a red card changed the odds, and callbacks across the whole match ("redemption for Varga").
+- **Never makes things up.** A fact-checker agent re-derives every number from the raw events; 735 of 735 insights verified in evaluation.
+- **Made for every fan.** Four voices for each moment (fan, analyst, studio, audio description), any language, your clubs, your players, your metric.
+- **Ready for a broadcast truck.** Timed overlay cues, a CasparCG/SPX template, an editorial producer agent with human approval, and an audit trail of every decision.
 
 ![Touchline live view: the 3D broadcast camera with a scorebug and a verified lower-third, beside insight cards](docs/screenshot.png)
 
-- **Live demo:** `<your Container Apps URL>` (see [Deploy](#deploy-to-azure)). The live app is at `/`, the project page at `/story`, and the keyable graphics output at `/overlay`.
-- **Demo video:** `<YouTube link>`
-- **For broadcasters:** [workflow fit, latency budget, trust and cost per match](docs/BROADCASTERS.md)
-- **Impact:** [problem, outcomes, cost and the path to production](docs/IMPACT.md), with a [ten-minute user test](docs/USER_TEST.md)
-- **Governance:** [data, AI controls, identity, audit and reliability](docs/GOVERNANCE.md)
-- **Submission kit:** [pitch and 2-minute video script](docs/SUBMISSION.md)
+## Features
 
----
+<table>
+<tr>
+<td width="50%" valign="top">
 
-## What it does
+**Live intelligence**
+- xG, expected threat, pass difficulty, PPDA, momentum, control vs chaos, rhythm, win probability
+- Player tags with sprint thresholds, ball and shot speed
+- Auto-eventing from video (top-down and broadcast camera)
+- Storylines with match-long memory and callbacks
 
-| Stage the brief asks for | What Touchline does |
+</td>
+<td width="50%" valign="top">
+
+**Agents that decide and check**
+- Microsoft Agent Framework workflow with fan-out, fan-in and a supervisor
+- FactChecker blocks any unsupported number or name
+- Producer agent airs, cuts in, queues or drops each graphic, with reasons
+- Resilience drills: break the feed, the model or an agent, live
+
+</td>
+</tr>
+<tr>
+<td valign="top">
+
+**For fans**
+- 3D broadcast view, isolated player cam, goal replays
+- Fan, Analyst, Studio and Audio description views
+- Favourite clubs and players, one-metric mode, any language
+- Two-voice captioned commentary, Ask the analyst, 3D My Match reels
+
+</td>
+<td valign="top">
+
+**On Azure, ready for production**
+- Agents published to Microsoft Foundry Agent Service, with tracing and evaluations
+- Azure AI Content Safety, Microsoft Entra ID roles, managed identity, no API keys
+- Event Hubs in and out, Azure Functions back office, Container Apps
+- One command: `azd up`
+
+</td>
+</tr>
+</table>
+
+## Quick start
+
+```bash
+git clone https://github.com/likalight/touchline && cd touchline
+pip install -r requirements.txt
+uvicorn touchline.server:app --reload       # open http://localhost:8000
+```
+
+It runs fully offline on verified phrase banks and your browser's voice; no keys needed.
+Or skip the setup: [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/likalight/touchline)
+
+**With Docker:** `docker build -t touchline . && docker run -p 8000:8000 touchline`
+
+**Turn on the cloud agents** (optional):
+
+```bash
+export FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project> FOUNDRY_MODEL=gpt-4.1-mini
+export AZURE_SPEECH_REGION=<region> AZURE_SPEECH_KEY=...          # neural voices
+```
+
+| Page | What it is |
 |---|---|
-| **Ingest** | A seeded, calibrated simulator generates a full 90-minute match (about 2.3 goals, 23 shots and 1,100 passes per game): passes, carries, dribbles, shots, saves, tackles, interceptions, pressures, fouls, cards and corners, with a 22-player tracking snapshot on every event. The `IngestGuard` validates, de-duplicates and re-orders the feed, and repaired a 10%-faulty feed exactly once in every evaluation match. The same pipeline consumes **Azure Event Hubs** or events **auto-generated from video**. |
-| **Interpret** | `MatchState` keeps a live model of the match: possession, xG, expected threat (xT), pass difficulty, progressive and line-breaking passes, PPDA, momentum, **control vs chaos**, game rhythm, win probability (stoppage time included), player speed and distance, records and ratings. |
-| **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have gone in 67% of the time"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
-| **Render** | The `Producer` agent is an editor: moments compete for the screen, and it scores each one (news value, storyline, freshness, team balance) and **airs, cuts in, queues or drops** it with a stated reason. It emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`), and a human producer can approve each one. The live app has a **3D broadcast view** (floodlit stadium, animated players in club kits, goal replays, an isolated player cam, LED boards carrying the verified insight), a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
-| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. **Two-voice commentary** (a lead commentator and an analyst, captioned) speaks every key moment. After the match, **My Match** replays each fan's own highlights in the 3D stadium and records the reel in their browser: their clubs, their players, their language. |
+| `/` | The live app: 3D broadcast view, insight feed, producer console, agents at work |
+| `/reel` | A personal 3D highlights reel, recorded in the browser |
+| `/story` | The project page |
+| `/overlay` | Keyable graphics output for a vision mixer |
 
-Everything else in the brief is covered too:
+## Deploy to Azure
 
-- **Player identification:** live name tags with speed indicators past a 28 km/h sprint threshold.
-- **Pass quality:** distance, accuracy, and a 0 to 100 difficulty rating from a trained model.
-- **Ball and shot speed.**
-- **Auto-eventing from video:** pass and speed metrics generated from pixels.
-- **Narratives, milestones and recaps** that find the story: comeback, ten men, late winner, hat-trick.
-- **Explainability:** control vs chaos, pressing changes and game rhythm.
-- **Synthetic data innovation:** a downloadable dataset and a model card.
-- **Multilingual storytelling.**
+```bash
+azd auth login
+azd up            # provisions everything in infra/ and deploys the container
+```
+
+[`infra/`](infra) (Bicep) provisions:
+
+- **Azure Container Apps**, with HTTP autoscaling, sticky sessions, health probes and optional Entra ID authentication
+- **Azure Container Registry**
+- **Microsoft Foundry**: an AI Services account, a project with a tracing connection to Application Insights, and a `gpt-4.1-mini` deployment, with local auth disabled. The postprovision hook publishes the agents to **Foundry Agent Service**.
+- **Azure AI Speech** and **Azure AI Content Safety**, through the same AI Services account
+- **Azure Event Hubs**: `match-events` in, `touchline-insights` out
+- **Azure Functions** (Flex Consumption) and **Blob Storage** for the event-driven back office
+- **Log Analytics and Application Insights**
+- a **user-assigned managed identity** with least-privilege roles
+
+No API keys: services use the managed identity (the optional Entra sign-in client secret is the only secret, stored as a Container Apps secret). To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
+plays a match onto Event Hubs, and the app serves it as session `live` at `<url>/?session=live`.
 
 ## The demo match
 
@@ -80,6 +168,9 @@ flowchart LR
   classDef src fill:#184232,color:#fff,stroke:#2a5242
 ```
 
+<details>
+<summary><b>The agents, and what makes this more than a chain of prompts</b></summary>
+
 **Agents and their roles.**
 
 | Agent | Role | Notes |
@@ -106,6 +197,34 @@ flowchart LR
 - **Contained language models.** LLM calls sit behind a timeout and a circuit breaker; a hosted Foundry agent falls back to the same agent run locally. Analysis runs in step with the feed, so it can never read the future, and slow language-model work arrives later as an update.
 - **Observability.** Every handoff is a span: live in the *Agents at work* tab, exportable as an audit trail, and sent to Application Insights through OpenTelemetry with Agent Framework's own instrumentation.
 
+</details>
+
+## What it covers
+
+<details>
+<summary><b>Every stage and requirement of the challenge brief, mapped to the code</b></summary>
+
+| Stage the brief asks for | What Touchline does |
+|---|---|
+| **Ingest** | A seeded, calibrated simulator generates a full 90-minute match (about 2.3 goals, 23 shots and 1,100 passes per game): passes, carries, dribbles, shots, saves, tackles, interceptions, pressures, fouls, cards and corners, with a 22-player tracking snapshot on every event. The `IngestGuard` validates, de-duplicates and re-orders the feed, and repaired a 10%-faulty feed exactly once in every evaluation match. The same pipeline consumes **Azure Event Hubs** or events **auto-generated from video**. |
+| **Interpret** | `MatchState` keeps a live model of the match: possession, xG, expected threat (xT), pass difficulty, progressive and line-breaking passes, PPDA, momentum, **control vs chaos**, game rhythm, win probability (stoppage time included), player speed and distance, records and ratings. |
+| **Explain** | The `TacticalAnalyst` says **why** a moment matters: which factor drove a chance, a **counterfactual** ("taken five metres closer, it would have gone in 67% of the time"), the assist's difficulty, the build-up's threat and the win-probability swing. The `StorylineKeeper` remembers the whole match and adds **callbacks**: "it began with a loss of possession by Varga, 24 seconds earlier", then later "redemption for Varga". Every claim cites event IDs, and the `FactChecker` re-derives every number, story counts included, before anything airs. |
+| **Render** | The `Producer` agent is an editor: moments compete for the screen, and it scores each one (news value, storyline, freshness, team balance) and **airs, cuts in, queues or drops** it with a stated reason. It emits **timed, machine-readable cues** on the match clock (`touchline.overlay/1`), and a human producer can approve each one. The live app has a **3D broadcast view** (floodlit stadium, animated players in club kits, goal replays, an isolated player cam, LED boards carrying the verified insight), a keyable `/overlay` output, and a **CasparCG / SPX-compatible graphics template** that real playout systems can load. |
+| **Personalise** | Every moment is written four ways: **Fan**, **Analyst**, **Studio** lower-third and **Audio description** for blind and low-vision fans, with a neural voice via Azure AI Speech. It works in **English, Spanish, French and Portuguese** offline, and in any language through Azure OpenAI. Viewers can pick **their club (or both)**, star **any number of favourite players**, switch on **player focus** to follow one player all match, or watch **one metric**. **Two-voice commentary** (a lead commentator and an analyst, captioned) speaks every key moment. After the match, **My Match** replays each fan's own highlights in the 3D stadium and records the reel in their browser: their clubs, their players, their language. |
+
+Everything else in the brief is covered too:
+
+- **Player identification:** live name tags with speed indicators past a 28 km/h sprint threshold.
+- **Pass quality:** distance, accuracy, and a 0 to 100 difficulty rating from a trained model.
+- **Ball and shot speed.**
+- **Auto-eventing from video:** pass and speed metrics generated from pixels.
+- **Narratives, milestones and recaps** that find the story: comeback, ten men, late winner, hat-trick.
+- **Explainability:** control vs chaos, pressing changes and game rhythm.
+- **Synthetic data innovation:** a downloadable dataset and a model card.
+- **Multilingual storytelling.**
+
+</details>
+
 ## Microsoft Foundry
 
 - **Agents published to Foundry Agent Service.** `azd up` runs `scripts/foundry_publish.py`, which publishes `touchline-analyst` (with its six tools) and `touchline-narrator` as new versions tagged with the git commit, each with a Responsible-AI content policy. At runtime `FoundryAgent` binds the published version to the live match tools (`TOUCHLINE_FOUNDRY_AGENTS=on`).
@@ -121,20 +240,6 @@ flowchart LR
 - **Audit export** per match: agent spans, verification results, editorial decisions, producer actions, drills and viewer feedback.
 
 Details in [docs/GOVERNANCE.md](docs/GOVERNANCE.md).
-
-## Explainable by construction
-
-The models are trained on our own synthetic league. `scripts/fit_models.py` simulates 300
-matches and holds out the last 20%:
-
-| Model | Held-out AUC | Brier | Used for |
-|---|---|---|---|
-| xG, logistic on 6 shot features | 0.762 | 0.110 | Chance quality, factor attribution, counterfactuals |
-| Pass completion, logistic on 9 features | 0.735 | 0.129 | Pass difficulty (0 to 100), passes over expected |
-| xT, 16x12 value-iteration grid | n/a | n/a | Threat added by passes and carries, momentum |
-
-They're logistic models on purpose: every prediction breaks down into per-feature
-contributions, which the evidence drawer shows. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
 ## Evaluation
 
@@ -158,27 +263,23 @@ From video:
 
 There are **46 tests**. They include the real Agent Framework LLM path against a mock model (a model that invents "99 goals" is rejected), tampered story numbers, no insight using its future, every resilience drill, the Producer's editorial decisions, the Foundry agent definitions and content policy, Entra roles on producer tools, Prompt Shields, the post-match package and the Azure Functions app.
 
-## Run it locally
+## Explainable by construction
 
-```bash
-pip install -r requirements.txt
-uvicorn touchline.server:app --reload
-# open http://localhost:8000
-```
+The models are trained on our own synthetic league. `scripts/fit_models.py` simulates 300
+matches and holds out the last 20%:
 
-With no cloud services configured it runs fully offline on verified phrase banks with the
-browser's voice. To enable the cloud agents:
+| Model | Held-out AUC | Brier | Used for |
+|---|---|---|---|
+| xG, logistic on 6 shot features | 0.762 | 0.110 | Chance quality, factor attribution, counterfactuals |
+| Pass completion, logistic on 9 features | 0.735 | 0.129 | Pass difficulty (0 to 100), passes over expected |
+| xT, 16x12 value-iteration grid | n/a | n/a | Threat added by passes and carries, momentum |
 
-```bash
-# Azure OpenAI in Microsoft Foundry (API key, or managed identity / az login when the key is absent)
-export AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com AZURE_OPENAI_MODEL=gpt-4.1-mini AZURE_OPENAI_API_KEY=...
-# or a Foundry project through Agent Framework's FoundryChatClient
-export FOUNDRY_PROJECT_ENDPOINT=https://<resource>.services.ai.azure.com/api/projects/<project> FOUNDRY_MODEL=gpt-4.1-mini
-# neural voice (key, or AZURE_SPEECH_RESOURCE_ID for managed identity)
-export AZURE_SPEECH_REGION=<region> AZURE_SPEECH_KEY=...
-```
+They're logistic models on purpose: every prediction breaks down into per-feature
+contributions, which the evidence drawer shows. See [docs/MODEL_CARD.md](docs/MODEL_CARD.md).
 
-Other useful commands:
+## Development
+
+Useful commands:
 
 ```bash
 pytest -q                                          # 46 tests
@@ -191,26 +292,7 @@ python scripts/find_demo_seed.py --seeds 400       # find the most dramatic matc
 python scripts/fit_models.py --matches 300         # regenerate the synthetic league and refit models
 ```
 
-## Deploy to Azure
-
-```bash
-azd auth login
-azd up            # provisions everything in infra/ and deploys the container
-```
-
-[`infra/`](infra) (Bicep) provisions:
-
-- **Azure Container Apps**, with HTTP autoscaling, sticky sessions, health probes and optional Entra ID authentication
-- **Azure Container Registry**
-- **Microsoft Foundry**: an AI Services account, a project with a tracing connection to Application Insights, and a `gpt-4.1-mini` deployment, with local auth disabled. The postprovision hook publishes the agents to **Foundry Agent Service**.
-- **Azure AI Speech** and **Azure AI Content Safety**, through the same AI Services account
-- **Azure Event Hubs**: `match-events` in, `touchline-insights` out
-- **Azure Functions** (Flex Consumption) and **Blob Storage** for the event-driven back office
-- **Log Analytics and Application Insights**
-- a **user-assigned managed identity** with least-privilege roles
-
-No API keys: services use the managed identity (the optional Entra sign-in client secret is the only secret, stored as a Container Apps secret). To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
-plays a match onto Event Hubs, and the app serves it as session `live` at `<url>/?session=live`.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Interfaces
 
@@ -222,11 +304,10 @@ plays a match onto Event Hubs, and the app serves it as session `live` at `<url>
 - **Graphics:** the [overlay contract](docs/OVERLAY_CONTRACT.md). `web/templates/touchline-graphics.html` loads in **CasparCG** (`play`, `stop`, `next`, `update`) and **SPX Graphics Controller**, or runs live with `?live=1`.
 - **A2A:** agent card at `/.well-known/agent-card.json`, JSON-RPC at `/a2a`.
 
-## Design
+## Project structure
 
-One design system across the app, the on-air graphics, the reels and the story page, with broadcast safe areas, motion timings and computed contrast. It's our own; no league or club marks are used. See [docs/DESIGN.md](docs/DESIGN.md).
-
-## Repository layout
+<details>
+<summary><b>Repository layout</b></summary>
 
 ```
 touchline/
@@ -255,7 +336,32 @@ tests/            pytest suite
 docs/             evaluation, model card, overlay contract, broadcasters, impact, user test, governance, design system, submission kit
 ```
 
-## Rules and data
+</details>
+
+## Documentation
+
+| Document | For |
+|---|---|
+| [Broadcasters](docs/BROADCASTERS.md) | Workflow fit, latency budget, trust, cost per match |
+| [Impact](docs/IMPACT.md) | The problem, outcomes, cost and the path to production |
+| [Governance](docs/GOVERNANCE.md) | Data, AI controls, identity, audit, reliability |
+| [Evaluation](docs/EVAL.md) | The CI gate and video auto-eventing results |
+| [Model card](docs/MODEL_CARD.md) | The glass-box models and how they were fitted |
+| [Overlay contract](docs/OVERLAY_CONTRACT.md) | The `touchline.overlay/1` cue format |
+| [Design](docs/DESIGN.md) | The design system |
+| [User test](docs/USER_TEST.md) | A ten-minute session to run with real fans |
+| [Submission](docs/SUBMISSION.md) | Hackathon pitch and video script |
+
+## Design
+
+One design system across the app, the on-air graphics, the reels and the story page, with broadcast safe areas, motion timings and computed contrast. It's our own; no league or club marks are used. See [docs/DESIGN.md](docs/DESIGN.md).
+
+## Acknowledgements
+
+- [Microsoft Agent Framework](https://github.com/microsoft/agent-framework), [A2A](https://github.com/a2aproject/a2a-python), FastAPI
+- [three.js](https://threejs.org) (MIT) for the 3D view
+- Player model and animations: [Mesh2Motion](https://github.com/Mesh2Motion/mesh2motion-app) and Quaternius (CC0)
+- Fonts: Barlow, Barlow Condensed and Source Serif 4 (SIL Open Font License)
 
 - Every event comes from a seeded simulator. No real match data, clubs, players, marks or
   broadcast footage are used.
@@ -265,4 +371,4 @@ docs/             evaluation, model card, overlay contract, broadcasters, impact
 
 ## License
 
-MIT
+[MIT](LICENSE)

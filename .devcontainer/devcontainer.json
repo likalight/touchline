@@ -1,0 +1,13 @@
+{
+  "name": "Touchline",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/azure/azure-dev/azd:latest": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {}
+  },
+  "postCreateCommand": "pip install -r requirements.txt -r functions/requirements.txt pytest",
+  "forwardPorts": [8000],
+  "portsAttributes": { "8000": { "label": "Touchline", "onAutoForward": "openBrowser" } },
+  "postAttachCommand": "uvicorn touchline.server:app --host 0.0.0.0 --port 8000",
+  "customizations": { "vscode": { "extensions": ["ms-python.python", "ms-azuretools.vscode-bicep", "ms-azuretools.azure-dev"] } }
+}
