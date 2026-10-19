@@ -16,7 +16,7 @@ Every number is checked before it airs.
 ![Microsoft Agent Framework](https://img.shields.io/badge/Microsoft%20Agent%20Framework-1.22-0f6cbd.svg)
 ![Microsoft Foundry](https://img.shields.io/badge/Microsoft%20Foundry-Agent%20Service-0f6cbd.svg)
 ![Azure](https://img.shields.io/badge/deploy-azd%20up-0f6cbd.svg)
-![Tests](https://img.shields.io/badge/tests-46%20passing-2e7d4f.svg)
+![Tests](https://img.shields.io/badge/tests-51%20passing-2e7d4f.svg)
 
 [Quick start](#quick-start) · [Deploy](#deploy-to-azure) · [How it works](#how-it-works) · [Evaluation](#evaluation) · [Docs](#documentation)
 
@@ -57,6 +57,8 @@ Graphics on a live broadcast say *what* happened. Working out *why it mattered*,
 - FactChecker blocks any unsupported number or name
 - Producer agent airs, cuts in, queues or drops each graphic, with reasons
 - Resilience drills: break the feed, the model or an agent, live
+- [Ablation study](docs/ABLATION.md): each agent switched off and measured
+- MCP server: GitHub Copilot and other agents can query a live match; A2A too
 
 </td>
 </tr>
@@ -68,6 +70,8 @@ Graphics on a live broadcast say *what* happened. Working out *why it mattered*,
 - Fan, Analyst, Studio and Audio description views
 - Favourite clubs and players, one-metric mode, any language
 - Two-voice captioned commentary, Ask the analyst, 3D My Match reels
+- What if: change one moment and replay the rest 1,000 times
+- A phone second screen: ask by voice, buzz on your club's goals
 
 </td>
 <td valign="top">
@@ -76,6 +80,8 @@ Graphics on a live broadcast say *what* happened. Working out *why it mattered*,
 - Agents published to Microsoft Foundry Agent Service, with tracing and evaluations
 - Azure AI Content Safety, Microsoft Entra ID roles, managed identity, no API keys
 - Event Hubs in and out, Azure Functions back office, Container Apps
+- Teams full-time card, post-match packages in Blob Storage
+- [1,000 fans per replica, about $0.22 per 1,000 fans a match](docs/LOADTEST.md)
 - One command: `azd up`
 
 </td>
@@ -108,6 +114,9 @@ export AZURE_SPEECH_REGION=<region> AZURE_SPEECH_KEY=...          # neural voice
 | `/reel` | A personal 3D highlights reel, recorded in the browser |
 | `/story` | The project page |
 | `/overlay` | Keyable graphics output for a vision mixer |
+| `/phone` | The second screen for your phone |
+| `/?tour=1` | The app with the 60-second guided tour started |
+| `/mcp` | MCP endpoint for GitHub Copilot and other agents (`.vscode/mcp.json`) |
 
 ## Deploy to Azure
 
@@ -230,6 +239,7 @@ Everything else in the brief is covered too:
 - **Agents published to Foundry Agent Service.** `azd up` runs `scripts/foundry_publish.py`, which publishes `touchline-analyst` (with its six tools) and `touchline-narrator` as new versions tagged with the git commit, each with a Responsible-AI content policy. At runtime `FoundryAgent` binds the published version to the live match tools (`TOUCHLINE_FOUNDRY_AGENTS=on`).
 - **Any language from one model deployment.** The narrator writes graphics copy in any language; the FactChecker and Content Safety check it before it airs.
 - **Tracing.** The project is connected to Application Insights, so every agent run and workflow superstep appears in the Foundry tracing view.
+- **What it saves.** A new market's graphics language is a setting, not a sprint; agents are versioned and rolled back like software. See [docs/FOUNDRY.md](docs/FOUNDRY.md).
 - **Evaluations.** `scripts/foundry_eval.py` runs Foundry's quality, tool-use and safety evaluators (relevance, coherence, task adherence, intent resolution, tool-call accuracy, tool-output use, hate and violence) together with Touchline's own checks (every number grounded in a tool result, citations for "why" questions, short answers), and writes `docs/FOUNDRY_EVAL.md` with the portal link. It needs the deployed Foundry project, so run it after `azd up`.
 
 ## Enterprise readiness
@@ -261,7 +271,22 @@ From video:
 - **Top-down feed:** pass precision 0.88, recall 0.75, passer and receiver correct 89%, ball-speed error 2.1 km/h, shot recall 0.8.
 - **Broadcast camera:** player localisation within 0.43 m (median) over 17,000 detections. Pass detection from the angled view is experimental, and the report says why.
 
-There are **46 tests**. They include the real Agent Framework LLM path against a mock model (a model that invents "99 goals" is rejected), tampered story numbers, no insight using its future, every resilience drill, the Producer's editorial decisions, the Foundry agent definitions and content policy, Entra roles on producer tools, Prompt Shields, the post-match package and the Azure Functions app.
+There are **51 tests**. They include the real Agent Framework LLM path against a mock model (a model that invents "99 goals" is rejected), tampered story numbers, no insight using its future, every resilience drill, the Producer's editorial decisions, the Foundry agent definitions and content policy, Entra roles on producer tools, Prompt Shields, the post-match package and the Azure Functions app.
+
+## Proof that the agents earn their place
+
+Switching each specialist off on 12 unseen matches ([docs/ABLATION.md](docs/ABLATION.md)):
+
+| Without | What goes wrong |
+|---|---|
+| IngestGuard | A 10%-faulty feed corrupts the match: 786 duplicate events counted twice, pass counts off by 453 |
+| MomentScout | About 21 graphics a minute instead of 0.7 |
+| StorylineKeeper | 20 of 28 goals lose their match context |
+| FactChecker | Every corrupted line airs; with it, 99.7% are blocked with zero false alarms |
+| Producer (editor) | In a four-match studio, 85 of 99 big moments air instead of 95, with more repeats |
+
+Building the study found and fixed four real gaps in the fact-checker. At scale, one replica streams to
+1,000 live fans with every fan receiving every event ([docs/LOADTEST.md](docs/LOADTEST.md)).
 
 ## Explainable by construction
 
@@ -282,8 +307,10 @@ contributions, which the evidence drawer shows. See [docs/MODEL_CARD.md](docs/MO
 Useful commands:
 
 ```bash
-pytest -q                                          # 46 tests
+pytest -q                                          # 51 tests
 python scripts/evaluate.py --gate                  # evaluation gate
+python scripts/ablation.py --matches 12            # switch each agent off and measure (docs/ABLATION.md)
+python scripts/loadtest.py --fans 100 250 500 1000 # fans per replica (docs/LOADTEST.md)
 python scripts/foundry_eval.py                     # Foundry evaluators + Touchline checks on the analyst agent (needs Foundry)
 python scripts/render_reel3d.py --club home        # render a 3D My Match reel to MP4 offline
 python -m touchline.vision.autoevent --minutes 5   # auto-eventing from the top-down feed
@@ -303,6 +330,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 - **Voice:** `GET /api/speak?text=&lang=`.
 - **Graphics:** the [overlay contract](docs/OVERLAY_CONTRACT.md). `web/templates/touchline-graphics.html` loads in **CasparCG** (`play`, `stop`, `next`, `update`) and **SPX Graphics Controller**, or runs live with `?live=1`.
 - **A2A:** agent card at `/.well-known/agent-card.json`, JSON-RPC at `/a2a`.
+- **MCP:** Streamable HTTP at `/mcp` with `list_matches`, `get_scoreboard`, `get_key_moments`, `explain_event`, `get_player`, `get_team_report`, `get_recap`, `what_if` and `ask_analyst`. `.vscode/mcp.json` adds it to GitHub Copilot agent mode.
+- **What if:** `GET /api/matches/{session}/whatif` lists counterfactuals from the match; `POST` runs 1,000 replays.
 
 ## Project structure
 
@@ -320,6 +349,8 @@ touchline/
   safety.py       Azure AI Content Safety (Prompt Shields, moderation)
   auth.py         Microsoft Entra ID principal and roles (Container Apps authentication)
   outbound.py     verified-insight stream to Event Hubs
+  mcp_server.py   MCP server for GitHub Copilot and other agents
+  whatif.py       counterfactual replays
   highlights.py   My Match: reel planning (EDL) and rendering
   vision/         broadcast camera, top-down and broadcast-angle auto-eventing
   llm.py          Foundry / Azure OpenAI / OpenAI-compatible clients via Agent Framework, circuit breaker
@@ -327,11 +358,11 @@ touchline/
   a2a.py          A2A server (a2a-sdk)
   feeds.py        Azure Event Hubs producer / consumer
   i18n.py         en / es / fr / pt phrase banks
-web/              live app, 3D broadcast view (tv3d.js), 3D reel player, story page, overlay output, CasparCG/SPX template
+web/              live app, 3D broadcast view (tv3d.js), 3D reel player, phone second screen, story page, overlay output, CasparCG/SPX template
   vendor/three/   three.js (MIT); models/ CC0 characters and animations (Mesh2Motion / Quaternius)
 functions/        Azure Functions: post-match packages, social cards, watchdog
 infra/            Bicep for azd
-scripts/          model fitting, evaluation gate, Foundry publish and evaluation, Entra setup, 3D reel renderer, demo-seed search, Event Hubs publisher
+scripts/          model fitting, evaluation gate, ablation study, load test, Foundry publish and evaluation, Entra setup, 3D reel renderer, demo-seed search, Event Hubs publisher
 tests/            pytest suite
 docs/             evaluation, model card, overlay contract, broadcasters, impact, user test, governance, design system, submission kit
 ```
@@ -346,6 +377,9 @@ docs/             evaluation, model card, overlay contract, broadcasters, impact
 | [Impact](docs/IMPACT.md) | The problem, outcomes, cost and the path to production |
 | [Governance](docs/GOVERNANCE.md) | Data, AI controls, identity, audit, reliability |
 | [Evaluation](docs/EVAL.md) | The CI gate and video auto-eventing results |
+| [Ablation](docs/ABLATION.md) | What each agent is worth, measured by switching it off |
+| [Load test](docs/LOADTEST.md) | Fans per replica and cost per 1,000 fans |
+| [Microsoft Foundry](docs/FOUNDRY.md) | What Foundry does for the project, before and after |
 | [Model card](docs/MODEL_CARD.md) | The glass-box models and how they were fitted |
 | [Overlay contract](docs/OVERLAY_CONTRACT.md) | The `touchline.overlay/1` cue format |
 | [Design](docs/DESIGN.md) | The design system |

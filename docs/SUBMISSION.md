@@ -28,6 +28,8 @@ highlights reel for every fan.
 - **Personal controls:** pick a club or both, star favourite players, follow one player all match, track one metric, or turn on two-voice commentary.
 - **Ask the analyst:** a Foundry agent with match-data tools. Fan questions pass Azure AI Content Safety Prompt Shields first, and the agent also speaks A2A to other agents.
 - **My Match:** after the whistle, each fan's own highlights replay in the 3D stadium and record in their browser, with graphics in their language.
+- **What if:** change one moment (a red card that never happened, a goal ruled out) and replay the rest of the match 1,000 times.
+- **A phone second screen:** your player's numbers, ask by voice, and a buzz when your club scores.
 
 **What broadcasters get.**
 
@@ -35,15 +37,16 @@ highlights reel for every fan.
 - **An event-driven back office:** every verified insight streams out on Event Hubs. An Azure Function writes social cards and, at full time, a post-match package to Blob Storage.
 - **Controls a security team signs off:** Microsoft Entra ID roles on producer tools, Content Safety, managed identity instead of API keys, and a full audit trail of agent hand-offs, editorial decisions and who approved what.
 - **Resilience drills:** break the feed, the model, a narrator, the storyline agent, or inject a made-up number, and watch which agent catches it and how fast it recovers.
+- **Teams and Copilot:** a full-time card in Microsoft Teams, and an MCP server so GitHub Copilot or any agent can query a live match.
 
 **Microsoft and Azure technology.**
 
 - Microsoft Agent Framework: workflows with fan-out and fan-in, a supervisor, agents and tool calling
 - Microsoft Foundry: agents published to Foundry Agent Service (versioned, with a content policy), model deployment, tracing, and an evaluation script for Foundry's evaluators
 - Azure AI Content Safety (Prompt Shields and moderation) and Azure AI Speech (two neural voices per language)
-- A2A protocol
+- A2A protocol, and an MCP server for GitHub Copilot agent mode
 - Azure Container Apps, with Microsoft Entra ID authentication
-- Azure Event Hubs (in and out), Azure Functions (Flex Consumption) and Blob Storage
+- Azure Event Hubs (in and out), Azure Functions (Flex Consumption), Blob Storage, and a Microsoft Teams full-time card
 - Azure Monitor and Application Insights through OpenTelemetry
 - Managed Identity, Container Registry, and Bicep with `azd`
 - GitHub Actions: CI with tests and an evaluation gate
@@ -56,7 +59,7 @@ relevant to millions of different fans. In our evaluation on 12 unseen matches, 
 - produced each graphic in under 5 ms at p95, inside one broadcast frame
 - recovered a faulty feed exactly once
 
-The resilience drills also found a real gap during development, ordinals like "99th" slipping past the number check. It is now fixed and tested.
+Switching each agent off proves its worth (docs/ABLATION.md): without the fact-checker every corrupted line airs, and with it 99.7% are blocked with zero false alarms. Without the ingest guard a faulty feed counts 786 duplicate events. In a four-match studio the editor airs 95 of 99 big moments against 85 for first come, first served. The study also found and fixed four gaps in our own fact-checker. One replica streams to 1,000 live fans, about $0.22 per 1,000 fans a match (docs/LOADTEST.md).
 
 All data is synthetic, and the clubs and players are fictional.
 
@@ -89,8 +92,8 @@ red card comes at 29'.
 | 0:20 to 0:33 | Jump to 36'. Ironmoor goal; the replay camera orbits; the card shows "It began with a loss of possession by Ravi Varga" | "The agents remember. This goal started with Varga giving the ball away, twenty-four seconds earlier." |
 | 0:33 to 0:45 | Jump to 75'. Varga equaliser; switch to Analyst to show "Redemption for Ravi Varga" | "Forty minutes later, the storyline agent calls back: redemption for Varga." |
 | 0:45 to 0:55 | Jump to 93'. The 94' winner, the crowd jumps, "down to 2% win probability" | "Down to two percent. Then, in the ninety-fourth minute, a hat-trick." |
-| 0:55 to 1:05 | Producer console: Editor's decisions (aired, cut in, queued, dropped, with reasons) | "A producer agent decides what goes on air, and says why. A human can approve every graphic." |
+| 0:55 to 1:05 | What if tab: "Tariq Calloway is not sent off": the bars shift from 26% to 35% | "What if he'd stayed on? Touchline replays the rest of the match a thousand times." |
 | 1:05 to 1:17 | Switch to Español, then Audio description; Player cam on Varga | "One moment, four audiences and any language, including audio description for blind fans." |
-| 1:17 to 1:30 | Agents at work: press "Inject a made-up number" and "Crash a narrator"; the log shows who caught each and the recovery time | "We break it on purpose. The fact-checker blocks a made-up number; a crashed agent is covered and the show goes on." |
+| 1:17 to 1:30 | Producer console (Editor's decisions), then Agents at work: "Inject a made-up number" is blocked | "A producer agent decides what airs and says why. And when we slip in a made-up number, the fact-checker blocks it." |
 | 1:30 to 1:42 | Azure services panel: Foundry hosted agents, Content Safety, Event Hubs, Functions packages | "It runs on Microsoft Foundry Agent Service, Content Safety, Event Hubs and Azure Functions, with no API keys." |
-| 1:42 to 1:55 | My Match: the 3D reel plays, then the CasparCG template | "Every fan gets their own highlights, and broadcasters get graphics that drop straight into their playout. Touchline: the game, explained." |
+| 1:42 to 1:55 | The phone second screen, then My Match's 3D reel | "On your phone, or in your own highlights. Touchline: the game, explained." |
