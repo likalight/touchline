@@ -13,7 +13,7 @@ const store = {
 
 const S = {
   judge: location.pathname === "/judge" || new URLSearchParams(location.search).get("judge") === "1",
-  judgeToken: null, judgeResume: false,
+  judgeToken: null, judgeResume: false, story: null,
   sid: new URLSearchParams(location.search).get("session") || "demo",
   es: null,
   meta: null,
@@ -56,6 +56,16 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
 
 /* ------------------------------------------------------------------ boot */
 async function boot() {
+  if (S.judge) {
+    document.body.classList.add("judge-mode");
+    const panel = $("#judgePanel"), hero = $("#judgeHeroImage");
+    panel.hidden = false; panel.setAttribute("role", "main"); panel.tabIndex = -1;
+    $(".skip-link").href = "#judgePanel";
+    $("#judgeStart").disabled = true;
+    hero.sizes = "(max-width: 767px) calc(100vw - 40px), 50vw";
+    hero.srcset = "/static/assets/matchday-hero-480.webp 480w, /static/assets/matchday-hero-960.webp 960w, /static/assets/matchday-hero.webp 1536w";
+    hero.src = hero.dataset.src;
+  }
   try {
     const [i18n, health] = await Promise.all([fetch("/api/i18n").then((r) => r.json()), fetch("/api/health").then((r) => r.json())]);
     S.i18n = i18n; S.llm = health.llm; S.speechNeural = !!(health.speech && health.speech.available);
@@ -70,6 +80,7 @@ async function boot() {
   addEventListener("resize", resizeCanvas);
   requestAnimationFrame(frame);
   if (S.judge) restoreJudge(); else connect();
+  if (!S.judge) loadPitch3D();
   loadModels();
   setInterval(tickSpeech, 400);
 }
@@ -85,6 +96,14 @@ function buildLangSelect() {
     sel.add(o);
   }
   sel.value = S.prefs.lang in S.i18n.languages || llmOn ? S.prefs.lang : "en";
+}
+
+let pitchLoad = null;
+function loadPitch3D() {
+  if (!pitchLoad) pitchLoad = import("/static/tv3d.js").catch(error => {
+    console.warn("3D view unavailable; the tactical canvas remains available.", error);
+    pitchLoad = null;
+  });
 }
 
 function savePrefs() { store.set("prefs", S.prefs); }
@@ -108,6 +127,7 @@ function connect() {
     const m = JSON.parse(e.data), ins = S.insights.find((x) => x.id === m.insight_id);
     if (!ins) return;
     ((ins.renders = ins.renders || {})[m.persona] = ins.renders[m.persona] || {})[m.lang] = m.render;
+    S.story?.refresh();
     if (m.persona === S.prefs.persona && m.lang === S.prefs.lang) {
       const old = document.querySelector(`.card[data-id="${CSS.escape(ins.id)}"]`);
       if (old) old.replaceWith(renderCard(ins));
@@ -118,12 +138,12 @@ function connect() {
   es.addEventListener("control", (e) => { const m = JSON.parse(e.data); if (m.action === "pause") setPaused(true); if (m.action === "resume") setPaused(false); });
   es.addEventListener("judge_chapter", (e) => {
     const chapter = JSON.parse(e.data);
-    const hint = chapter.index === 1 ? "Switch to Analyst to see Varga's redemption, then compare Fan." : "Open an evidence receipt to see the agents' work.";
-    $("#judgeStatus").textContent = `${chapter.index + 1} / 3 — ${chapter.title}. ${hint}`;
+    const hint = "The next chapter unlocks when its goal arrives. Explore any chapter you have seen.";
+    $("#judgeStatus").textContent = `${chapter.title}. ${hint}`;
   });
   es.addEventListener("done", () => {
     if (S.judge) {
-      $("#judgeStatus").textContent = "Replay complete. Compare Fan and Analyst, inspect the receipts, or restart.";
+      $("#judgeStatus").textContent = "The story is complete. Revisit a chapter, compare perspectives, and follow the thread back to its source.";
       $("#pauseBtn").disabled = true;
     } else toast("Full-time. A fresh live match starts shortly.");
   });
@@ -132,6 +152,15 @@ function connect() {
 }
 
 function onHello(h) {
+  // A reconnected SSE stream sends its history again. Rebuild rather than duplicate it.
+  S.insights = []; rerenderCards();
+  if (S.story) {
+    document.body.classList.add("story-playing");
+    $("#judgePanel").removeAttribute("role");
+    $(".skip-link").href = "#mainStage";
+    S.story.reset(h.judge?.moments);
+    loadPitch3D();
+  }
   S.meta = h.match; S.llm = h.llm || S.llm;
   S.players = {};
   for (const t of [h.match.home, h.match.away]) for (const p of t.players) S.players[p.id] = { ...p, color: t.color };
@@ -172,7 +201,7 @@ function onState(s) {
   if (s.drills && s.drills.length) { for (const d of s.drills) S.drills[d.id] = d; if (!$("#tab-ops").hidden) renderDrills(); }
   tvBug(s);
   const sc = s.score;
-  $("#score").textContent = `${sc.home}–${sc.away}`;
+  $("#score").textContent = `${sc.home}-${sc.away}`;
   $("#clock").textContent = s.status === "half_time" ? "HT" : s.status === "full_time" ? "FT" : `${s.minute}'`;
   const wp = s.win_prob;
   const pct = (v) => Math.round(v * 100);
@@ -251,6 +280,7 @@ function rendersFor(ins, persona = S.prefs.persona) {
 function onInsight(ins, replayed) {
   if (S.judge && !["goal", "hat_trick"].includes(ins.kind)) return;
   S.insights.push(ins);
+  S.story?.add(ins);
   if (S.insights.length > 400) S.insights.shift();
   const card = renderCard(ins);
   const cards = $("#cards");
@@ -1190,6 +1220,7 @@ function applyPrefs() {
   $("#awayBug").classList.toggle("fav", isMine("away"));
   document.documentElement.lang = S.prefs.lang;
   rerenderCards();
+  S.story?.refresh();
   updateMetric();
   if (!$("#tab-mine").hidden && S.meta) loadReelPlan();
 }
@@ -1224,6 +1255,25 @@ async function loadMe() {
 function bindJudgeMode() {
   if (!S.judge) return;
   document.body.classList.add("judge-mode");
+  $("#judgeHeroImage").src = $("#judgeHeroImage").dataset.src;
+  S.story = TouchlineStory.create({
+    loadReceipt: async id => {
+      const response = await fetch(`/api/matches/${encodeURIComponent(S.sid)}/insights/${encodeURIComponent(id)}/receipt`);
+      if (!response.ok) throw new Error("Evidence unavailable");
+      return response.json();
+    },
+    openReceipt, openEvent: openEvidence,
+    loadWhatIf: async eventId => {
+      const response = await fetch(`/api/matches/${encodeURIComponent(S.sid)}/whatif`, {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scenario: `nogoal:${eventId}` }),
+      });
+      if (!response.ok) throw new Error("Comparison unavailable");
+      return response.json();
+    },
+    getTeams: () => ({home: S.meta?.home.short || "Home", away: S.meta?.away.short || "Away"}),
+    getPrefs: () => S.prefs,
+    setPersona: persona => { S.prefs.persona = persona; savePrefs(); applyPrefs(); },
+  });
   $("#judgePanel").hidden = false;
   $("#pauseBtn").disabled = true;
   $("#matchLabel").textContent = "Your own replay, ready when you are";
@@ -1231,6 +1281,7 @@ function bindJudgeMode() {
                          club: "", focus: "", metric: "", favs: [] });
   $('[data-tab="ask"]').click();
   $("#judgeStart").addEventListener("click", startJudge);
+  $("#judgeStart").disabled = false;
 }
 
 async function restoreJudge() {
@@ -1259,6 +1310,7 @@ async function startJudge() {
       if (!stopped.ok && stopped.status !== 404) throw new Error("Could not stop the previous replay. Please retry.");
     }
     S.es?.close(); S.judgeToken = null;
+    S.story?.reset();
     const response = await fetch("/api/judge", { method: "POST" });
     if (!response.ok) { const error = await response.json(); throw new Error(error.detail || "Could not start replay."); }
     const match = await response.json();

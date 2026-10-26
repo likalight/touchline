@@ -16,6 +16,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Match memory navigation and evidence map contracts
+        run: node --test tests/story.test.cjs
       - run: pip install -r requirements.txt -r functions/requirements.txt pytest
       - name: Unit, pipeline, API, A2A, Foundry wiring, drills, enterprise controls, Functions and mocked-LLM tests
         run: pytest -q

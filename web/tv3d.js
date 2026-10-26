@@ -175,7 +175,9 @@ function init() {
     seats.forEach(([x, y, z], i) => {
       m4.makeTranslation(x, y, z); inst.setMatrixAt(i, m4);
       const fan = fanSide === "home" ? homeCol : fanSide === "away" ? awayCol : (x < 0 ? homeCol : awayCol);
-      c.set(rnd() < 0.55 ? fan : palette[(rnd() * palette.length) | 0]).multiplyScalar(0.55 + rnd() * 0.35);
+      // Keep the action legible: fewer bright kit blocks in the judge presentation.
+      const kitShare = S.judge ? 0.30 : 0.55;
+      c.set(rnd() < kitShare ? fan : palette[(rnd() * palette.length) | 0]).multiplyScalar(S.judge ? 0.30 + rnd() * 0.25 : 0.55 + rnd() * 0.35);
       inst.setColorAt(i, c); phase[i] = rnd() * 6.28;
     });
     inst.geometry = crowdGeo.clone();

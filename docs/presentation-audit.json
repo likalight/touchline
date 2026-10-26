@@ -1,0 +1,39 @@
+{
+  "schema": "touchline.presentation-audit/1",
+  "generated_at": "2026-10-26T08:38:40.172Z",
+  "url": "http://127.0.0.1:8765/judge",
+  "lighthouse_version": "13.5.0",
+  "form_factor": "mobile",
+  "throttling_method": "simulate",
+  "scores": {
+    "performance": 96,
+    "accessibility": 100
+  },
+  "metrics": {
+    "first-contentful-paint": {
+      "value": 1670.592,
+      "unit": "millisecond",
+      "display": "1.7 s"
+    },
+    "largest-contentful-paint": {
+      "value": 2664.456,
+      "unit": "millisecond",
+      "display": "2.7 s"
+    },
+    "cumulative-layout-shift": {
+      "value": 0.0004575367548434501,
+      "unit": "unitless",
+      "display": "0"
+    },
+    "total-blocking-time": {
+      "value": 6,
+      "unit": "millisecond",
+      "display": "10 ms"
+    }
+  },
+  "scope": "Local entrance lab audit; not field performance, a full accessibility certification or 3D replay device testing.",
+  "remaining": [
+    "LCP exceeds the 2.5-second target",
+    "Production cache lifetimes and image delivery need measurement"
+  ]
+}
