@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/match-centre.png" width="100%" alt="Touchline match centre: a prominent score, tactical pitch and an inspectable redemption story in the shared plum and lime design.">
+<img src="docs/player-spotlight.png" width="100%" alt="Touchline Player Spotlight: Ravi Varga's fictional kit, timestamped match totals and source-linked player moments.">
 
 # Touchline
 
@@ -26,6 +26,13 @@ and a timeline that lets you revisit goals while the broadcast continues. Person
 view, inspect the evidence, or explore Q&A, players, alternate endings and production tools.
 The same light/dark appearance follows you into Judge Mode, the phone companion and the reel.
 Read the [main-app redesign and validation report](docs/MATCH_CENTRE.md).
+
+**Player Spotlight** gives all 22 fictional players an identity, illustrated club kit,
+timestamped match totals and inspectable moments. Select a player to explore their story,
+then follow them on the pitch with a persistent name and shirt-number label. The camera
+keeps the action ahead of a quieter stadium, and the compact opening brings the pitch
+into view sooner. Statistics use only snapshots delivered to the browser; inspecting an
+earlier moment does not rewind the pitch or turn current totals into historical facts.
 
 A mistake leads to a goal. The same player returns to equalize. Then comes the winner.
 Touchline remembers the earlier moment and explains the connection. A fan gets the story;

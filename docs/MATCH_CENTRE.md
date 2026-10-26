@@ -16,6 +16,34 @@ The taste and existing-project redesign skills inform the visual audit. This is 
 CSS in the existing application, not a Fluent component implementation or an official
 Premier League design. There are no league marks or claims of endorsement.
 
+## Player experience follow-up
+
+The visual audit found three concrete gaps: the featured player was difficult to identify,
+the crowd competed with the replay, and the desktop pitch began about 606px down the page.
+The compact header now brings the pitch to approximately 485px at 1440px width. Judge Mode
+retains its separate introduction.
+
+Player Spotlight adds a fictional kit illustration, all 22 players, three timestamped
+match totals and up to three delivered player moments. Goal explanations take precedence
+over same-minute milestones. Viewers can pin an earlier moment, inspect its receipt,
+return to the latest moment, or follow the player on the pitch. The identity label tracks
+the actual camera subject, including the replay scorer. Stadium colours are restrained;
+the elevated replay camera shows more pitch, with a stationary orbit under reduced motion.
+
+The profile never fetches future match history. Totals are explicitly timed separately
+from a selected story, and only the current audience/language rendering supplies its
+prose. An illustrated kit is not a player likeness or an official club asset.
+
+Validation: 83 backend tests and six JavaScript tests passed. The real match-centre browser
+journey checks player selection, snapshot values, earlier-moment pinning, goal/milestone
+deduplication, keyboard focus, receipt access, follow camera and identity. The shared-route
+checks cover both themes, all eight tools, and 320/390/768px layouts. Screenshots in the
+README show the running application, not a design mockup. These checks are functional
+and visual verification, not human usability evidence. Lighthouse 13.5.0's local mobile
+accessibility audit scored 100 after correcting description-list markup and matching the
+moment buttons' accessible names to their visible labels; automated checks do not replace
+screen-reader or participant testing.
+
 [Microsoft's Fluent principles](https://fluent2.microsoft.design/design-principles) emphasize
 focus, familiar behavior and inclusion. We apply those principles through progressive
 disclosure, readable controls and keyboard navigation. The [Premier League/Microsoft
