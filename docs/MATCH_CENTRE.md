@@ -43,8 +43,9 @@ not validation of Touchline's usability.
   player table scrolls within a labeled region instead of overflowing the phone viewport.
 - Source inspection handles a missing event outcome as “Not recorded”; previously that
   value could throw before the evidence drawer opened.
-- Reconnect and seek history is batched into one feed update. This preserves pinned goals
-  and reduces repeated layout work during the initial event burst.
+- Reconnect and seek history is batched into one feed update, reducing repeated layout
+  work during the initial event burst. Seeking preserves a pinned goal; reconnecting
+  rebuilds the session view and returns to the latest goal.
 
 ## Validation and limits
 
