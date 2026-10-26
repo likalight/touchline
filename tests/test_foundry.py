@@ -10,6 +10,7 @@ feval = importlib.util.module_from_spec(spec); spec.loader.exec_module(feval)
 
 class Msg:
     def __init__(self, *texts):
+        self.role = "tool"
         self.contents = [type("C", (), {"result": t, "text": None})() for t in texts]
 
 
@@ -46,6 +47,6 @@ def test_touchline_eval_checks():
     conv = [Msg('{"score": {"home": 3, "away": 2}, "xg": 1.47}')]
     assert feval.grounded_numbers("score?", "Kestrel lead 3-2 on 1.47 xG.", conv)["passed"]
     assert not feval.grounded_numbers("score?", "Kestrel lead 4-2.", conv)["passed"]
-    assert feval.cites_events("Why did they score?", "A late winner [E01837].")["passed"]
+    assert feval.cites_events("Why did they score?", "A late winner [E01837].", [Msg("E01837")])["passed"]
     assert not feval.cites_events("Why did they score?", "A late winner.")["passed"]
     assert feval.concise("One. Two. Three.") and not feval.concise("One. Two. Three. Four.")

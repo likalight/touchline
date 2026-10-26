@@ -761,24 +761,52 @@ function tickSpeech() {
 
 /* ------------------------------------------------------------------ evidence drawer */
 let drawerTrigger = null;
+let drawerBackground = [];
 function showDrawer() {
   if (!$("#drawer").contains(document.activeElement)) drawerTrigger = document.activeElement;
+  if ($("#drawer").hidden) {
+    drawerBackground = [...document.body.children].filter(el => el !== $("#drawer")).map(el => [el, el.inert]);
+    drawerBackground.forEach(([el]) => { el.inert = true; });
+  }
   $("#drawer").hidden = false;
   $("#drawerClose").focus();
 }
-function closeDrawer() { $("#drawer").hidden = true; drawerTrigger?.focus(); }
+function closeDrawer() {
+  $("#drawer").hidden = true;
+  drawerBackground.forEach(([el, wasInert]) => { el.inert = wasInert; });
+  drawerBackground = [];
+  if (drawerTrigger?.isConnected) drawerTrigger.focus();
+}
+
+function drawerKeys(e) {
+  const drawer = $("#drawer");
+  if (drawer.hidden) return;
+  if (e.key === "Escape") { e.preventDefault(); closeDrawer(); return; }
+  if (e.key !== "Tab") return;
+  const focusable = [...drawer.querySelectorAll('button, a[href], input, select, textarea, summary, [tabindex="0"]')]
+    .filter(el => !el.disabled && el.getClientRects().length);
+  const first = focusable[0], last = focusable.at(-1);
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+  if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+}
 
 async function openReceipt(id) {
   try {
     const query = new URLSearchParams({ persona: S.prefs.persona, lang: S.prefs.lang });
     const response = await fetch(`/api/matches/${S.sid}/insights/${encodeURIComponent(id)}/receipt?${query}`);
     if (!response.ok) throw new Error("Receipt unavailable. The replay may have expired; restart to try again.");
-    const d = await response.json(), r = d.render, v = d.verification, ed = d.editorial;
+    const raw = await response.text(), d = JSON.parse(raw), r = d.render, v = d.verification, ed = d.editorial;
     const chips = (ids) => ids.map(eid => `<button class="chip" data-ev="${esc(eid)}">${esc(eid)}</button>`).join(" ");
     $("#drawerBody").innerHTML = `<span class="eyebrow">Evidence receipt · Synthetic match</span>
       <h3>${esc(r?.title || id)}</h3>
       <p class="muted">${esc(id)} · ${d.minute}' · ${esc(r?.persona || S.prefs.persona)} / ${esc(r?.lang || S.prefs.lang)} · ${esc(r?.source || "no render")}</p>
       ${(r?.lines || []).map(line => `<p>${esc(line.text)}<br>${chips(line.ev || [])}</p>`).join("")}
+      <details class="receipt-comparison"><summary>Compare Fan and Analyst</summary>
+        <p class="muted">The same moment and evidence, written for two audiences.</p>
+        ${Object.entries(d.audiences || {}).filter(([, copy]) => copy).map(([persona, copy]) => `<article>
+          <span class="eyebrow">${persona === "casual" ? "Fan" : "Analyst"} · ${esc(copy.lang)}</span>
+          <h4>${esc(copy.title)}</h4>${(copy.lines || []).map(line => `<p>${esc(line.text)}</p>`).join("")}</article>`).join("")}
+      </details>
       <h4>Checks performed</h4><p><strong>${esc(v.status)}</strong> · ${v.checks} frame checks at this moment.</p>
       ${v.issues.length ? `<ul>${v.issues.map(issue => `<li>${esc(issue)}</li>`).join("")}</ul>` : ""}
       <p class="muted">${esc(d.scope)}</p>
@@ -796,7 +824,15 @@ async function openReceipt(id) {
       <details><summary>${d.agents.length} recorded agent handoffs</summary>
       <ol class="receipt-agents">${d.agents.map(a => `<li><strong>${esc(a.agent)}</strong> · ${esc(a.status)} · ${a.ms} ms<br><span class="muted">${esc(a.note)}${a.handoff_to ? ` → ${esc(a.handoff_to)}` : ""}</span></li>`).join("")}</ol>
       </details>
-      <p><strong>${d.pipeline_ms} ms</strong> · ${esc(d.timing_scope)}</p>`;
+      <p><strong>${d.pipeline_ms} ms</strong> · ${esc(d.timing_scope)}</p>
+      <button class="btn primary" id="downloadReceipt">Download evidence receipt</button>
+      <p class="muted">JSON containing this moment's facts, checks, audience versions and agent handoffs.</p>`;
+    $("#downloadReceipt").addEventListener("click", () => {
+      const url = URL.createObjectURL(new Blob([raw], { type: "application/json" }));
+      const link = document.createElement("a"); link.href = url;
+      link.download = `touchline-${d.insight_id.replace(/[^a-z0-9_-]/gi, "_")}-receipt.json`;
+      link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     showDrawer();
   } catch (error) { toast(error.message); }
 }
@@ -847,7 +883,10 @@ async function ask(q) {
     const r = await fetch(`/api/matches/${S.sid}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q, lang: S.prefs.lang }) }).then((x) => x.json());
     box.innerHTML = `<div class="q">${esc(q)}</div><div class="a">${esc(r.answer)}</div>
       <div class="chips">${(r.citations || []).slice(0, 6).map((id) => `<button class="chip" data-ev="${id}">${id}</button>`).join("")}</div>
-      <div class="by">${r.source === "router" ? "Answered from the live match data" : "Written by the analyst agent, numbers checked against its tools"} in ${r.ms} ms</div>`;
+      <div class="by">${r.source === "router" ? "Answered from the live match data" : "Written by the analyst agent, numbers checked against its tools"} in ${r.ms} ms</div>
+      ${r.execution ? `<details class="qa-proof"><summary>How this answer ran</summary><p>${r.execution.path === "foundry_hosted" ? "Microsoft Foundry hosted agent" : "Local Agent Framework agent"}${r.execution.fallback ? " · fallback used" : ""}</p>
+        <p>${esc(r.execution.model || "")} · ${r.grounding?.tool_results || 0} tool results checked</p>
+        <p class="muted">${esc(r.grounding?.scope || "")} Request ${esc(r.execution.request_id || "")}</p></details>` : ""}`;
   } catch { box.querySelector(".a").textContent = "The analyst couldn't be reached. Check your connection and ask again."; }
 }
 
@@ -1286,7 +1325,7 @@ function bindControls() {
   $("#recapBtn").addEventListener("click", loadRecap);
   $("#reelBtn").addEventListener("click", makeReel);
   $("#drawerClose").addEventListener("click", closeDrawer);
-  addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
+  addEventListener("keydown", drawerKeys);
   $$(".tabs [role=tab]").forEach((t) => t.addEventListener("click", () => {
     $$(".tabs [role=tab]").forEach((x) => x.setAttribute("aria-selected", String(x === t)));
     $$(".tabpanel").forEach((p) => { p.hidden = p.id !== "tab-" + t.dataset.tab; });

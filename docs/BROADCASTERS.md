@@ -26,7 +26,7 @@ frame; language-model work never sits on the hot path.
 | Stage | Measured (p50 / p95) |
 |---|---|
 | Event to updated match state | about 0.15 / under 1 ms |
-| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, editorial producer, commentary) | about 2.5 / under 5 ms |
+| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, editorial producer, commentary) | See the current measured p50 / p95 in EVAL.md (server pipeline only) |
 | Extra language via Azure OpenAI (async; arrives as a `render` update) | model-bound, typically sub-second |
 | Personal highlights reel (75 s, 1280x720, H.264) | about 45 s on 1 vCPU |
 

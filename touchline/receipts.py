@@ -20,6 +20,8 @@ def build_receipt(session, insight, persona="casual", lang="en"):
     return {
         "schema": "touchline.receipt/1", "synthetic": True, "session_id": session.id,
         "insight_id": insight["id"], "minute": insight["minute"], "render": render,
+        "audiences": {p: insight.get("renders", {}).get(p, {}).get(lang)
+                      or insight.get("renders", {}).get(p, {}).get("en") for p in ("casual", "analyst")},
         "claims": [{"key": frame["k"], "values": frame["p"], "event_ids": frame["ev"]}
                    for frame in [insight["headline"], *insight["reasons"]]],
         "evidence": evidence, "verification": insight["verification"],

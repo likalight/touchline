@@ -20,7 +20,7 @@ from touchline.agents.storyline import StorylineKeeper
 from touchline.agents.verifier import FactChecker
 from touchline.analytics.models import get_models
 from touchline.analytics.state import MatchState
-from touchline.llm import get_llm
+from touchline.llm import get_llm, SessionLLM
 from touchline.outbound import insight_message, outbound
 from touchline.orchestrator import Deps, MomentPipeline, Trace
 from typing import AsyncIterator
@@ -69,6 +69,8 @@ class MatchSession:
         self.trace = Trace()
         self.insights: list[dict] = []
         self.ask_agent = AskTheAnalyst(self.state, lambda: self.insights)
+        self.llm = SessionLLM(get_llm())
+        self.ask_agent.llm = self.narrator.llm = self.llm
         self.extra_langs = set(extra_langs or [])
         self.deps = Deps(self.analyst, self.checker, self.narrator, self.producer, self.trace, self.extra_langs,
                          now_t=lambda: self.state.t, storyline=self.storyline, late=self._late_render,
@@ -123,7 +125,7 @@ class MatchSession:
     def describe(self) -> dict:
         return {"session_id": self.id, "match": self.meta.model_dump(), "seed": self.seed, "speed": self.speed,
                 "chaos": self.chaos, "mode": self.producer.mode, "total_events": len(self.events), "done": self.done,
-                "topology": MomentPipeline.topology(), "llm": get_llm().status(),
+                "topology": MomentPipeline.topology(), "llm": self.llm.status(),
                 "models": {"version": get_models().params["version"], "trained_on": get_models().params["trained_on"]}}
 
     def snapshot(self) -> dict:
@@ -147,7 +149,7 @@ class MatchSession:
             "insights": len(self.insights), "pipeline_ms_p50": percentile(lat, 0.5), "pipeline_ms_p95": percentile(lat, 0.95),
             "event_ms_p50": percentile(ev_lat, 0.5), "event_ms_p95": percentile(ev_lat, 0.95),
             "ingest": self.guard.stats, "fault_injection": self.injector.injected, "verifier": self.checker.stats(),
-            "producer": self.producer.stats(), "llm": get_llm().status(),
+            "producer": self.producer.stats(), "llm": self.llm.status(),
             "narrator_llm": {"accepted": self.narrator.llm_ok, "rejected": self.narrator.llm_rejected},
         }
 
@@ -178,6 +180,9 @@ class MatchSession:
     async def _run(self) -> None:
         if self.feed is not None:
             async for payload in self.feed:
+                self.broadcast_outputs = not payload.get("_replay", False)
+                if payload.get("match_id") and payload["match_id"] != self.meta.match_id:
+                    raise ValueError("Incoming event belongs to another match")
                 for ev in self.guard.push(payload):
                     self.events.append(ev)
                     await self._play(ev, realtime=True)
@@ -209,7 +214,8 @@ class MatchSession:
         if not self.broadcast_outputs:
             return
         outbound.emit({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
-                       "score": dict(self.state.score), "insights": len(self.insights)})
+                       "score": dict(self.state.score), "insights": len(self.insights),
+                       "package": self.package()})
 
     def add_feedback(self, insight_id: str, useful: bool, persona: str, lang: str) -> dict:
         ins = next((i for i in self.insights if i["id"] == insight_id), None)
@@ -370,10 +376,10 @@ class MatchSession:
             self._storm_left = 60
             entry["_guard0"] = dict(self.guard.stats)
         elif name == "llm_outage":
-            get_llm().breaker.force_open(25)
+            self.llm.breaker.force_open(25)
             entry.update(detected=time.time(), detected_by="CircuitBreaker")
             entry["notes"].append("model marked unavailable; narrators and the analyst switched to verified phrase banks"
-                                  if get_llm().client is not None else "no model configured here, so the app already runs on verified phrase banks")
+                                  if self.llm.client is not None else "no model configured here, so the app already runs on verified phrase banks")
         else:
             self.deps.drills[name] = 1 if name == "hallucination" else 2
         self.drills.append(entry)
@@ -412,7 +418,7 @@ class MatchSession:
                                   f"{caught['reordered']} re-ordered; every real event applied exactly once, in order"]
                     done = True
             elif n == "llm_outage":
-                done = not get_llm().breaker.open
+                done = not self.llm.breaker.open
                 if done:
                     d["notes"].append("breaker closed again; model calls allowed (any failure re-opens it)")
             elif after_insight is not None and d["detected"] and self.deps.drills.get(n, 0) == 0 and not after_insight.get("degraded"):

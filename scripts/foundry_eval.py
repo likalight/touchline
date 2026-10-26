@@ -6,7 +6,7 @@
   tool-output use, and the hate/unfairness and violence safety evaluators
   (run in the Foundry project; the report link opens the results in the portal)
 * Touchline checks, run locally on the same conversations:
-  - grounded_numbers: every number in the answer appears in a tool result or the question
+  - grounded_numbers: every number in the answer appears in a tool result
   - cites_events: answers about specific moments cite an event ID
   - concise: three sentences or fewer, as the instructions require
 
@@ -41,28 +41,44 @@ QUERIES = [
 NUM = re.compile(r"\d+(?:\.\d+)?")
 
 
+def _get(obj, name, default=None):
+    return obj.get(name, default) if isinstance(obj, dict) else getattr(obj, name, default)
+
+
 def _texts(conversation) -> str:
+    """Only tool outputs are evidence. Prompts and model responses cannot verify themselves."""
     out = []
     for m in conversation or []:
-        for c in getattr(m, "contents", []) or []:
-            for attr in ("result", "text"):
-                v = getattr(c, attr, None)
-                if v:
+        role = str(_get(m, "role", "")).lower()
+        for c in _get(m, "contents", []) or []:
+            kind = str(_get(c, "type", "")).lower()
+            if kind == "function_result" or role == "tool":
+                v = _get(c, "result")
+                if v is None:
+                    v = _get(c, "text")
+                if v is not None:
                     out.append(str(v))
+        if role == "tool" and isinstance(_get(m, "content"), str):
+            out.append(_get(m, "content"))
     return " ".join(out)
 
 
 def grounded_numbers(query: str, response: str, conversation) -> dict:
-    corpus = set(NUM.findall(_texts(conversation) + " " + query))
+    tools = _texts(conversation)
+    corpus = set(NUM.findall(re.sub(r"\bE\d{5}\b", "", tools)))
     corpus |= {f"{float(n):g}" for n in corpus}
     nums = [n for n in NUM.findall(re.sub(r"\bE\d{5}\b", "", response))]
     bad = [n for n in nums if n not in corpus and f"{float(n):g}" not in corpus]
-    return {"passed": not bad, "score": 1.0 if not bad else 0.0, "reason": f"unsupported: {bad}" if bad else "all numbers grounded"}
+    ok = bool(tools) and not bad
+    return {"passed": ok, "score": float(ok),
+            "reason": "no tool evidence" if not tools else f"unsupported: {bad}" if bad else "numbers present in tool outputs (not semantic verification)"}
 
 
-def cites_events(query: str, response: str) -> dict:
+def cites_events(query: str, response: str, conversation=None) -> dict:
     needs = bool(re.search(r"\bwhy\b|por qué|pourquoi|happened|explain", query, re.I))
-    ok = (not needs) or bool(re.search(r"\[?E\d{5}\]?", response))
+    cited = set(re.findall(r"E\d{5}", response))
+    available = set(re.findall(r"E\d{5}", _texts(conversation)))
+    ok = ((not needs) or bool(cited)) and cited <= available
     return {"passed": ok, "score": 1.0 if ok else 0.0}
 
 
@@ -73,8 +89,9 @@ def concise(response: str) -> bool:
 async def main() -> int:
     if not (os.getenv("FOUNDRY_PROJECT_ENDPOINT") and os.getenv("FOUNDRY_MODEL")):
         print("Set FOUNDRY_PROJECT_ENDPOINT and FOUNDRY_MODEL (azd env get-values) to run the Foundry evaluation.")
-        return 0
+        return 1
     os.environ.setdefault("TOUCHLINE_LLM", "on")
+    os.environ.setdefault("TOUCHLINE_FOUNDRY_AGENTS", "on")
     from agent_framework import LocalEvaluator, evaluate_agent, evaluator
     from agent_framework.foundry import FoundryEvals
 
@@ -89,6 +106,9 @@ async def main() -> int:
         await asyncio.sleep(0.05)
     llm = get_llm()
     agent = llm.agent("AskTheAnalyst", INSTRUCTIONS, s.ask_agent.tools())
+    if not llm.hosted.get("AskTheAnalyst"):
+        print("The published Foundry agent is required for this evaluation; local fallback is not cloud evidence.")
+        return 1
 
     local = LocalEvaluator(evaluator(grounded_numbers, name="touchline_grounded_numbers"),
                            evaluator(cites_events, name="touchline_cites_events"), evaluator(concise, name="touchline_concise"))
@@ -118,9 +138,12 @@ after a full synthetic match. Agent: {hosted}, model `{llm.model}`.
 Foundry's judges score quality (relevance, coherence, task adherence, intent), tool use, and safety. Touchline's own checks
 confirm what matters on air: no number the tools did not return, citations for "why" questions, and short answers.
 """
-    (ROOT / "docs" / "FOUNDRY_EVAL.md").write_text(md)
+    checks = [counts for r in results for counts in (r.per_evaluator or {}).values()]
+    passed = bool(checks) and all(c.get("passed", 0) > 0 and not c.get("failed", 0) and not c.get("error", 0) for c in checks)
+    md += f"\nEvaluation gate: {'PASSED' if passed else 'FAILED'}.\n"
+    (ROOT / "docs" / "FOUNDRY_EVAL.md").write_text(md, encoding="utf-8")
     print(md)
-    return 0
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

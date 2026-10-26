@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+import hashlib
 import logging
 import os
 
@@ -76,11 +77,19 @@ def on_insight(events: list[func.EventHubEvent]) -> None:
                     "copy": m.get("copy", {}), "evidence": m.get("evidence", []), "checked": m.get("verification") == "verified"}
             _put(c, f"{mid}/social/{m['minute']:03d}-{m['id']}.json", card)
             log.info("social card %s %s", mid, m["kind"])
-        if m.get("type") == "full_time" and WEB:
-            r = httpx.get(f"{WEB}/api/matches/{m['session']}/package", timeout=30)
-            r.raise_for_status()
-            pkg = {**r.json(), "built_at": dt.datetime.now(dt.timezone.utc).isoformat(), "built_by": "touchline-packages (Azure Functions)"}
-            stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%S")
+        if m.get("type") == "full_time":
+            snapshot = m.get("package")
+            if snapshot is None:  # backwards compatibility, with identity validation
+                if not WEB:
+                    raise ValueError("Full-time message requires a package snapshot")
+                r = httpx.get(f"{WEB}/api/matches/{m['session']}/package", timeout=30)
+                r.raise_for_status()
+                snapshot = r.json()
+            if (snapshot.get("match_id") != mid or snapshot.get("session") != m.get("session")
+                    or not snapshot.get("complete")):
+                raise ValueError("Package does not belong to this completed match")
+            stamp = hashlib.sha256(json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:20]
+            pkg = {**snapshot, "built_at": dt.datetime.now(dt.timezone.utc).isoformat(), "built_by": "touchline-packages (Azure Functions)"}
             _put(c, f"{mid}/package-{stamp}.json", pkg)
             _put(c, f"{mid}/latest.json", pkg)
             _put(c, "latest.json", {"match_id": mid, "score": pkg["score"], "home": pkg["home"], "away": pkg["away"],

@@ -8,6 +8,8 @@ open <app-url>/?session=live
 """
 import argparse
 import asyncio
+import json
+import os
 import sys
 from pathlib import Path
 
@@ -20,5 +22,7 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--speed", type=float, default=10.0, help="x real time")
     a = ap.parse_args()
+    if a.speed <= 0:
+        ap.error("--speed must be positive")
     n = asyncio.run(publish_match(a.seed, a.speed))
-    print(f"published {n} events")
+    print(json.dumps({"match_id": f"SYN-{a.seed:05d}", "events_published": n, "partition": os.getenv("TOUCHLINE_EVENTHUB_PARTITION", "0")}))

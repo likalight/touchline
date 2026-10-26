@@ -155,7 +155,9 @@ def test_deployment_smoke_requires_hosted_execution(monkeypatch, failure):
     before = {"llm": dict(llm)}
     if failure == "offline":
         before["llm"]["backend"] = "offline"
-    answer = {"source": "router" if failure == "router" else "llm:foundry", "answer": "0-0"}
+    answer = {"source": "router" if failure == "router" else "llm:foundry", "answer": "0-0",
+              "execution": {"path": "foundry_hosted", "completed": True, "fallback": failure == "fallback"},
+              "grounding": {"tool_results": 1}}
     after = {"llm": {**llm, "hosted_fallbacks": int(failure == "fallback")}}
     replies = iter([before, {"state": {"minute": 1}}, answer, after])
     monkeypatch.setattr(smoke_deployment, "urlopen", lambda *args, **kwargs: io.BytesIO(json.dumps(next(replies)).encode()))

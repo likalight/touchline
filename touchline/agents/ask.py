@@ -122,7 +122,11 @@ class AskTheAnalyst:
                 from touchline.safety import safety
 
                 if tool_log and not bad and not bad_citations and (await safety.moderate(text))["ok"]:
-                    return {"answer": text, "citations": citations, "source": f"llm:{self.llm.backend}"}
+                    return {"answer": text, "citations": citations, "source": f"llm:{self.llm.backend}",
+                            "execution": self.llm.execution() if hasattr(self.llm, "execution") else {},
+                            "grounding": {"tool_results": len(tool_log), "numbers_supported": True,
+                                          "citations_supported": True,
+                                          "scope": "Token-level numbers and event IDs in returned tools; not semantic entailment."}}
         return self.route(question)
 
     def route(self, q: str) -> dict:

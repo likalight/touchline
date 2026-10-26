@@ -5,8 +5,9 @@ worker, about one vCPU, like a Container Apps replica with `cpu: 1.0`), plays a 
 real match's event rate, so this is conservative), and connects every fan to the live stream for 30 seconds.
 Fan-out lag is the gap between the first and the last fan receiving the same match event.
 
-The fans ran on the same two-vCPU machine as the server, so at high counts the lag is mostly the load generator
-itself queueing; **server CPU is the capacity signal**, and it stays well below one core.
+This historical experiment ran clients and server on the same machine. It cannot isolate the
+contributions of the load generator, server and network to delivery lag. It has not been repeated
+on the deployed Azure topology for this revision.
 
 | Fans | Connected | Received every event | Fan-out lag p50 / p95 | Server CPU | Memory |
 |---|---|---|---|---|---|
@@ -15,16 +16,17 @@ itself queueing; **server CPU is the capacity signal**, and it stays well below 
 | 500 | 500 | 100% | 59.3 / 443.2 ms | 24% | 151 MiB |
 | 1,000 | 1,000 | 100% | 153.1 / 3521.1 ms | 47% | 177 MiB |
 
-p95 fan-out lag reaches 3.5 s at 1,000 fans, largely the co-located load generator. Events in
-the last two seconds of each run are left out of "received every event", and each run lasts 30 seconds, not a whole match.
+At 1,000 connections the measured p95 fan-out lag was 3.5 seconds. Events in the last two
+seconds are excluded from completeness, and the denominator is the union seen by clients;
+an event missed by every client is not detected. These results do not establish full-match
+capacity or acceptable real-time delivery at 1,000 fans.
 
-**One replica serves at least 1,000 live fans** with every fan receiving every event and the server under 70% of one
-vCPU, at ten times the real event rate. Container Apps adds replicas on HTTP load (`maxReplicas` in
-`infra/resources.bicep`).
+The current app runs on one warm replica. Scale-out requires shared session state and input
+ownership. The runner now rejects an empty sample and uses a 500 ms p95 fan-out target in
+addition to connections, completeness and CPU when reporting a passing short-run count.
+Those stricter gates were not applied to the historical numbers above.
 
-## Cost per 1,000 fans
-
-A 1 vCPU, 2 GiB replica for a two-hour match window costs about **$0.22** at Azure Container Apps consumption
-prices (East US: $0.000024 per vCPU-second, $0.000003 per GiB-second, from the Azure Retail Prices API; the monthly free
-grant is ignored here). At 1,000 fans per replica that is **about $0.22 per 1,000 fans per match** for the
-live experience, before any language-model or speech usage (see [BROADCASTERS.md](BROADCASTERS.md#cost-per-match)).
+A historical compute-only estimate of $0.22 for a two-hour 1-vCPU/2-GiB window excluded Event
+Hubs, storage, Functions, monitoring, networking, model calls and speech. It is neither a
+current Azure quote nor a measured cost per 1,000 fans. Obtain deployment-specific pricing
+and a sustained external load result before making cost or capacity claims.

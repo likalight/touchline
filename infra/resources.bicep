@@ -302,6 +302,11 @@ resource packagesContainer 'Microsoft.Storage/storageAccounts/blobServices/conta
   name: 'packages'
 }
 
+resource journalContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (enableEventHubs) {
+  parent: blobService
+  name: 'input-journal'
+}
+
 resource blobOwner 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (enableEventHubs) {
   name: guid(resourceGroup().id, identity.id, roles.storageBlobDataOwner)
   scope: storage
@@ -390,7 +395,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
     type: 'UserAssigned'
     userAssignedIdentities: { '${identity.id}': {} }
   }
-  dependsOn: [acrPull, openAiUser, aiUser, speechUser, safetyUser]
+  dependsOn: [acrPull, openAiUser, aiUser, speechUser, safetyUser, blobOwner, journalContainer]
   properties: {
     managedEnvironmentId: env.id
     configuration: {
@@ -429,6 +434,8 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: appInsights.properties.ConnectionString }
             { name: 'TOUCHLINE_PUBLIC_URL', value: 'https://${webName}.${env.properties.defaultDomain}' }
             { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }
+            { name: 'TOUCHLINE_EVENTHUB_PARTITION', value: '0' }
+            { name: 'TOUCHLINE_INPUT_JOURNAL_URL', value: enableEventHubs ? '${storage!.properties.primaryEndpoints.blob}input-journal/partition-0.json' : '' }
             { name: 'AZURE_SPEECH_REGION', value: location }
             { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
             { name: 'AZURE_CONTENT_SAFETY_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.cognitiveservices.azure.com' }
@@ -444,7 +451,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               type: 'Readiness'
-              httpGet: { path: '/api/health', port: 8000 }
+              httpGet: { path: '/api/ready', port: 8000 }
               periodSeconds: 10
             }
           ]

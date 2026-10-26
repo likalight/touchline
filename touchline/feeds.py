@@ -20,15 +20,13 @@ log = logging.getLogger("touchline.feeds")
 HUB = os.getenv("TOUCHLINE_EVENTHUB_NAME", "match-events")
 
 
-def _consumer():
+def _consumer(credential=None):
     from azure.eventhub.aio import EventHubConsumerClient
 
     group = os.getenv("TOUCHLINE_EVENTHUB_CONSUMER_GROUP", "$Default")
     if os.getenv("TOUCHLINE_EVENTHUB_CONNECTION"):
         return EventHubConsumerClient.from_connection_string(os.environ["TOUCHLINE_EVENTHUB_CONNECTION"], group, eventhub_name=HUB)
-    from azure.identity.aio import DefaultAzureCredential
-
-    return EventHubConsumerClient(os.environ["TOUCHLINE_EVENTHUB_NAMESPACE"], HUB, group, DefaultAzureCredential())
+    return EventHubConsumerClient(os.environ["TOUCHLINE_EVENTHUB_NAMESPACE"], HUB, group, credential)
 
 
 def eventhub_enabled() -> bool:
@@ -36,28 +34,77 @@ def eventhub_enabled() -> bool:
 
 
 async def eventhub_payloads(stop: Optional[asyncio.Event] = None) -> AsyncIterator[dict]:
-    """Yield decoded JSON payloads from the hub (latest position), across all partitions."""
+    """Resume one journaled partition; otherwise receive new events from all partitions.
+
+    The journal commits the offset with the complete current match history. On restart,
+    that history rebuilds state with outbound publication suppressed before live reception.
+    """
+    from azure.identity.aio import DefaultAzureCredential
+    from touchline.journal import BlobJournalStore, InputJournal
+
     q: asyncio.Queue = asyncio.Queue(maxsize=10000)
-    client = _consumer()
+    credential = DefaultAzureCredential()
+    client = _consumer(credential)
+    store = journal = None
+    task = None
+    failure = None
+    options = {"starting_position": "@latest"}
 
     async def on_event(partition_context, event):
+        nonlocal failure
+        if failure:
+            return
         if event is None:
             return
         try:
-            q.put_nowait(json.loads(event.body_as_str()))
-        except Exception as exc:  # malformed message: let the IngestGuard see something invalid
-            q.put_nowait({"_invalid": str(exc)})
+            payload = json.loads(event.body_as_str())
+            if not isinstance(payload, dict):
+                raise ValueError("message must be a JSON object")
+        except (ValueError, TypeError) as exc:
+            payload = {"_invalid": str(exc)}
+        if journal:
+            try:
+                await journal.append(payload, str(event.offset))
+            except Exception as exc:
+                failure = exc  # SDK callbacks can swallow exceptions; stop reception explicitly.
+                return
+        # Apply backpressure rather than treating QueueFull as malformed data and losing events.
+        await q.put(payload)
 
-    task = asyncio.create_task(client.receive(on_event=on_event, starting_position="@latest"))
     try:
+        url = os.getenv("TOUCHLINE_INPUT_JOURNAL_URL")
+        if url:
+            partition = os.getenv("TOUCHLINE_EVENTHUB_PARTITION", "0")
+            store = BlobJournalStore(url, credential)
+            journal = InputJournal(store, {"namespace": os.getenv("TOUCHLINE_EVENTHUB_NAMESPACE", "connection-string"),
+                                          "hub": HUB, "partition": partition,
+                                          "group": os.getenv("TOUCHLINE_EVENTHUB_CONSUMER_GROUP", "$Default")})
+            saved = await journal.restore()
+            if saved["meta"]:
+                yield {"meta": saved["meta"], "_replay": True}
+                for payload in saved["events"]:
+                    yield {**payload, "_replay": True}
+            options = {"partition_id": partition, "starting_position": saved["offset"] if saved["offset"] is not None else "-1",
+                       "starting_position_inclusive": False}
+        task = asyncio.create_task(client.receive(on_event=on_event, **options))
         while stop is None or not stop.is_set():
+            if failure:
+                raise failure
+            if task.done() and q.empty():
+                await task  # receive/auth/storage errors must reach the health monitor
+                return
             try:
                 yield await asyncio.wait_for(q.get(), timeout=1.0)
             except asyncio.TimeoutError:
                 continue
     finally:
+        if task:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         await client.close()
-        task.cancel()
+        if store:
+            await store.close()
+        await credential.close()
 
 
 async def publish_match(seed: int, speed: float = 1.0) -> int:
@@ -76,10 +123,11 @@ async def publish_match(seed: int, speed: float = 1.0) -> int:
     sim = MatchSimulator(seed)
     events = list(sim.run())
     async with prod:
-        await prod.send_batch([EventData(json.dumps({"meta": sim.meta.model_dump()}))], partition_key=sim.match_id)
+        partition = os.getenv("TOUCHLINE_EVENTHUB_PARTITION", "0")
+        await prod.send_batch([EventData(json.dumps({"meta": sim.meta.model_dump()}))], partition_id=partition)
         last = 0.0
         for ev in events:
             await asyncio.sleep(max(0.0, (ev.t - last) / speed))
             last = ev.t
-            await prod.send_batch([EventData(ev.model_dump_json())], partition_key=sim.match_id)
+            await prod.send_batch([EventData(ev.model_dump_json())], partition_id=partition)
     return len(events)

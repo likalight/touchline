@@ -319,6 +319,10 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 }
 .drawer[hidden] { display: none; }
 .drawer h3 { font: 700 22px/1.1 var(--display); margin: 0 0 4px; }
+.drawer .eyebrow:first-child { display: block; padding-right: 65px; }
+.receipt-comparison article { border-left: 2px solid var(--sodium); padding: 12px 0 6px 14px; margin-top: 12px; }
+.receipt-comparison article h4 { margin-top: 8px; }
+.qa-proof { margin: 12px 0; overflow-wrap: anywhere; }
 .drawer .close { position: absolute; right: 14px; top: 14px; }
 .bars { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .bars .row { display: grid; grid-template-columns: 150px 1fr 48px; gap: 8px; align-items: center; font-size: 13.5px; }

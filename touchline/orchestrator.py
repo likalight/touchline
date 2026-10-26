@@ -194,7 +194,7 @@ class NarratorExecutor(Executor):
                 if self.d.on_fault:
                     self.d.on_fault("hallucination", "FactChecker",
                                     f"blocked \"{fake}\" ({next((i for i in issues if '99' in str(i)), issues[0]) if issues else 'not caught'}); the verified copy aired")
-            llm = get_llm()
+            llm = self.d.narrator.llm
             if llm.available and self.d.extra_langs and self.d.late is not None:
                 for lg in sorted(self.d.extra_langs):
                     if lg in BANKS:

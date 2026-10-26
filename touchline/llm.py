@@ -20,6 +20,8 @@ import logging
 import os
 import re
 import time
+import uuid
+from contextvars import ContextVar
 from typing import Any, Callable, Optional
 
 log = logging.getLogger("touchline.llm")
@@ -73,6 +75,7 @@ class LLM:
         self._agents: dict[str, Any] = {}
         self.hosted: dict[str, bool] = {}
         self.fallbacks = 0
+        self._execution = ContextVar("touchline_execution", default=None)
         if os.getenv("TOUCHLINE_LLM", "").lower() in ("off", "offline", "0"):
             return
         try:
@@ -134,15 +137,20 @@ class LLM:
 
     async def run(self, name: str, instructions: str, prompt: str, timeout: float = 6.0,
                   tools: Optional[list[Callable]] = None) -> Optional[str]:
+        evidence = {"request_id": uuid.uuid4().hex, "agent": name, "backend": self.backend,
+                    "model": self.model, "path": "unavailable", "completed": False, "fallback": False}
+        self._execution.set(evidence)
         if not self.available:
             return None
         agent = self.agent(name, instructions, tools)
         is_hosted = self.hosted.get(name, False)  # request-local: another request may update status
+        evidence["path"] = "foundry_hosted" if is_hosted else "local_agent"
         t0 = time.perf_counter()
         self.calls += 1
         try:
             resp = await asyncio.wait_for(agent.run(prompt), timeout=timeout)
             self.breaker.ok()
+            evidence["completed"] = True
             return resp.text
         except Exception as exc:
             self.errors += 1
@@ -154,9 +162,11 @@ class LLM:
                 fallback = Agent(self.client, instructions, name=name, tools=tools or None)
                 self.hosted[name] = False
                 self.fallbacks += 1
+                evidence.update(path="local_agent", fallback=True)
                 try:
                     resp = await asyncio.wait_for(fallback.run(prompt), timeout=timeout)
                     self.breaker.ok()
+                    evidence["completed"] = True
                     return resp.text
                 except Exception as fallback_exc:
                     self.errors += 1
@@ -164,7 +174,12 @@ class LLM:
             self.breaker.fail()
             return None
         finally:
-            self.total_ms += (time.perf_counter() - t0) * 1000
+            evidence["duration_ms"] = round((time.perf_counter() - t0) * 1000, 2)
+            self.total_ms += evidence["duration_ms"]
+
+    def execution(self) -> dict:
+        """Provenance of this task's call, never another concurrent request's status."""
+        return dict(self._execution.get() or {})
 
     async def run_json(self, name: str, instructions: str, prompt: str, timeout: float = 6.0) -> Optional[Any]:
         text = await self.run(name, instructions, prompt, timeout)
@@ -180,6 +195,30 @@ class LLM:
         return {"backend": self.backend, "model": self.model, "breaker_open": self.breaker.open,
                 "calls": self.calls, "errors": self.errors, "hosted_agents": [k for k, v in self.hosted.items() if v], "hosted_fallbacks": self.fallbacks,
                 "avg_ms": round(self.total_ms / self.calls, 1) if self.calls else None}
+
+
+class SessionLLM:
+    """Session-local outage drills over a shared model client and real service breaker."""
+    def __init__(self, shared):
+        self.shared = shared
+        self.breaker = CircuitBreaker()
+
+    def __getattr__(self, name):
+        return getattr(self.shared, name)
+
+    @property
+    def available(self):
+        return not self.breaker.open and self.shared.available
+
+    async def run(self, *args, **kwargs):
+        return await self.shared.run(*args, **kwargs) if self.available else None
+
+    async def run_json(self, *args, **kwargs):
+        return await self.shared.run_json(*args, **kwargs) if self.available else None
+
+    def status(self):
+        return {**self.shared.status(), "breaker_open": self.breaker.open or self.shared.breaker.open,
+                "session_outage_drill": self.breaker.open}
 
 
 _LLM: Optional[LLM] = None

@@ -34,6 +34,7 @@ DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", "221"))  # 3-2 comeback, hat-tr
 DEMO_SPEED = float(os.getenv("TOUCHLINE_DEMO_SPEED", "10"))
 
 sessions: dict[str, MatchSession] = {}
+feed_health = {"status": "disabled"}
 DEMO = "demo"
 
 
@@ -117,6 +118,16 @@ async def demo_keeper():
         await asyncio.sleep(5)
 
 
+async def supervised_feed():
+    feed_health.update(status="running")
+    try:
+        await hub_consumer()
+        feed_health.update(status="stopped")
+    except Exception as exc:
+        feed_health.update(status="failed", error=type(exc).__name__)
+        log.exception("Live feed stopped; inspect the input journal and connection before restarting")
+
+
 class _MCPApp:
     """The MCP endpoint, rebuilt on each app start (its session manager can only run once per instance)."""
 
@@ -138,9 +149,11 @@ async def lifespan(app: FastAPI):
 
     setup_telemetry()
     sessions.clear()
+    feed_health.clear()
+    feed_health.update(status="disabled")
     tasks = [asyncio.create_task(demo_keeper())]
     if eventhub_enabled():
-        tasks.append(asyncio.create_task(hub_consumer()))
+        tasks.append(asyncio.create_task(supervised_feed()))
     mcp = build_mcp(lambda: sessions)
     MCP_APP.app = mcp.streamable_http_app()
     try:
@@ -153,6 +166,8 @@ async def lifespan(app: FastAPI):
         for s in list(sessions.values()):
             await s.stop()
         sessions.clear()
+        from touchline.outbound import outbound
+        await outbound.close()
 
 
 app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
@@ -241,13 +256,20 @@ async def health():
     from touchline.safety import safety
     from touchline.speech import speech
 
-    return {"status": "ok", "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status(),
+    return {"status": "degraded" if feed_health["status"] in {"failed", "stopped"} else "ok",
+            "feed": dict(feed_health), "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status(),
             "content_safety": safety.status(), "auth": auth_mode()}
 
 
 @app.get("/api/i18n")
 async def i18n():
     return {"languages": LANGS, "banks": BANKS}
+
+
+@app.get("/api/ready")
+async def ready():
+    ok = DEMO in sessions and feed_health["status"] not in {"failed", "stopped"}
+    return JSONResponse({"ready": ok, "feed": dict(feed_health)}, status_code=200 if ok else 503)
 
 
 @app.post("/api/matches")
@@ -380,6 +402,8 @@ async def cues(sid: str):
 
 @app.post("/api/matches/{sid}/cues/{cue_id}/decision")
 async def decide(sid: str, cue_id: str, body: Decision, request: Request):
+    if sid in (DEMO, "live") and os.getenv("TOUCHLINE_PROTECT_SHARED", "").lower() == "on" and auth_mode() != "entra":
+        raise HTTPException(403, "The shared broadcast is read-only.")
     p = require_producer(request)
     s = get(sid)
     judge_owner(s, request)
