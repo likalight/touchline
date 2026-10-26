@@ -29,6 +29,22 @@ class MemoryStore:
         pass
 
 
+def test_comparison_dataset_detects_changed_inputs_and_keeps_results_separate(tmp_path):
+    from scripts.compare_agents import dataset_hash, read_dataset
+    row = {'seed': 5000, 'insight_id': 'one', 'input': {'minute': 30},
+           'pipeline': {'renders': {}}, 'scoring': {'players': []}, 'single_agent': {'status': 'not_run'}}
+    report = {'schema': 'touchline.narration-comparison/2', 'cases': [row], 'dataset_sha256': dataset_hash([row])}
+    path = tmp_path / 'frozen.json'
+    path.write_text(json.dumps(report))
+    assert read_dataset(path) == [row]
+    row['single_agent'] = {'status': 'failed', 'raw': None}
+    assert dataset_hash([row]) == report['dataset_sha256']
+    row['input']['minute'] = 94
+    path.write_text(json.dumps(report))
+    with pytest.raises(ValueError, match='fingerprint'):
+        read_dataset(path)
+
+
 def test_journal_commits_history_with_offset_and_fails_closed():
     # Explicitly test the interleaving case after metadata has loaded.
     async def interleaved():

@@ -24,6 +24,15 @@ after they are observed. Do not submit claims that these steps have already pass
 2. **Personalization with proof:** compare Fan and Analyst, then open and download one receipt.
 3. **Purposeful agents:** show an actual failure being caught and a successful hosted request's execution evidence.
 
+Judge Mode now includes **Try an incorrect stat**. It rechecks one chance-quality claim
+against the recorded synthetic estimate, changes its value in a copy, and shows the real
+checker verdict. The result can be downloaded. Call this a controlled numeric-check
+demonstration; it is not a live model outage or evidence of semantic truth.
+
+Four real local pipeline fault drills are recorded in [recovery evidence](evidence/recovery.json).
+The application recovered from feed corruption, narrator and storyline failures, and a
+fabricated claim. Accelerated local recovery time is not a production latency promise.
+
 The five-stage brief is covered by ingest validation, interpreted match state, causal/contextual
 explanations, timed graphics and audience preferences. See the [full category evidence map](WINNING_CASE.md).
 
@@ -56,6 +65,21 @@ staged success, mock service panel or offline result carrying a cloud label.
 - Current CI run and its downloadable evaluation artifact.
 - One receipt, Foundry evidence and the category case.
 - Clear synthetic-data statement, prototype boundaries and dependency licenses.
+
+## Local video rehearsal
+
+`scripts/record_demo.cjs` records actual UI interactions, including the checker test, with
+editorial captions. `scripts/render_demo.py` trims waiting between chapters into a video
+under two minutes. Every frame is labeled **Local rehearsal / synthetic match**, and the
+closing caption lists uncompleted hosted and participant work. The video is silent and
+captioned; add original narration and actual hosted footage before the final submission.
+
+```bash
+# Use the same Playwright/Chromium environment variables as the browser tests.
+DEMO_RECORDING=work/demo-recording node scripts/record_demo.cjs
+# Development-only encoder: pip install imageio-ffmpeg==0.6.0
+python scripts/render_demo.py --input-dir work/demo-recording --output work/touchline-rehearsal.mp4
+```
 
 ## Evidence wording
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -21,6 +22,22 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 PERSONAS = ('casual', 'analyst', 'studio', 'access')
+
+
+def dataset_hash(rows):
+    """Bind both alternatives to the same frozen inputs and reference outputs."""
+    frozen = [{k: row[k] for k in ('seed', 'insight_id', 'input', 'pipeline', 'scoring')} for row in rows]
+    return hashlib.sha256(json.dumps(frozen, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+
+
+def read_dataset(path):
+    report = json.loads(path.read_text(encoding='utf-8'))
+    rows = report.get('cases', [])
+    if report.get('schema') != 'touchline.narration-comparison/2' or not 1 <= len(rows) <= 24:
+        raise ValueError('Expected a prepared v2 dataset with 1..24 cases.')
+    if report.get('dataset_sha256') != dataset_hash(rows):
+        raise ValueError('Frozen dataset fingerprint does not match.')
+    return rows
 INSTRUCTIONS = '''You are a single football graphics agent. Call get_context once and write
 all four English audience versions of this synthetic moment. Use only its claim frames
 and source facts; do not invent statistics, players, records or event IDs. Casual: plain
@@ -99,14 +116,21 @@ async def main():
     mode.add_argument('--run', action='store_true')
     parser.add_argument('--limit', type=int, default=12)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--input', type=Path, help='Frozen --prepare dataset; required with --run')
     args = parser.parse_args()
     if not 1 <= args.limit <= 24:
         parser.error('--limit must be 1..24; model runs are deliberately bounded')
+    if args.run and not args.input:
+        parser.error('--run requires --input from --prepare so the cases cannot silently change')
+    if args.prepare and args.input:
+        parser.error('--input is only used with --run')
+    if args.input and args.input.resolve() == args.output.resolve():
+        parser.error('Keep the frozen input separate from the observed output')
     from touchline.llm import get_llm, _json_from
     if args.run and (not get_llm().available or get_llm().backend != 'foundry'):
         print('A configured Foundry model is required. Use --prepare for an offline dataset.', file=sys.stderr)
         return 1
-    items = await prepare(args.limit)
+    items = [] if args.run else await prepare(args.limit)
     llm = get_llm() if args.run else None
     rows = []
     for item in items:
@@ -114,11 +138,20 @@ async def main():
         reference = {p: insight['renders'][p]['en'] for p in PERSONAS}
         row = {'seed': item['seed'], 'insight_id': insight['id'], 'input': item['context'],
                'pipeline': {'renders': reference, 'checks': score_copy(insight, reference, item['players'])},
+               'scoring': {'insight': {**{k: insight[k] for k in ('headline', 'reasons', 'minute', 'event_ids')},
+                                       'score': insight.get('score', {})},
+                           'players': item['players']},
                'single_agent': {'status': 'not_run'}}
+        rows.append(row)
+    if args.run:
+        rows = read_dataset(args.input)
+    for row in rows:
         if llm:
-            frozen = json.dumps(item['context'], ensure_ascii=False)
+            frozen = json.dumps(row['input'], ensure_ascii=False)
+            calls = []
             def get_context() -> str:
                 """The same interpreted frames and time-bounded source facts given to the pipeline narrators."""
+                calls.append('get_context')
                 return frozen
             raw = await llm.run('SingleWriterBaseline', INSTRUCTIONS, 'Write all four audience versions.',
                                 timeout=20, tools=[get_context])
@@ -126,12 +159,20 @@ async def main():
                 rendered = _json_from(raw or '')
             except (ValueError, TypeError):
                 rendered = {}
+            checks = score_copy(row['scoring']['insight'], rendered, row['scoring']['players'])
+            if not calls:
+                checks['passed'] = False
+                checks['issues'].append('The agent did not retrieve the supplied context.')
             row['single_agent'] = {'status': 'completed' if raw else 'failed', 'raw': raw,
-                                   'checks': score_copy(insight, rendered, item['players']),
+                                   'checks': checks, 'context_tool_calls': len(calls),
                                    'execution': llm.execution()}
-        rows.append(row)
-    report = {'schema': 'touchline.narration-comparison/1', 'observed_at': datetime.now(timezone.utc).isoformat(),
+    report = {'schema': 'touchline.narration-comparison/2', 'observed_at': datetime.now(timezone.utc).isoformat(),
               'status': 'measured' if llm else 'prepared_not_run', 'cases': rows,
+              'dataset_sha256': dataset_hash(rows),
+              'summary': {'cases': len(rows), 'attempted': len(rows) if llm else 0,
+                          'pipeline_format_numeric_citation_passes': sum(r['pipeline']['checks']['passed'] for r in rows),
+                          'single_agent_completed': sum(r['single_agent']['status'] == 'completed' for r in rows),
+                          'single_agent_format_numeric_citation_passes': sum(r['single_agent'].get('checks', {}).get('passed', False) for r in rows)},
               'scope': 'Single-agent narration versus specialist phrase-bank narration on identical interpreted inputs. '
                        'Not an end-to-end single-agent baseline, a semantic accuracy score, or evidence that more agents always win.'}
     args.output.parent.mkdir(parents=True, exist_ok=True)

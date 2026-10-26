@@ -10,11 +10,18 @@ explicitly recommends starting with the least complexity that reliably meets the
 ```bash
 python scripts/compare_agents.py --prepare --limit 12 --output evidence/comparison-inputs.json
 # With the chosen Foundry model configured; this makes billable model calls:
-python scripts/compare_agents.py --run --limit 12 --output evidence/comparison-results.json
+python scripts/compare_agents.py --run --input evidence/comparison-inputs.json --output evidence/comparison-results.json
 ```
 
 Preparation runs held-out seeds beginning at 5000 and freezes selected goal/card/milestone
 inputs. The two paths receive the same interpreted frames and time-bounded source facts:
+
+The [prepared 12-case dataset](evidence/comparison-inputs.json) has no model-run results.
+Its SHA-256 binds the cases, scoring context and reference outputs. `--run` reads that
+exact dataset, verifies its fingerprint and writes to a separate file. It does not
+regenerate or silently replace cases. Retrieving the context tool is required for a
+baseline check to pass. Every attempted case, including timeout and malformed output,
+stays in the denominator. CI also prepares a fresh dataset as a downloadable artifact.
 
 - The existing specialist narrators render four audience versions from phrase banks.
 - One Agent Framework agent on the configured Foundry model uses a context tool and writes

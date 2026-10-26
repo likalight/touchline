@@ -1283,6 +1283,11 @@ function bindJudgeMode() {
   document.body.classList.add("judge-mode");
   $("#judgeHeroImage").src = $("#judgeHeroImage").dataset.src;
   S.story = TouchlineStory.create({
+    loadChallenge: async id => {
+      const response = await fetch(`/api/matches/${encodeURIComponent(S.sid)}/insights/${encodeURIComponent(id)}/challenge`);
+      if (!response.ok) throw new Error("Checker test unavailable");
+      return response.json();
+    },
     loadReceipt: async id => {
       const response = await fetch(`/api/matches/${encodeURIComponent(S.sid)}/insights/${encodeURIComponent(id)}/receipt`);
       if (!response.ok) throw new Error("Evidence unavailable");

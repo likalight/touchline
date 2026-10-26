@@ -14,6 +14,12 @@ The normal public Judge Mode remains anonymous and isolated.
 Save the deployment command result and app URL. Open `/judge` on desktop and phone, start two
 independent replays, pause one and verify the other keeps running. Check refresh and restart.
 
+On Windows, ensure the `python` found by the postprovision hook has `pip` and the project
+dependencies available. A virtual environment created by `uv` may not include `pip`.
+Check `python -m pip --version` before `azd up`. When using portable CLIs, put their
+directories on the current process PATH so Azure SDK credentials can find `az`.
+`azd config set auth.useAzCliAuth true` lets azd use the same Azure CLI login.
+
 ## 2. Prove hosted Foundry execution
 
 ```bash

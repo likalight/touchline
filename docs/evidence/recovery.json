@@ -1,0 +1,90 @@
+{
+  "schema": "touchline.recovery-evidence/1",
+  "observed_at": "2026-10-26T10:47:23.552861+00:00",
+  "source_sha256": "cfcfbc2849122177b5a99a95a3f66cb3264d55036a23270877d9b430940e2fa9",
+  "seed": 221,
+  "injected_at_sequence": 200,
+  "passed": true,
+  "checks": {
+    "all_four_drills_detected_and_recovered": true,
+    "no_injected_claim_in_rendered_copy": true,
+    "events_applied_once": true,
+    "analyst_stand_in_used": true,
+    "match_completed": true
+  },
+  "drills": [
+    {
+      "id": "D1",
+      "name": "feed_storm",
+      "label": "Corrupt the feed",
+      "minute": 11,
+      "started": 1793011641.956491,
+      "detected": 1793011641.9574883,
+      "detected_by": "IngestGuard",
+      "recovered": 1793011641.994613,
+      "ms": 38,
+      "notes": [
+        "7 malformed events quarantined, 4 duplicates dropped, 10 re-ordered; every real event applied exactly once, in order"
+      ]
+    },
+    {
+      "id": "D2",
+      "name": "narrator_crash",
+      "label": "Crash a narrator",
+      "minute": 11,
+      "started": 1793011641.956491,
+      "detected": 1793011641.984323,
+      "detected_by": "Narrator[analyst]",
+      "recovered": 1793011642.0258632,
+      "ms": 69,
+      "notes": [
+        "caught; the studio narrator's verified copy stood in",
+        "next moment ran the full pipeline cleanly"
+      ]
+    },
+    {
+      "id": "D3",
+      "name": "storyline_crash",
+      "label": "Crash the storyline agent",
+      "minute": 11,
+      "started": 1793011641.956491,
+      "detected": 1793011641.981576,
+      "detected_by": "StorylineKeeper",
+      "recovered": 1793011642.0258632,
+      "ms": 69,
+      "notes": [
+        "caught in the agent; the moment went on without storyline callbacks",
+        "next moment ran the full pipeline cleanly"
+      ]
+    },
+    {
+      "id": "D4",
+      "name": "hallucination",
+      "label": "Inject a made-up number",
+      "minute": 11,
+      "started": 1793011641.956491,
+      "detected": 1793011641.984323,
+      "detected_by": "FactChecker",
+      "recovered": 1793011642.0263536,
+      "ms": 70,
+      "notes": [
+        "blocked \"Tariq Calloway breaks the lines, his 99th goal of the season\" (unsupported number '99'); the verified copy aired",
+        "next moment ran the full pipeline cleanly"
+      ]
+    }
+  ],
+  "final_score": {
+    "home": 3,
+    "away": 2
+  },
+  "insights": 70,
+  "ingest": {
+    "accepted": 1851,
+    "duplicates": 4,
+    "quarantined": 7,
+    "reordered": 10,
+    "gaps_skipped": 0
+  },
+  "escaped_insight_ids": [],
+  "scope": "Accelerated local synthetic replay, four controlled faults injected together. No hosted model, Azure outage, process restart, network latency or production recovery SLA is measured."
+}
