@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Match reel</title>
+<script src="/static/theme.js"></script>
 <link rel="preload" href="/static/fonts/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
 <style>
 @font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; }
@@ -27,9 +28,12 @@ button:focus-visible, a.btn:focus-visible { outline: 2px solid var(--sodium); ou
 .prog { flex: 1 1 200px; height: 4px; background: #1c3a2c; border-radius: 2px; overflow: hidden; }
 .prog i { display: block; height: 100%; width: 0; background: var(--sodium); }
 </style>
+<link rel="stylesheet" href="/static/experience.css">
+<link rel="stylesheet" href="/static/companion.css">
 </head>
-<body>
+<body class="reel-page">
 <main>
+  <div class="companion-nav"><a href="/">Touchline / Match centre</a><label>Appearance <select id="storyTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
   <h1 id="title">Your highlights</h1>
   <p class="sub" id="sub">Cut from the broadcast camera, with graphics checked against the match data.</p>
   <div class="stage">

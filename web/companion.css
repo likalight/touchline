@@ -1,0 +1,31 @@
+/* Phone and reel surfaces reuse the match centre's palette and preference. */
+@font-face { font-family:"Barlow"; src:url("/static/fonts/Barlow-Regular.woff2") format("woff2"); font-weight:400; font-display:swap; }
+:root { --ui:"Barlow",system-ui,sans-serif; --display:"Barlow Condensed","Arial Narrow",sans-serif; }
+.companion-page { background:#f5f3f7; }
+.companion-page[data-theme="dark"] { background:#17111d; }
+.companion-page body { --deep:var(--surface); --card:var(--surface-raised); font-family:var(--ui); }
+.companion-nav { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:0 0 20px; font:500 13px var(--ui); }
+.companion-nav a { color:var(--ink); text-decoration:none; }
+.companion-nav a:hover { text-decoration:underline; text-underline-offset:4px; }
+.companion-nav label { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--muted); }
+.companion-nav select { width:auto; min-height:34px; margin:0; padding:6px 8px; border:1px solid var(--rule); background:var(--surface-raised); color:var(--ink); border-radius:4px; font:400 12px var(--ui); }
+.phone-page { max-width:640px; margin:auto; }
+.phone-page header { background:var(--surface); box-shadow:0 1px 0 var(--rule); padding-top:20px; }
+.phone-page main { padding-top:24px; gap:16px; }
+.phone-page .card { border:1px solid var(--rule); border-radius:8px; padding:20px; }
+.phone-page .line, .phone-page .answer { font:400 17px/1.55 var(--ui); color:var(--ink); }
+.phone-page .feed .row { border-color:var(--rule); }
+.phone-page .k .ok { color:var(--accent-ink); }
+.phone-page .bug .min, .phone-page nav button[aria-pressed="true"] { background:var(--accent-fill); color:var(--accent-text); }
+.phone-page nav { max-width:640px; margin:auto; background:var(--surface); box-shadow:0 -1px 0 var(--rule); }
+.phone-page nav button { background:var(--surface-hover); border-radius:5px; }
+.phone-page nav button.hold { background:var(--ink); color:var(--surface); }
+.phone-page select, .phone-page input { border-color:var(--rule) !important; }
+.reel-page main { padding:28px 24px 48px; }
+.reel-page h1 { font-size:clamp(38px,5vw,64px); letter-spacing:-.03em; margin:18px 0 12px; }
+.reel-page .sub { max-width:65ch; margin-bottom:28px; }
+.reel-page .stage { background:#30133f; border-radius:8px; }
+.reel-page button, .reel-page a.btn { background:var(--surface-hover); color:var(--ink); border-color:var(--rule); border-radius:5px; }
+.reel-page button.primary { background:var(--accent-fill); color:var(--accent-text); border-color:var(--accent-fill); }
+.reel-page .prog { background:var(--rule); }
+@media(max-width:400px) { .companion-nav label { font-size:0; } }

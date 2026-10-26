@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f2b20">
 <title>Touchline on your phone</title>
+<script src="/static/theme.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
 <style>
 @font-face { font-family: "Barlow Condensed"; src: url("/static/fonts/BarlowCondensed-Bold.woff2") format("woff2"); font-weight: 700; }
@@ -50,9 +51,12 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--sodium); o
 @keyframes flash { 0% { background: var(--sodium); } 100% { background: var(--card); } }
 @media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } .wp span { transition: none; } }
 </style>
+<link rel="stylesheet" href="/static/experience.css">
+<link rel="stylesheet" href="/static/companion.css">
 </head>
-<body>
+<body class="phone-page">
 <header>
+  <div class="companion-nav"><a href="/">Touchline / Match centre</a><label>Appearance <select id="storyTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
   <div class="bug" aria-live="polite">
     <div class="t"><i id="hc"></i><span id="hs">HOM</span></div>
     <div class="sc" id="score">0-0</div>

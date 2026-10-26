@@ -48,7 +48,8 @@
     await new Promise((res) => { const w = () => (window.TV3D && TV3D.ready ? res() : setTimeout(w, 100)); w(); });
     ready = true;
     $("status").textContent = `${clips.length} moments, about ${Math.round(clips.reduce((a, c) => a + (c.end - c.start), 0) + 6)} seconds`;
-    if (!FRAMES) drawCard(0, "intro");
+    // Show the composed title immediately; t=0 is the transparent start of its animation.
+    if (!FRAMES) drawCard(1, "intro");
   }
 
   /* ------------------------------------------------------------ playback engine (virtual time) */

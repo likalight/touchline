@@ -10,6 +10,7 @@
 <script src="/static/theme.js"></script>
 <link rel="stylesheet" href="/static/styles.css">
 <link rel="stylesheet" href="/static/story.css">
+<link rel="stylesheet" href="/static/experience.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -17,16 +18,18 @@
 <header class="top">
   <div class="brand">
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#184232"/><path d="M4 26h24M16 6v20" stroke="#eef0e8" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="#f2c14e" stroke-width="2.5"/></svg>
-    <div>Touchline <small id="matchLabel">Connecting to the live match…</small></div>
+    <a class="wordmark" href="/">Touchline<span>Football, with memory.</span></a>
+    <nav class="app-nav" aria-label="Main navigation"><a href="#mainStage">Match centre</a><a href="#workspace">Explore</a></nav>
     <button class="btn small primary tour-btn" id="tourBtn">Show me around</button>
     <a class="btn small" href="/judge" id="judgeLink">90-second demo</a>
     <label class="judge-theme-control" hidden>Appearance <select id="storyTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   </div>
+  <div class="studio-intro"><span class="section-label">Inside the game / Synthetic match</span><h1>The match.<br>The meaning.</h1><p>See the moment. Understand the story behind it.</p><p id="matchLabel" class="match-location">Connecting to the match…</p></div>
   <div class="meters">
     <div class="scorebug" aria-live="polite">
-      <div class="club" id="homeBug"><i id="homeSwatch"></i><span id="homeShort">HOM</span></div>
+      <div class="club" id="homeBug"><i id="homeSwatch"></i><span id="homeShort">HOM</span><span class="club-name" id="homeName">Home</span></div>
       <div class="score" id="score">0–0</div>
-      <div class="club" id="awayBug"><span id="awayShort">AWY</span><i id="awaySwatch"></i></div>
+      <div class="club" id="awayBug"><span id="awayShort">AWY</span><i id="awaySwatch"></i><span class="club-name" id="awayName">Away</span></div>
       <div class="clock" id="clock">0'</div>
     </div>
     <div class="meter">
@@ -44,14 +47,14 @@
     </div>
   </div>
 
-  <div class="prefs" role="group" aria-label="Personalise">
+  <div class="prefs" id="matchPreferences" role="group" aria-label="Personalise">
     <div class="seg" role="group" aria-label="Viewing mode" id="personaSeg">
       <button data-persona="casual" aria-pressed="true">Fan</button>
       <button data-persona="analyst" aria-pressed="false">Analyst</button>
       <button data-persona="studio" aria-pressed="false">Studio</button>
       <button data-persona="access" aria-pressed="false">Audio description</button>
     </div>
-    <button class="btn small more" id="moreBtn" aria-expanded="false" aria-controls="prefsMore">More options</button>
+    <button class="btn small more" id="moreBtn" aria-expanded="false" aria-controls="matchPreferences">Personalise</button>
     <label class="field">Language <select id="lang"></select></label>
     <label class="field">My club <select id="club"><option value="">None</option></select></label>
     <label class="field">Follow player <select id="focus"><option value="">Nobody</option></select></label>
@@ -85,15 +88,18 @@
 
 <main class="stage" id="mainStage" tabindex="-1">
   <section class="pitch-wrap" aria-label="Live pitch">
+    <div class="broadcast-heading studio-only"><div><h2>On the pitch</h2><span>Synthetic event replay</span></div><a href="/judge">Try the 90-second story ↗</a></div>
     <div class="view-bar"><span class="judge-broadcast-label" hidden>On the pitch <span>Match replay · fictional clubs</span></span><div class="seg" id="viewSeg" role="group" aria-label="Camera">
       <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="player" aria-pressed="false" title="Follows your focus player, or whoever has the ball">Player cam</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div>
       <a class="btn small phone-link" href="/phone" target="_blank" rel="noopener" title="A second screen for your phone">On your phone</a></div>
     <div class="pitch-box" id="pitchBox">
       <canvas id="pitch3d" aria-hidden="true"></canvas>
-      <canvas id="pitch"></canvas>
+      <canvas id="pitch" role="img" aria-label="Animated synthetic match positions. Goal explanations and evidence are available beside the pitch."></canvas>
       <div class="overlay-layer" id="overlay" aria-live="polite"></div>
       <div class="caption" id="caption" hidden><b id="capWho"></b><span id="capText"></span></div>
     </div>
+    <div class="centre-timeline studio-only"><span>Goals so far</span><nav id="centreGoals" aria-label="Explore goals"><span class="muted">Goals appear as the match unfolds.</span></nav></div>
+    <div id="matchNumbers" class="match-numbers studio-only"></div>
     <div class="under">
       <div class="chart-title"><span>Win probability and momentum</span>
         <span class="legend"><span style="color:var(--home)" id="lgHome">Home</span><span style="color:var(--away)" id="lgAway">Away</span><span style="color:var(--sodium)">Momentum</span></span></div>
@@ -102,6 +108,14 @@
   </section>
 
   <aside class="feed" aria-label="Insights">
+    <section id="centreStory" class="centre-story studio-only" aria-label="Selected match story">
+      <div class="centre-story-meta"><span id="centreChapter">The story so far</span><strong id="centreMinute"></strong></div>
+      <h2 id="centreTitle">Every match has a turning point.</h2>
+      <p id="centreLine">Follow the replay. The latest goal and its evidence will appear here.</p>
+      <div id="centreMemoryWrap" class="centre-memory" hidden><span>Match memory</span><p id="centreMemory"></p></div>
+      <div class="centre-actions"><button class="btn primary" id="centreReceipt" disabled>Inspect the evidence</button><button class="btn ghost" id="centreLatest" hidden>Follow latest</button></div>
+      <p class="centre-source" id="centreSource">Explanations are checked against fictional match data.</p>
+    </section>
     <section id="storyLens" class="story-lens" aria-label="Match memory" hidden>
       <div class="story-heading"><span id="storyChapter">Match memory</span><span id="storyMinute">Ready</span></div>
       <h2 id="storyTitle">A goal is a moment.<br>A comeback is a story.</h2>
@@ -127,8 +141,9 @@
   <div class="story-alternate"><div><h3>A different ending.</h3><p>What if this goal never happened? Compare the model's simulated endings from that moment.</p><button class="btn" id="storyWhatIf">Explore alternate ending</button></div><div id="storyAlternate" aria-live="polite"><p>Run the comparison to see how this moment changes the model's outlook.</p></div></div>
 </section>
 
-<section class="tabs-wrap">
-  <div class="tabs" role="tablist">
+<section class="tabs-wrap" id="workspace" tabindex="-1">
+  <div class="workspace-heading studio-only"><div><span class="section-label">Go deeper</span><h2>Make it your match.</h2></div><p>Ask a question. Change a moment.<br>Find the evidence that matters to you.</p></div>
+  <div class="tabs" role="tablist" aria-label="Match tools">
     <button role="tab" aria-selected="true" data-tab="mine">My match</button>
     <button role="tab" aria-selected="false" data-tab="ask">Ask the analyst</button>
     <button role="tab" aria-selected="false" data-tab="whatif">What if</button>
@@ -150,6 +165,7 @@
       </div>
       <div class="box">
         <h3>Your reel</h3>
+        <figure class="reel-cover"><img src="/static/assets/matchday-hero-480.webp" width="480" height="320" loading="lazy" alt="An original AI-generated football scene under floodlights"><figcaption>AI-generated cover. Your highlights use the match simulation.</figcaption></figure>
         <video id="reelVideo" controls playsinline hidden style="width:100%;border-radius:6px;background:#0c241b"></video>
         <p class="muted" id="reelStatus">"Watch and save in 3D" replays each moment in the stadium view and records it in your browser. "Quick video" renders a lighter version on the server in about a minute.</p>
       </div>
@@ -186,7 +202,7 @@
   </div>
 
   <div class="tabpanel" id="tab-players" role="tabpanel" hidden>
-    <table class="data" id="playersTable"><thead></thead><tbody></tbody></table>
+    <div class="table-scroll" role="region" aria-label="Player statistics, scroll horizontally for more columns" tabindex="0"><table class="data" id="playersTable"><thead></thead><tbody></tbody></table></div>
   </div>
 
   <div class="tabpanel" id="tab-producer" role="tabpanel" hidden>
@@ -275,6 +291,7 @@
   <div class="tour-ctl"><button class="btn small" id="tourBack">Back</button><button class="btn small primary" id="tourNext">Next</button><button class="btn small ghost" id="tourClose">Close</button></div>
 </div>
 <script defer src="/static/story.js"></script>
+<script defer src="/static/centre.js"></script>
 <script defer src="/static/app.js"></script>
 </body>
 </html>

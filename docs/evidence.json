@@ -1,7 +1,7 @@
 {
   "schema": "touchline.evaluation/1",
-  "generated_at": "2026-10-26T08:46:08.465402+00:00",
-  "source_sha256": "00699d048da0fa24c72401ed379267d1de21bea01a9f3e84120a63cd0a44002e",
+  "generated_at": "2026-10-26T09:53:57.968811+00:00",
+  "source_sha256": "b67989b8b44b093acccdfcbaf7f89b5d696ae064fda5422cb5d16268181a6f59",
   "mode": "deterministic synthetic evaluation",
   "seeds": [
     5000,
@@ -54,12 +54,12 @@
     "renders_per_insight": 16,
     "template_leaks": 0,
     "citation_errors": 0,
-    "pipeline_ms_p50": 3.25,
-    "pipeline_ms_p95": 5.71,
-    "event_ms_p50": 0.23,
-    "event_ms_p95": 0.67,
+    "pipeline_ms_p50": 3.89,
+    "pipeline_ms_p95": 5.79,
+    "event_ms_p50": 0.26,
+    "event_ms_p95": 0.79,
     "exactly_once": 1,
-    "secs": 17.8
+    "secs": 20.5
   },
   "gates": {
     "verified_rate": 1.0,

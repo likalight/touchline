@@ -1,0 +1,121 @@
+/* Real full-app journey against a local server. Uses an isolated synthetic match.
+   Same PLAYWRIGHT_MODULE, CHROMIUM_EXECUTABLE, TOUCHLINE_URL conventions as story-browser.cjs. */
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const path=require('node:path');
+const base=process.env.TOUCHLINE_URL || 'http://127.0.0.1:8765';
+const output=process.env.CENTRE_SCREENSHOTS || 'work/centre';
+(async()=>{
+ await fs.mkdir(output,{recursive:true});
+ const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_EXECUTABLE?{executablePath:process.env.CHROMIUM_EXECUTABLE}:{})});
+ try {
+ const page=await browser.newPage({viewport:{width:1440,height:1100},acceptDownloads:true});
+ const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+ const response=await page.request.post(`${base}/api/matches`,{data:{seed:221,speed:40,chaos:0}});
+ assert(response.ok()); const {session_id:sid}=await response.json();
+ await page.goto(`${base}/?session=${sid}`);
+ await page.waitForFunction(()=>S.meta!==null);
+ assert.equal(await page.evaluate(()=>S.view),'tactical');
+ assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').some(r=>r.name.endsWith('/tv3d.js'))),false);
+ assert.equal(await page.locator('#focus').isVisible(),false);
+ await page.locator('#moreBtn').click();
+ assert.equal(await page.locator('#focus').isVisible(),true);
+ await page.locator('#metric').selectOption('xg');
+ await page.waitForFunction(()=>!document.querySelector('#metricBox').hidden);
+ await page.locator('#metric').selectOption('');
+ await page.locator('#jump').selectOption('75');
+ await page.waitForFunction(()=>document.querySelectorAll('#centreGoals button').length>=3,null,{timeout:25000});
+ await page.waitForFunction(()=>S.snap.minute>=75,null,{timeout:25000});
+ await page.locator('#pauseBtn').click();
+ await page.waitForFunction(()=>S.paused);
+ await page.locator('#moreBtn').click();
+ await page.locator('#centreGoals button').first().click();
+ const pinned=await page.locator('#centreMinute').innerText();
+ const selected=await page.locator('#centreReceipt').getAttribute('data-receipt');
+ await page.locator('#personaSeg [data-persona="analyst"]').click();
+ assert((await page.locator('#centreSource').innerText()).startsWith('Analyst'));
+ await page.locator('#lang').selectOption('pt');
+ assert.equal(await page.locator('#centreTitle').getAttribute('lang'),'pt');
+ await page.locator('#lang').selectOption('en');
+ await page.locator('#personaSeg [data-persona="casual"]').click();
+ await page.locator('#centreReceipt').click();
+ await page.locator('#downloadReceipt').waitFor();
+ const downloadPromise=page.waitForEvent('download'); await page.locator('#downloadReceipt').click();
+ const download=await downloadPromise; await download.saveAs(path.join(output,'receipt.json'));
+ assert.equal(JSON.parse(await fs.readFile(path.join(output,'receipt.json'),'utf8')).insight_id,selected);
+ await page.keyboard.press('Escape');
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'centreReceipt');
+ await page.request.post(`${base}/api/matches/${sid}/control`,{data:{action:'jump',value:77}});
+ await page.locator('#pauseBtn').click();
+ await page.waitForFunction(()=>document.querySelectorAll('#centreGoals button').length>=4,null,{timeout:25000});
+ await page.waitForFunction(()=>S.snap.minute>=77,null,{timeout:25000});
+ await page.locator('#pauseBtn').click();
+ assert.equal(await page.locator('#centreMinute').innerText(),pinned);
+ await page.locator('#centreLatest').click();
+ assert.equal(await page.locator('#centreMinute').innerText(),'76′');
+ assert((await page.locator('#centreMemory').innerText()).includes('Ravi Varga'));
+ console.log('PASS: real goal timeline, pinned story, latest goal, perspectives, language, receipt and preferences.');
+ await page.locator('#storyTheme').selectOption('light');
+ await page.evaluate(()=>{document.activeElement.blur();scrollTo(0,0)});
+ await page.screenshot({path:path.join(output,'match-centre.png'),animations:'disabled'});
+ await page.screenshot({path:path.join(output,'match-centre-full.png'),fullPage:true,animations:'disabled'});
+ await page.locator('#storyTheme').selectOption('dark');
+ await page.screenshot({path:path.join(output,'match-centre-dark.png'),animations:'disabled'});
+ await page.locator('#cards .card-details summary').first().click();
+ assert(await page.locator('#cards [data-ev]').first().isVisible());
+ await page.locator('#cards [data-ev]').first().click(); await page.locator('#drawer').waitFor({state:'visible'});
+ assert((await page.locator('#drawerBody').innerText()).includes('Not recorded'));
+ await page.keyboard.press('Escape');
+ await page.locator('#tool-mine').focus(); await page.keyboard.press('ArrowRight');
+ assert.equal(await page.evaluate(()=>document.activeElement.id),'tool-ask');
+ assert.equal(await page.locator('#tool-ask').getAttribute('aria-selected'),'true');
+ await page.locator('#askInput').fill('Why did they score?'); await page.locator('#askForm button').click();
+ await page.locator('.qa .a').first().waitFor({timeout:20000});
+ for(const tab of ['whatif','recap','players','producer','ops','about','mine']) {
+   await page.locator(`#tool-${tab}`).click();
+   assert(await page.locator(`#tab-${tab}`).isVisible());
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`desktop overflow in ${tab}`);
+ }
+ await page.locator('#viewSeg [data-view="tv"]').click();
+ await page.waitForFunction(()=>window.TV3D?.ready,null,{timeout:30000});
+ await page.locator('#viewSeg [data-view="player"]').click();
+ assert.equal(await page.evaluate(()=>S.camMode),'player');
+ await page.locator('#viewSeg [data-view="tactical"]').click();
+ console.log('PASS: keyboard tabs, analyst Q&A, all eight tools, source drawer, TV and player cameras.');
+ for(const width of [320,390,768]) {
+   await page.setViewportSize({width,height:844});
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width}`);
+ }
+ await page.setViewportSize({width:390,height:844});
+ await page.locator('#storyTheme').selectOption('light');
+ await page.evaluate(()=>scrollTo(0,0));
+ await page.screenshot({path:path.join(output,'match-centre-mobile.png'),fullPage:true,animations:'disabled'});
+ for(const tab of ['players','producer','ops','about','ask']) {
+   await page.locator(`#tool-${tab}`).click();
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`mobile overflow in ${tab}`);
+ }
+ await page.locator('#storyTheme').selectOption('dark');
+ await page.goto(`${base}/judge`); await page.locator('#storyRail button').first().waitFor();
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
+ assert.equal(await page.locator('#centreStory').isVisible(),false);
+ assert.equal(await page.locator('.studio-intro').isVisible(),false);
+ await page.goto(`${base}/?session=${sid}`); await page.waitForFunction(()=>S.meta!==null);
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
+ assert(await page.locator('#centreStory').isVisible());
+ assert((await page.locator('.phone-link').getAttribute('href')).includes(sid));
+ await page.goto(`${base}/phone?session=${sid}`);
+ await page.waitForFunction(()=>document.querySelector('#hs').textContent==='KES');
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'dark');
+ await page.locator('#storyTheme').selectOption('light');
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.screenshot({path:path.join(output,'phone-companion.png'),fullPage:true,animations:'disabled'});
+ await page.goto(`${base}/reel?session=${sid}`);
+ await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('moments'),null,{timeout:30000});
+ assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme),'light');
+ assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+ await page.screenshot({path:path.join(output,'reel-view.png'),fullPage:true,animations:'disabled'});
+ assert.deepEqual(errors,[]);
+ console.log('PASS: both themes, 320/390/768px, mobile tools, shared appearance, route isolation, phone session and reel.');
+ } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1});
