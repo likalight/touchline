@@ -95,6 +95,14 @@ const output=process.env.CENTRE_SCREENSHOTS || 'work/centre';
  assert((await page.locator('#playerIdentity').innerText()).includes(player.name));
  await page.locator('#pitchBox').screenshot({path:path.join(output,'player-camera.png'),animations:'disabled'});
  await page.locator('#playerSpotlight').screenshot({path:path.join(output,'player-spotlight.png'),animations:'disabled'});
+ // Roster IDs repeat across seeds. The camera label must adopt the new name.
+ const nextMatch=await page.request.post(`${base}/api/matches`,{data:{seed:222,speed:1,chaos:0}});
+ assert(nextMatch.ok()); const {session_id:nextSid}=await nextMatch.json();
+ await page.evaluate(sid=>{S.sid=sid;connect();},nextSid);
+ await page.waitForFunction(({pid,name})=>S.snap && S.players[pid]?.name!==name && document.querySelector('#playerIdentity')?.textContent.includes(S.players[pid].name),{pid:player.id,name:player.name},{timeout:20000});
+ assert((await page.locator('#playerIdentity').innerText()).includes(await page.locator('#spotlightName').innerText()));
+ await page.evaluate(sid=>{S.sid=sid;connect();},sid);
+ await page.waitForFunction(name=>S.snap && document.querySelector('#spotlightName').textContent===name,player.name);
  await page.locator('#viewSeg [data-view="tactical"]').click();
  assert.equal(await page.locator('#playerIdentity').isVisible(),false);
  console.log('PASS: player selection, delivered totals, keyboard focus, evidence receipt, camera follow and projected identity.');

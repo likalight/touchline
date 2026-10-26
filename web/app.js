@@ -567,8 +567,9 @@ function placePlayerIdentity() {
   }
   const [x, y, visible] = TV3D.project(position[0], position[1], 2.4);
   label.hidden = !visible;
-  if (label.dataset.player !== pid) {
-    label.textContent = `#${player.number} ${player.name}`; label.dataset.player = pid;
+  const identity = `#${player.number} ${player.name}`;
+  if (label.textContent !== identity || label.dataset.player !== pid) {
+    label.textContent = identity; label.dataset.player = pid;
   }
   const width = $("#pitchBox").clientWidth, half = label.offsetWidth / 2 + 8;
   label.style.left = `${Math.max(half, Math.min(width - half, x))}px`;
