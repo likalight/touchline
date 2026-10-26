@@ -14,6 +14,7 @@
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#184232"/><path d="M4 26h24M16 6v20" stroke="#eef0e8" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="#f2c14e" stroke-width="2.5"/></svg>
     <div>Touchline <small id="matchLabel">Connecting to the live match…</small></div>
     <button class="btn small primary tour-btn" id="tourBtn">Show me around</button>
+    <a class="btn small" href="/judge" id="judgeLink">90-second demo</a>
   </div>
   <div class="meters">
     <div class="scorebug" aria-live="polite">
@@ -64,6 +65,15 @@
     </div>
   </div>
 </header>
+
+<section class="judge-panel" id="judgePanel" aria-label="Judge Mode" hidden>
+  <div><span class="eyebrow">Judge Mode · Synthetic match replay</span>
+    <h1>One mistake. One redemption. One winner.</h1>
+    <p id="judgeStatus" role="status">Three moments in 90 seconds. Switch audiences and open a graphic's evidence receipt.</p>
+  </div>
+  <div class="judge-actions"><button class="btn primary" id="judgeStart">Start demonstration</button>
+    <a href="/">Explore the full app</a></div>
+</section>
 
 <main class="stage">
   <section class="pitch-wrap" aria-label="Live pitch">

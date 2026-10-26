@@ -44,6 +44,7 @@ class MatchSession:
                  meta: Optional[MatchMeta] = None, feed: Optional[AsyncIterator[dict]] = None):
         self.id = match_id or f"m-{uuid.uuid4().hex[:8]}"
         self.feed = feed
+        self.broadcast_outputs = True
         if meta is not None:  # external, event-driven feed (e.g. Azure Event Hubs)
             self.meta, self.events = meta, []
         else:
@@ -108,9 +109,12 @@ class MatchSession:
             q.put_nowait(e)
         for span in list(self.trace.spans)[-30:]:
             q.put_nowait({"type": "trace", **span})
-        for ins in self.insights[-30:]:
+        for ins in self.replay_history():
             q.put_nowait({"type": "insight", "insight": ins, "replayed": True})  # history: feed only, no graphics
         return q
+
+    def replay_history(self):
+        return self.insights[-30:]
 
     def unsubscribe(self, q: asyncio.Queue) -> None:
         self.subscribers.discard(q)
@@ -165,6 +169,12 @@ class MatchSession:
         if self.task is None:
             self.task = asyncio.create_task(self._run())
 
+    async def stop(self) -> None:
+        tasks = [t for t in [self.task, *self.pending_tasks] if t is not None]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+
     async def _run(self) -> None:
         if self.feed is not None:
             async for payload in self.feed:
@@ -175,9 +185,13 @@ class MatchSession:
                         break
                 if self.state.status == "full_time":
                     break
+            for ev in self.guard.flush():
+                self.events.append(ev)
+                await self._play(ev, realtime=True)
             await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
             self.done = True
-            self._emit_full_time()
+            if self.state.status == "full_time":
+                self._emit_full_time()
             self.publish({"type": "done"})
             return
         for payload in self.injector.apply(self.events):
@@ -192,6 +206,8 @@ class MatchSession:
         self.publish({"type": "done"})
 
     def _emit_full_time(self) -> None:
+        if not self.broadcast_outputs:
+            return
         outbound.emit({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
                        "score": dict(self.state.score), "insights": len(self.insights)})
 
@@ -296,11 +312,13 @@ class MatchSession:
         if ins is None:
             return
         self.latencies.append(ins["latency_ms"])
+        # Retain the actual handoffs with the insight, even after the rolling trace expires.
+        ins["agent_spans"] = [dict(span) for span in self.trace.spans if span["ref"] == ins["id"]]
         self.insights.append(ins)
         if ins["kind"] in ("half_time", "full_time"):
             self.recaps.clear()
         self.publish({"type": "insight", "insight": ins, "replayed": jumping})
-        if ins.get("verification", {}).get("status") == "verified":
+        if self.broadcast_outputs and ins.get("verification", {}).get("status") == "verified":
             outbound.emit(insight_message(self.id, self.meta.match_id, ins))
         if self.drills:
             self._drill_tick(ins)

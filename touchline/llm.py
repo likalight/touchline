@@ -86,7 +86,8 @@ class LLM:
             from agent_framework.foundry import FoundryChatClient
             from azure.identity import DefaultAzureCredential
 
-            self.client = FoundryChatClient(credential=DefaultAzureCredential())
+            self.client = FoundryChatClient(project_endpoint=os.environ["FOUNDRY_PROJECT_ENDPOINT"],
+                                           model=os.environ["FOUNDRY_MODEL"], credential=DefaultAzureCredential())
             self.backend, self.model = "foundry", os.environ["FOUNDRY_MODEL"]
         elif os.getenv("AZURE_OPENAI_ENDPOINT") and os.getenv("AZURE_OPENAI_MODEL"):
             from agent_framework.openai import OpenAIChatCompletionClient
@@ -114,18 +115,21 @@ class LLM:
         return self.client is not None and not self.breaker.open
 
     def agent(self, name: str, instructions: str, tools: Optional[list[Callable]] = None):
-        """Create (once) a named Agent Framework agent on the configured client."""
+        """Cache stateless narrators only; tool closures belong to one request/match."""
         if self.client is None:
             return None
-        if name not in self._agents:
+        if tools is not None or name not in self._agents:
             from agent_framework import Agent
 
             from touchline.foundry_agents import hosted_agent
 
             hosted = hosted_agent(name, tools) if self.backend == "foundry" else None
-            self._agents[name] = hosted or Agent(self.client, instructions, name=name, tools=tools or None,
-                                                 middleware=purview_middleware() or None)
+            agent = hosted or Agent(self.client, instructions, name=name, tools=tools,
+                                   middleware=purview_middleware() or None)
             self.hosted[name] = hosted is not None
+            if tools is not None:
+                return agent
+            self._agents[name] = agent
         return self._agents[name]
 
     async def run(self, name: str, instructions: str, prompt: str, timeout: float = 6.0,
@@ -133,6 +137,7 @@ class LLM:
         if not self.available:
             return None
         agent = self.agent(name, instructions, tools)
+        is_hosted = self.hosted.get(name, False)  # request-local: another request may update status
         t0 = time.perf_counter()
         self.calls += 1
         try:
@@ -142,14 +147,20 @@ class LLM:
         except Exception as exc:
             self.errors += 1
             log.warning("agent %s failed: %s", name, exc)
-            if self.hosted.get(name):
+            if is_hosted:
                 # the published Foundry agent is unreachable: fall back to the same agent run locally, once
                 from agent_framework import Agent
 
-                self._agents[name] = Agent(self.client, instructions, name=name, tools=tools or None)
+                fallback = Agent(self.client, instructions, name=name, tools=tools or None)
                 self.hosted[name] = False
                 self.fallbacks += 1
-                return await self.run(name, instructions, prompt, timeout, tools)
+                try:
+                    resp = await asyncio.wait_for(fallback.run(prompt), timeout=timeout)
+                    self.breaker.ok()
+                    return resp.text
+                except Exception as fallback_exc:
+                    self.errors += 1
+                    log.warning("local agent %s failed: %s", name, fallback_exc)
             self.breaker.fail()
             return None
         finally:

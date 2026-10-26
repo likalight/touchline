@@ -74,8 +74,8 @@ from verified phrase banks.
 - `azd up` provisions Container Apps, Container Registry, Microsoft Foundry (project and
   model deployment), Event Hubs, Log Analytics, Application Insights and a managed
   identity with least-privilege roles. No secrets.
-- One match is one session. Sticky sessions keep a viewer's stream on one replica;
-  replicas scale on HTTP concurrency; `minReplicas: 1` keeps the demo live.
+- One match is one session. The judged deployment pins one warm replica because state is process-local;
+  shared durable state is required before scaling replicas. Judge Mode uses a separate replay per visitor.
 - Event Hubs partitions by match ID, so many concurrent matches ingest independently.
 - Every verified insight also streams out on a second hub; the `packages` Azure Function
   (Flex Consumption) builds social cards and the post-match package for your CMS.

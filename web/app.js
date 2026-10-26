@@ -12,6 +12,8 @@ const store = {
 };
 
 const S = {
+  judge: location.pathname === "/judge" || new URLSearchParams(location.search).get("judge") === "1",
+  judgeToken: null, judgeResume: false,
   sid: new URLSearchParams(location.search).get("session") || "demo",
   es: null,
   meta: null,
@@ -61,12 +63,13 @@ async function boot() {
   buildLangSelect();
   bindControls();
   bindTour();
+  bindJudgeMode();
   loadMe();
   applyPrefs();
   applyView();
   addEventListener("resize", resizeCanvas);
   requestAnimationFrame(frame);
-  connect();
+  if (S.judge) restoreJudge(); else connect();
   loadModels();
   setInterval(tickSpeech, 400);
 }
@@ -113,7 +116,17 @@ function connect() {
   es.addEventListener("drill", (e) => onDrill(JSON.parse(e.data).drill));
   es.addEventListener("cue_update", (e) => onCueUpdate(JSON.parse(e.data).cue));
   es.addEventListener("control", (e) => { const m = JSON.parse(e.data); if (m.action === "pause") setPaused(true); if (m.action === "resume") setPaused(false); });
-  es.addEventListener("done", () => toast("Full-time. A fresh live match starts shortly."));
+  es.addEventListener("judge_chapter", (e) => {
+    const chapter = JSON.parse(e.data);
+    const hint = chapter.index === 1 ? "Switch to Analyst to see Varga's redemption, then compare Fan." : "Open an evidence receipt to see the agents' work.";
+    $("#judgeStatus").textContent = `${chapter.index + 1} / 3 — ${chapter.title}. ${hint}`;
+  });
+  es.addEventListener("done", () => {
+    if (S.judge) {
+      $("#judgeStatus").textContent = "Replay complete. Compare Fan and Analyst, inspect the receipts, or restart.";
+      $("#pauseBtn").disabled = true;
+    } else toast("Full-time. A fresh live match starts shortly.");
+  });
   $("#auditLink").href = `/api/matches/${S.sid}/audit`;
   $("#datasetLink").href = `/api/matches/${S.sid}/dataset.jsonl`;
 }
@@ -140,6 +153,10 @@ function onHello(h) {
   $("#speed").value = String(h.speed);
   renderSuggestions();
   applyPrefs();
+  if (S.judge && S.judgeResume) {
+    S.judgeResume = false;
+    control("resume").catch(() => { $("#judgeStatus").textContent = "Could not start playback. Please restart."; });
+  }
 }
 
 function tvBug(s) {
@@ -232,6 +249,7 @@ function rendersFor(ins, persona = S.prefs.persona) {
 }
 
 function onInsight(ins, replayed) {
+  if (S.judge && !["goal", "hat_trick"].includes(ins.kind)) return;
   S.insights.push(ins);
   if (S.insights.length > 400) S.insights.shift();
   const card = renderCard(ins);
@@ -277,7 +295,8 @@ function renderCard(ins) {
       <span class="src">${src}</span></div>
     <h3>${esc(r.title)}</h3>
     ${r.lines.length ? `<ul>${r.lines.map((l) => `<li>${esc(l.text)}</li>`).join("")}</ul>` : ""}
-    <div class="chips">${(ins.event_ids || []).slice(-4).map((id) => `<button class="chip" data-ev="${id}" title="Show the evidence">${id}</button>`).join("")}
+    <div class="chips"><button class="chip receipt-link" data-receipt="${esc(ins.id)}">Evidence receipt</button>
+      ${(ins.event_ids || []).slice(-4).map((id) => `<button class="chip" data-ev="${id}" title="Show the evidence">${id}</button>`).join("")}
       ${S.prefs.persona === "access" ? `<button class="chip speak" data-say="${ins.id}">Read aloud</button>` : ""}
       <span class="fb" role="group" aria-label="Was this useful?"><button class="chip" data-fb="${ins.id}" data-up="1" aria-pressed="${S.fb[ins.id] === 1}">Useful</button><button class="chip" data-fb="${ins.id}" data-up="0" aria-pressed="${S.fb[ins.id] === 0}">Not for me</button></span></div>`;
   return el;
@@ -741,6 +760,47 @@ function tickSpeech() {
 }
 
 /* ------------------------------------------------------------------ evidence drawer */
+let drawerTrigger = null;
+function showDrawer() {
+  if (!$("#drawer").contains(document.activeElement)) drawerTrigger = document.activeElement;
+  $("#drawer").hidden = false;
+  $("#drawerClose").focus();
+}
+function closeDrawer() { $("#drawer").hidden = true; drawerTrigger?.focus(); }
+
+async function openReceipt(id) {
+  try {
+    const query = new URLSearchParams({ persona: S.prefs.persona, lang: S.prefs.lang });
+    const response = await fetch(`/api/matches/${S.sid}/insights/${encodeURIComponent(id)}/receipt?${query}`);
+    if (!response.ok) throw new Error("Receipt unavailable. The replay may have expired; restart to try again.");
+    const d = await response.json(), r = d.render, v = d.verification, ed = d.editorial;
+    const chips = (ids) => ids.map(eid => `<button class="chip" data-ev="${esc(eid)}">${esc(eid)}</button>`).join(" ");
+    $("#drawerBody").innerHTML = `<span class="eyebrow">Evidence receipt · Synthetic match</span>
+      <h3>${esc(r?.title || id)}</h3>
+      <p class="muted">${esc(id)} · ${d.minute}' · ${esc(r?.persona || S.prefs.persona)} / ${esc(r?.lang || S.prefs.lang)} · ${esc(r?.source || "no render")}</p>
+      ${(r?.lines || []).map(line => `<p>${esc(line.text)}<br>${chips(line.ev || [])}</p>`).join("")}
+      <h4>Checks performed</h4><p><strong>${esc(v.status)}</strong> · ${v.checks} frame checks at this moment.</p>
+      ${v.issues.length ? `<ul>${v.issues.map(issue => `<li>${esc(issue)}</li>`).join("")}</ul>` : ""}
+      <p class="muted">${esc(d.scope)}</p>
+      <h4>Editorial decision</h4><p>${esc(ed?.decision?.reason || "No cue emitted: the insight did not pass verification.")}</p>
+      ${ed ? `<p class="muted">${esc(ed.approval)} · Cue ${esc(ed.cue_id)} · ${ed.in_at_t}–${ed.out_at_t} seconds on the match clock.</p>` : ""}
+      <h4>Source events and model estimates</h4>
+      <p>${chips(d.evidence.map(e => e.event_id))}</p>
+      <details><summary>Inspect facts and model factors for ${d.evidence.length} events</summary>
+      ${d.evidence.map(e => `<details><summary>${esc(e.event_id)} · ${esc(e.facts.type)} · ${esc(e.facts.minute)}'</summary>
+        <p>${chips([e.event_id])} Open the event for its facts and model factors.</p>
+        <pre>${esc(JSON.stringify(e.facts, null, 2))}</pre>
+        ${e.model_drivers.length ? `<p class="muted">Model contributions (log-odds relative to the synthetic league baseline)</p><pre>${esc(JSON.stringify(e.model_drivers, null, 2))}</pre>` : ""}</details>`).join("")}</details>
+      <details><summary>Claim inputs and citations</summary><pre>${esc(JSON.stringify(d.claims, null, 2))}</pre></details>
+      <h4>Agents that contributed</h4>
+      <details><summary>${d.agents.length} recorded agent handoffs</summary>
+      <ol class="receipt-agents">${d.agents.map(a => `<li><strong>${esc(a.agent)}</strong> · ${esc(a.status)} · ${a.ms} ms<br><span class="muted">${esc(a.note)}${a.handoff_to ? ` → ${esc(a.handoff_to)}` : ""}</span></li>`).join("")}</ol>
+      </details>
+      <p><strong>${d.pipeline_ms} ms</strong> · ${esc(d.timing_scope)}</p>`;
+    showDrawer();
+  } catch (error) { toast(error.message); }
+}
+
 async function openEvidence(id) {
   const res = await fetch(`/api/matches/${S.sid}/events/${id}`);
   if (!res.ok) return toast("That event isn't available yet.");
@@ -764,8 +824,7 @@ async function openEvidence(id) {
     <p class="muted" style="margin:0 0 10px">${esc(id)}: ${esc(ev.type)}${ev.outcome ? ", " + esc(ev.outcome) : ""}. Every number here is recomputed from the raw event and its tracking snapshot.</p>
     <table class="data"><tbody>${rows}</tbody></table>${bars}
     ${d.pitch_control ? `<p class="muted" style="margin-top:12px;font-size:13px">The pitch now shows who controlled each patch of grass at that instant: ${S.meta.home.short} ${Math.round(d.pitch_control.home_share * 100)}%, ${S.meta.away.short} ${Math.round((1 - d.pitch_control.home_share) * 100)}%.</p>` : ""}`;
-  $("#drawer").hidden = false;
-  $("#drawerClose").focus();
+  showDrawer();
   const until = performance.now() + 9000;
   S.draws = S.draws.filter((x) => x.kind !== "control" && x.kind !== "evidence");
   if (d.pitch_control) S.draws.push({ kind: "control", until, ...d.pitch_control });
@@ -1097,8 +1156,15 @@ function applyPrefs() {
 }
 
 async function control(action, value) {
-  const r = await fetch(`/api/matches/${S.sid}/control`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, value }) });
-  if (r.status === 401 || r.status === 403) { needProducer(r.status); return { ok: false, reason: "auth" }; }
+  const headers = { "Content-Type": "application/json" };
+  if (S.judgeToken) headers["X-Touchline-Judge-Token"] = S.judgeToken;
+  const r = await fetch(`/api/matches/${S.sid}/control`, { method: "POST", headers, body: JSON.stringify({ action, value }) });
+  if (!r.ok && S.judge) { const error = await r.json(); toast(error.detail || "Playback control failed."); return { ok: false }; }
+  if (r.status === 401 || r.status === 403) {
+    const error = await r.json();
+    if (error.detail?.includes("read-only")) toast(error.detail); else needProducer(r.status);
+    return { ok: false, reason: "auth" };
+  }
   return r.json();
 }
 function needProducer(status) {
@@ -1114,6 +1180,60 @@ async function loadMe() {
       : me.auth_mode === "entra" ? `<a class="btn small" href="${me.login}?post_login_redirect_uri=/">Sign in with Microsoft</a> to approve graphics and run drills.`
       : "Open demo: anyone can try the producer tools. In production they sit behind Microsoft sign-in with a Producer role, and every action is audited.";
   } catch (e) { /* offline */ }
+}
+
+function bindJudgeMode() {
+  if (!S.judge) return;
+  document.body.classList.add("judge-mode");
+  $("#judgePanel").hidden = false;
+  $("#pauseBtn").disabled = true;
+  $("#matchLabel").textContent = "Your own replay, ready when you are";
+  Object.assign(S.prefs, { persona: "casual", lang: "en", view: "tv", speak: false, booth: false,
+                         club: "", focus: "", metric: "", favs: [] });
+  $('[data-tab="ask"]').click();
+  $("#judgeStart").addEventListener("click", startJudge);
+}
+
+async function restoreJudge() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem("tl.judge") || "null");
+    if (!saved) return;
+    const response = await fetch(`/api/matches/${encodeURIComponent(saved.session_id)}`);
+    if (!response.ok) { sessionStorage.removeItem("tl.judge"); return; }
+    const match = await response.json();
+    if (!match.judge) return;
+    S.sid = saved.session_id; S.judgeToken = saved.control_token;
+    $("#judgeStart").textContent = "Restart demonstration";
+    $("#pauseBtn").disabled = match.done;
+    $("#judgeStatus").textContent = match.done ? "Replay complete. Inspect the receipts or restart." : "Reconnected to your replay.";
+    connect();
+  } catch { /* storage is optional; Start always creates a fresh replay */ }
+}
+
+async function startJudge() {
+  const button = $("#judgeStart");
+  button.disabled = true;
+  $("#judgeStatus").textContent = "Preparing the match history…";
+  try {
+    if (S.judgeToken) {
+      const stopped = await fetch(`/api/judge/${S.sid}`, { method: "DELETE", headers: { "X-Touchline-Judge-Token": S.judgeToken } });
+      if (!stopped.ok && stopped.status !== 404) throw new Error("Could not stop the previous replay. Please retry.");
+    }
+    S.es?.close(); S.judgeToken = null;
+    const response = await fetch("/api/judge", { method: "POST" });
+    if (!response.ok) { const error = await response.json(); throw new Error(error.detail || "Could not start replay."); }
+    const match = await response.json();
+    S.sid = match.session_id; S.judgeToken = match.control_token; S.judgeResume = true;
+    try { sessionStorage.setItem("tl.judge", JSON.stringify(match)); } catch { /* no storage required */ }
+    for (const layer of Object.values(S.layers)) layer.remove();
+    S.layers = {}; S.speechQ = []; S.snap = null; S.fb = {};
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    $("#drawer").hidden = true;
+    $("#pauseBtn").disabled = false;
+    button.textContent = "Restart demonstration";
+    connect();
+  } catch (error) { $("#judgeStatus").textContent = error.message; }
+  finally { button.disabled = false; }
 }
 
 function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; }
@@ -1149,6 +1269,7 @@ function bindControls() {
   $("#jump").addEventListener("change", (e) => { if (e.target.value) { S.jumping = true; setTimeout(() => { S.jumping = false; }, 4000); control("jump", Number(e.target.value)); } e.target.value = ""; });
 
   document.addEventListener("click", (e) => {
+    const receipt = e.target.closest("[data-receipt]"); if (receipt) return openReceipt(receipt.dataset.receipt);
     const chip = e.target.closest("[data-ev]"); if (chip) return openEvidence(chip.dataset.ev);
     const say = e.target.closest("[data-say]"); if (say) { const i = S.insights.find((x) => x.id === say.dataset.say); if (i) queueSpeech({ ...i, salience: 1 }); return; }
     const q = e.target.closest("[data-q]"); if (q) return ask(q.dataset.q);
@@ -1164,8 +1285,8 @@ function bindControls() {
   $("#askForm").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#askInput").value.trim(); if (v) { ask(v); $("#askInput").value = ""; } });
   $("#recapBtn").addEventListener("click", loadRecap);
   $("#reelBtn").addEventListener("click", makeReel);
-  $("#drawerClose").addEventListener("click", () => { $("#drawer").hidden = true; });
-  addEventListener("keydown", (e) => { if (e.key === "Escape") $("#drawer").hidden = true; });
+  $("#drawerClose").addEventListener("click", closeDrawer);
+  addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#drawer").hidden) closeDrawer(); });
   $$(".tabs [role=tab]").forEach((t) => t.addEventListener("click", () => {
     $$(".tabs [role=tab]").forEach((x) => x.setAttribute("aria-selected", String(x === t)));
     $$(".tabpanel").forEach((p) => { p.hidden = p.id !== "tab-" + t.dataset.tab; });

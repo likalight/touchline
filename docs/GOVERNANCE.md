@@ -51,7 +51,7 @@ Every graphic, line of commentary and answer passes through these, in order. A f
 | Survives a bad feed | IngestGuard: validation, de-duplication, re-ordering; exactly-once in 100% of faulty-feed matches | [EVAL.md](EVAL.md), drills |
 | Survives a model outage | Circuit breaker; hosted Foundry agent falls back to the same agent run locally, then to phrase banks | Resilience drills |
 | Survives an agent crash | Agents catch and degrade; the workflow supervisor rebuilds and retries a failed run | Resilience drills, `tests/test_drills.py` |
-| Stays up | Container Apps, minimum one replica, health probes, autoscale on HTTP load; the packages Azure Function scales out on the Event Hubs backlog and a watchdog checks health every 5 minutes | `infra/resources.bicep`, `functions/` |
+| Stays up | Container Apps, one warm replica and health probes; shared durable state is needed before app scale-out. The packages Azure Function scales on Event Hubs backlog. The watchdog checks HTTP health, not successful cloud-agent execution. | `infra/resources.bicep`, `functions/`, `scripts/smoke_deployment.py` |
 
 Resilience drills (Agents at work tab) inject each failure on demand in the live system. Building them found and fixed a real gap: the FactChecker did not treat ordinals ("99th") as numbers.
 

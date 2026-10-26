@@ -111,6 +111,7 @@ export AZURE_SPEECH_REGION=<region> AZURE_SPEECH_KEY=...          # neural voice
 | Page | What it is |
 |---|---|
 | `/` | The live app: 3D broadcast view, insight feed, producer console, agents at work |
+| `/judge` | Start an isolated 90-second synthetic replay: mistake, redemption, winner; pause, restart and inspect evidence receipts |
 | `/reel` | A personal 3D highlights reel, recorded in the browser |
 | `/story` | The project page |
 | `/overlay` | Keyable graphics output for a vision mixer |
@@ -127,7 +128,7 @@ azd up            # provisions everything in infra/ and deploys the container
 
 [`infra/`](infra) (Bicep) provisions:
 
-- **Azure Container Apps**, with HTTP autoscaling, sticky sessions, health probes and optional Entra ID authentication
+- **Azure Container Apps**, with one warm replica, health probes and optional Entra ID authentication (match state is process-local)
 - **Azure Container Registry**
 - **Microsoft Foundry**: an AI Services account, a project with a tracing connection to Application Insights, and a `gpt-4.1-mini` deployment, with local auth disabled. The postprovision hook publishes the agents to **Foundry Agent Service**.
 - **Azure AI Speech** and **Azure AI Content Safety**, through the same AI Services account
@@ -138,6 +139,28 @@ azd up            # provisions everything in infra/ and deploys the container
 
 No API keys: services use the managed identity (the optional Entra sign-in client secret is the only secret, stored as a Container Apps secret). To require Microsoft sign-in for producer tools, run `./scripts/setup_entra.sh` after the first `azd up`. Event-driven mode: `python scripts/publish_feed.py --seed 42 --speed 10`
 plays a match onto Event Hubs, and the app serves it as session `live` at `<url>/?session=live`.
+
+The Foundry publication hook fails the deployment on missing configuration, publication errors or
+missing version IDs. After deployment, verify a real hosted answer rather than relying on a green health response:
+
+```bash
+python scripts/smoke_deployment.py https://<your-container-app>
+```
+
+This makes one billed model request and fails on deterministic or local-agent fallback. It does not certify
+the other Azure integrations. Start the Event Hubs consumer before publishing the feed; ingestion currently
+starts at the latest position and does not persist checkpoints. Test a complete feed and its resulting package separately.
+
+The deployed shared `demo` and `live` broadcasts are read-only until Entra producer access is configured
+(`TOUCHLINE_PROTECT_SHARED=on`). Anonymous judges use `/judge`: each tab gets its own replay, with a private
+control token, pause/resume and restart. Three 30-second excerpts run through the normal pipeline; skipped
+history is still processed in order. Replay sessions expire after 15 minutes and do not emit broadcast
+packages to Event Hubs. One replica is intentional; shared state and durable ingestion are prerequisites for scale-out.
+
+Each graphic's **Evidence receipt** combines its rendered copy, cited event facts, model contributions,
+original verification result, retained agent handoffs and current editorial decision. Timing is explicitly
+server pipeline time, excluding later model updates, speech and browser delivery. The receipt is evidence
+of the checks performed on synthetic data, not a guarantee of factual or translation accuracy.
 
 ## The demo match
 
@@ -325,6 +348,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 - **Stream:** `GET /api/matches/{session}/stream` (SSE): events, state, insights, cues, late renders and agent traces.
 - **Read endpoints** (all under `/api/matches/{session}`): `GET /insights?persona=&lang=`, `/recap`, `/players`, `/events/{id}` (facts, model drivers, pitch control), `/audit`, `/dataset.jsonl`.
+- **Evidence receipt:** `GET /api/matches/{session}/insights/{insight_id}/receipt?persona=casual&lang=en`.
 - **My Match:** `/reel?session=&club=&player=&lang=` plays and records the 3D reel in the browser; `GET /api/matches/{id}/reel` returns the edit list; `POST` renders a quick MP4 on the server; `GET /window?start=&end=` returns any slice of the match with positions.
 - **Post-match and feedback:** `GET /package` (recaps x personas x languages, highlights, top players, verification), `POST /feedback`, `GET /api/downstream`, `GET /api/me`.
 - **Voice:** `GET /api/speak?text=&lang=`.

@@ -433,6 +433,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
             { name: 'AZURE_CONTENT_SAFETY_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.cognitiveservices.azure.com' }
             { name: 'TOUCHLINE_AUTH', value: empty(authClientId) ? 'open' : 'entra' }
+            { name: 'TOUCHLINE_PROTECT_SHARED', value: 'on' } // anonymous viewers use isolated Judge Mode
             { name: 'TOUCHLINE_PACKAGES_URL', value: enableEventHubs ? 'https://${packagesFn!.properties.defaultHostName}' : '' }
           ]
           probes: [
@@ -451,7 +452,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
       ]
       scale: {
         minReplicas: 1 // the demo must stay live for judging
-        maxReplicas: 3
+        maxReplicas: 1 // match state is process-local; scale out only after adding shared state
         rules: [
           {
             name: 'http-concurrency'

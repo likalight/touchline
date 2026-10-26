@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import os
+import secrets
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,6 +29,7 @@ from touchline.telemetry import setup_telemetry
 log = logging.getLogger("touchline")
 WEB = Path(__file__).resolve().parents[1] / "web"
 MAX_SESSIONS = int(os.getenv("TOUCHLINE_MAX_SESSIONS", "12"))
+SESSION_TTL = 15 * 60
 DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", "221"))  # 3-2 comeback, hat-trick, red card, 94th-minute winner
 DEMO_SPEED = float(os.getenv("TOUCHLINE_DEMO_SPEED", "10"))
 
@@ -48,37 +50,65 @@ async def hub_consumer():
     from touchline.schema import MatchMeta
 
     feed = eventhub_payloads()
-    queue: asyncio.Queue = asyncio.Queue()
+    queue: asyncio.Queue = asyncio.Queue(maxsize=10000)
+    pending_meta = None
+    exhausted = False
 
     async def pump():
-        async for payload in feed:
-            await queue.put(payload)
+        try:
+            async for payload in feed:
+                await queue.put(payload)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Event Hubs feed stopped")
+            raise
+        finally:
+            # Cancellation must not block shutdown on a full queue.
+            if not asyncio.current_task().cancelling():
+                await queue.put(None)
 
-    asyncio.create_task(pump())
+    pump_task = asyncio.create_task(pump())
 
     async def session_feed():
+        nonlocal pending_meta, exhausted
         while True:
             payload = await queue.get()
+            if payload is None:
+                exhausted = True
+                return
             if "meta" in payload:  # a new match started on the hub: hand over to a new session
-                await queue.put(payload)
+                pending_meta = payload  # do not move metadata behind its events in the queue
                 return
             yield payload
 
-    while True:
-        payload = await queue.get()
-        if "meta" not in payload:
-            continue
-        s = MatchSession(meta=MatchMeta.model_validate(payload["meta"]), feed=session_feed(), match_id="live")
-        sessions["live"] = s
-        s.start()
-        log.info("live Event Hubs session started for %s", s.meta.match_id)
-        while not s.done and queue.empty():
-            await asyncio.sleep(1)
+    try:
+        while True:
+            if exhausted:
+                await pump_task  # surface receive errors instead of silently stopping
+                return
+            payload = pending_meta if pending_meta is not None else await queue.get()
+            pending_meta = None
+            if payload is None:
+                await pump_task
+                return
+            if "meta" not in payload:
+                continue
+            s = MatchSession(meta=MatchMeta.model_validate(payload["meta"]), feed=session_feed(), match_id="live")
+            sessions["live"] = s
+            s.start()
+            log.info("live Event Hubs session started for %s", s.meta.match_id)
+            # Only session_feed reads events until this match ends. Competing readers lose events.
+            await s.task
+    finally:
+        pump_task.cancel()
+        await asyncio.gather(pump_task, return_exceptions=True)
 
 
 async def demo_keeper():
     """Keep a live demo match running 24/7 (restart a fresh one a minute after full-time)."""
     while True:
+        await prune_sessions()
         s = sessions.get(DEMO)
         if s is None or (s.done and time.time() - s.created > 60):
             if s is not None and s.done:
@@ -107,15 +137,22 @@ async def lifespan(app: FastAPI):
     from touchline.feeds import eventhub_enabled
 
     setup_telemetry()
+    sessions.clear()
     tasks = [asyncio.create_task(demo_keeper())]
     if eventhub_enabled():
         tasks.append(asyncio.create_task(hub_consumer()))
     mcp = build_mcp(lambda: sessions)
     MCP_APP.app = mcp.streamable_http_app()
-    async with mcp.session_manager.run():
-        yield
-    for t in tasks:
-        t.cancel()
+    try:
+        async with mcp.session_manager.run():
+            yield
+    finally:
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        for s in list(sessions.values()):
+            await s.stop()
+        sessions.clear()
 
 
 app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
@@ -128,6 +165,20 @@ def get(sid: str) -> MatchSession:
     if not s:
         raise HTTPException(404, "unknown session")
     return s
+
+
+async def prune_sessions():
+    for sid, s in list(sessions.items()):
+        if (sid not in (DEMO, "live") and time.time() - s.created > SESSION_TTL
+                and (s.done or getattr(s, "control_token", None))):
+            await s.stop()
+            sessions.pop(sid, None)
+
+
+def judge_owner(s, request: Request):
+    token = getattr(s, "control_token", None)
+    if token and not secrets.compare_digest(request.headers.get("x-touchline-judge-token", ""), token):
+        raise HTTPException(403, "This replay belongs to another viewer. Start your own Judge Mode.")
 
 
 class NewMatch(BaseModel):
@@ -160,6 +211,7 @@ class Feedback(BaseModel):
 
 
 @app.get("/", include_in_schema=False)
+@app.get("/judge", include_in_schema=False)
 async def index():
     return FileResponse(WEB / "index.html")
 
@@ -200,15 +252,38 @@ async def i18n():
 
 @app.post("/api/matches")
 async def create_match(body: NewMatch):
-    done = [k for k, v in sessions.items() if v.done and k != DEMO]
-    for k in done:
-        sessions.pop(k, None)
+    await prune_sessions()
     if len(sessions) >= MAX_SESSIONS:
         raise HTTPException(429, "too many live sessions")
     s = MatchSession(seed=body.seed, speed=body.speed, chaos=body.chaos, mode=body.mode, extra_langs=set(body.langs))
     sessions[s.id] = s
     s.start()
     return {"session_id": s.id, **{k: v for k, v in s.describe().items() if k != "match"}}
+
+
+@app.post("/api/judge")
+async def create_judge():
+    from touchline.judge import JudgeSession
+
+    await prune_sessions()
+    if len(sessions) >= MAX_SESSIONS:
+        raise HTTPException(429, "All replay slots are busy. Please try again shortly.")
+    s = JudgeSession()
+    sessions[s.id] = s
+    # Playback begins only when the creating browser is connected and sends resume.
+    s.start()
+    return {"session_id": s.id, "control_token": s.control_token, "duration_s": 90}
+
+
+@app.delete("/api/judge/{sid}")
+async def delete_judge(sid: str, request: Request):
+    s = get(sid)
+    if not getattr(s, "control_token", None):
+        raise HTTPException(404, "unknown judge replay")
+    judge_owner(s, request)
+    await s.stop()
+    sessions.pop(sid, None)
+    return {"ok": True}
 
 
 @app.get("/api/matches")
@@ -248,7 +323,7 @@ async def stream(sid: str, request: Request):
 
 
 PRODUCER_ACTIONS = {"mode", "drill"}            # always producer tools
-SHARED_ACTIONS = {"pause", "resume", "speed", "jump"}  # producer tools on the shared broadcast; free on a fan's own match
+SHARED_ACTIONS = {"pause", "resume", "speed", "jump", "langs"}
 
 
 @app.get("/api/me")
@@ -261,7 +336,13 @@ async def me(request: Request):
 @app.post("/api/matches/{sid}/control")
 async def control(sid: str, body: Control, request: Request):
     s = get(sid)
-    if body.action in PRODUCER_ACTIONS or (sid == DEMO and body.action in SHARED_ACTIONS):
+    judge_owner(s, request)
+    if getattr(s, "control_token", None) and body.action not in {"pause", "resume", "langs"}:
+        raise HTTPException(400, "Judge Mode supports pause, resume and language selection. Use Restart to replay.")
+    shared = sid in (DEMO, "live")
+    if shared and os.getenv("TOUCHLINE_PROTECT_SHARED", "").lower() == "on" and auth_mode() != "entra":
+        raise HTTPException(403, "The shared broadcast is read-only. Start Judge Mode for your own replay.")
+    if body.action in PRODUCER_ACTIONS or (shared and body.action in SHARED_ACTIONS):
         p = require_producer(request)
         s.actions.append({"at": time.time(), "minute": s.state.minute, "actor": actor(p), "action": body.action, "value": body.value})
     return s.control(body.action, body.value)
@@ -280,6 +361,17 @@ async def insights(sid: str, persona: Optional[str] = None, lang: str = "en", si
     return out
 
 
+@app.get("/api/matches/{sid}/insights/{insight_id}/receipt")
+async def receipt(sid: str, insight_id: str, persona: str = "casual", lang: str = "en"):
+    from touchline.receipts import build_receipt
+
+    s = get(sid)
+    ins = next((i for i in s.insights if i["id"] == insight_id), None)
+    if ins is None:
+        raise HTTPException(404, "unknown or future insight")
+    return build_receipt(s, ins, persona, lang)
+
+
 @app.get("/api/matches/{sid}/cues")
 async def cues(sid: str):
     s = get(sid)
@@ -290,6 +382,7 @@ async def cues(sid: str):
 async def decide(sid: str, cue_id: str, body: Decision, request: Request):
     p = require_producer(request)
     s = get(sid)
+    judge_owner(s, request)
     s.actions.append({"at": time.time(), "minute": s.state.minute, "actor": actor(p), "action": "approve" if body.approve else "drop", "value": cue_id})
     cue = s.decide_cue(cue_id, body.approve)
     if not cue:
