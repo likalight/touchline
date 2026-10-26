@@ -1,4 +1,8 @@
-# Matchday presentation review
+# First Judge Mode presentation review
+
+Historical first pass. The current shared presentation, including the default `/` route,
+is described in [Match centre](MATCH_CENTRE.md). Its palette and main-app performance results
+supersede this earlier review; the interaction and evidence work remains in place.
 
 Applied `design-taste-frontend` to the consumer demo entrance and presentation on
 26 October 2026. The full studio is a dense product surface, outside that skill's primary

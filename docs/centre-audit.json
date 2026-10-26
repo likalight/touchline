@@ -1,0 +1,39 @@
+{
+  "schema": "touchline.presentation-audit/1",
+  "generated_at": "2026-10-26T09:48:50.925Z",
+  "url": "http://127.0.0.1:8765/",
+  "lighthouse_version": "13.5.0",
+  "form_factor": "mobile",
+  "throttling_method": "simulate",
+  "scores": {
+    "performance": 95,
+    "accessibility": 100
+  },
+  "metrics": {
+    "first-contentful-paint": {
+      "value": 1673.229,
+      "unit": "millisecond",
+      "display": "1.7 s"
+    },
+    "largest-contentful-paint": {
+      "value": 2775.715,
+      "unit": "millisecond",
+      "display": "2.8 s"
+    },
+    "cumulative-layout-shift": {
+      "value": 0.05020181212362603,
+      "unit": "unitless",
+      "display": "0.05"
+    },
+    "total-blocking-time": {
+      "value": 20.5,
+      "unit": "millisecond",
+      "display": "20 ms"
+    }
+  },
+  "scope": "Local full-app lab audit. Not field performance or an accessibility certification.",
+  "remaining": [
+    "LCP exceeds the 2.5-second target",
+    "Production cache lifetimes and real-device measurement"
+  ]
+}

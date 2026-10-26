@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/banner.png" width="100%" alt="Touchline Judge Mode: Football, with memory. A matchday entrance with three story chapters and a Start demonstration action.">
+<img src="docs/match-centre.png" width="100%" alt="Touchline match centre: a prominent score, tactical pitch and an inspectable redemption story in the shared plum and lime design.">
 
 # Touchline
 
@@ -21,6 +21,12 @@ personalized graphics and broadcaster-ready outputs. Built for the Microsoft × 
 
 ## Start with one story
 
+The default app at **`/`** is the match centre: a live tactical pitch, a prominent goal story,
+and a timeline that lets you revisit goals while the broadcast continues. Personalise the
+view, inspect the evidence, or explore Q&A, players, alternate endings and production tools.
+The same light/dark appearance follows you into Judge Mode, the phone companion and the reel.
+Read the [main-app redesign and validation report](docs/MATCH_CENTRE.md).
+
 A mistake leads to a goal. The same player returns to equalize. Then comes the winner.
 Touchline remembers the earlier moment and explains the connection. A fan gets the story;
 an analyst gets the tactical evidence; a producer gets a timed graphics cue.
@@ -37,7 +43,7 @@ beside the pitch, with three chapters that unlock as their goals arrive:
 The matchday presentation supports light, dark and system themes, keyboard navigation,
 reduced motion and mobile layouts. Its original generated hero is clearly labeled;
 the interactive pitch and evidence map use the synthetic match data. See the
-[design audit and local performance results](docs/TASTE_REVIEW.md).
+[design audit and local performance results](docs/MATCH_CENTRE.md).
 
 Open **Evidence receipt** to:
 
@@ -67,7 +73,8 @@ pip install -r requirements.txt
 uvicorn touchline.server:app --reload
 ```
 
-Open [Judge Mode](http://localhost:8000/judge). Select **Start demonstration**, then open a
+Open the [match centre](http://localhost:8000/) for the full experience, or
+[Judge Mode](http://localhost:8000/judge) for the guided story. Select **Start demonstration**, then open a
 chapter after a goal. Compare perspectives, select a memory link, and try the alternate ending.
 Open its receipt to inspect the checks and download the proof. The full app at
 [localhost:8000](http://localhost:8000) adds player focus, four built-in languages, commentary,

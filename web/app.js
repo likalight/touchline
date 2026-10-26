@@ -13,9 +13,10 @@ const store = {
 
 const S = {
   judge: location.pathname === "/judge" || new URLSearchParams(location.search).get("judge") === "1",
-  judgeToken: null, judgeResume: false, story: null,
+  judgeToken: null, judgeResume: false, story: null, centre: null,
   sid: new URLSearchParams(location.search).get("session") || "demo",
   es: null,
+  historyTimer: null, pendingHistory: [],
   meta: null,
   players: {},
   snap: null,
@@ -23,7 +24,7 @@ const S = {
   lastPass: null,
   i18n: null,
   llm: { backend: "offline" },
-  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", favs: [], metric: "", speak: false, booth: false }, store.get("prefs", {})),
+  prefs: Object.assign({ persona: "casual", lang: "en", club: "", focus: "", favs: [], metric: "", speak: false, booth: false, view: "tactical" }, store.get("prefs", {})),
   pos: {}, from: {}, to: {}, t0: 0, dur: 1,
   ball: [52.5, 34], ballFrom: [52.5, 34], ballMid: [52.5, 34], ballTo: [52.5, 34],
   lastT: 0,
@@ -56,6 +57,7 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
 
 /* ------------------------------------------------------------------ boot */
 async function boot() {
+  if (!S.judge) S.centre = TouchlineCentre.create({getPrefs: () => S.prefs, getRender: rendersFor, getMemory: TouchlineStory.memoryLine});
   if (S.judge) {
     document.body.classList.add("judge-mode");
     const panel = $("#judgePanel"), hero = $("#judgeHeroImage");
@@ -80,7 +82,6 @@ async function boot() {
   addEventListener("resize", resizeCanvas);
   requestAnimationFrame(frame);
   if (S.judge) restoreJudge(); else connect();
-  if (!S.judge) loadPitch3D();
   loadModels();
   setInterval(tickSpeech, 400);
 }
@@ -111,6 +112,7 @@ function savePrefs() { store.set("prefs", S.prefs); }
 /* ------------------------------------------------------------------ stream */
 function connect() {
   if (S.es) S.es.close();
+  clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
   S.insights = []; S.pos = {}; S.draws = [];
   $("#cards").innerHTML = `<p class="empty">Moments appear here as they happen, each one checked against the match data before it's shown.</p>`;
   $("#trace").innerHTML = "";
@@ -128,6 +130,7 @@ function connect() {
     if (!ins) return;
     ((ins.renders = ins.renders || {})[m.persona] = ins.renders[m.persona] || {})[m.lang] = m.render;
     S.story?.refresh();
+    S.centre?.refresh();
     if (m.persona === S.prefs.persona && m.lang === S.prefs.lang) {
       const old = document.querySelector(`.card[data-id="${CSS.escape(ins.id)}"]`);
       if (old) old.replaceWith(renderCard(ins));
@@ -153,7 +156,9 @@ function connect() {
 
 function onHello(h) {
   // A reconnected SSE stream sends its history again. Rebuild rather than duplicate it.
+  clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
   S.insights = []; rerenderCards();
+  S.centre?.reset();
   if (S.story) {
     document.body.classList.add("story-playing");
     $("#judgePanel").removeAttribute("role");
@@ -165,6 +170,8 @@ function onHello(h) {
   S.players = {};
   for (const t of [h.match.home, h.match.away]) for (const p of t.players) S.players[p.id] = { ...p, color: t.color };
   const { home, away } = h.match;
+  $("#homeName").textContent = home.name; $("#awayName").textContent = away.name;
+  $(".phone-link").href = `/phone?session=${encodeURIComponent(S.sid)}`;
   $("#matchLabel").textContent = `${home.name} v ${away.name}, ${h.match.venue}`;
   $("#homeShort").textContent = home.short; $("#awayShort").textContent = away.short;
   $("#homeSwatch").style.background = home.color; $("#awaySwatch").style.background = away.color;
@@ -277,10 +284,27 @@ function rendersFor(ins, persona = S.prefs.persona) {
   return byLang[S.prefs.lang] || byLang.en;
 }
 
+function flushHistory() {
+  clearTimeout(S.historyTimer); S.historyTimer = null;
+  S.centre?.appendMany(S.pendingHistory); S.pendingHistory = [];
+  rerenderCards(); drawTimeline();
+  $("#feedCount").textContent = `${S.insights.length} moments explained`;
+}
+
 function onInsight(ins, replayed) {
   if (S.judge && !["goal", "hat_trick"].includes(ins.kind)) return;
+  if (!replayed && S.historyTimer) flushHistory();
   S.insights.push(ins);
+  if (!S.judge && replayed) {
+    // Reconnect and seek can deliver dozens of moments in one burst. Keep the data
+    // immediately, then update the feed once while preserving a pinned goal.
+    if (S.insights.length > 400) S.insights.shift();
+    S.pendingHistory.push(ins);
+    clearTimeout(S.historyTimer); S.historyTimer = setTimeout(flushHistory, 60);
+    return;
+  }
   S.story?.add(ins);
+  S.centre?.add(ins);
   if (S.insights.length > 400) S.insights.shift();
   const card = renderCard(ins);
   const cards = $("#cards");
@@ -325,10 +349,10 @@ function renderCard(ins) {
       <span class="src">${src}</span></div>
     <h3>${esc(r.title)}</h3>
     ${r.lines.length ? `<ul>${r.lines.map((l) => `<li>${esc(l.text)}</li>`).join("")}</ul>` : ""}
-    <div class="chips"><button class="chip receipt-link" data-receipt="${esc(ins.id)}">Evidence receipt</button>
+    <div class="card-footer"><button class="chip receipt-link" data-receipt="${esc(ins.id)}">Evidence receipt</button><details class="card-details"><summary>Sources and feedback</summary><div class="chips">
       ${(ins.event_ids || []).slice(-4).map((id) => `<button class="chip" data-ev="${id}" title="Show the evidence">${id}</button>`).join("")}
       ${S.prefs.persona === "access" ? `<button class="chip speak" data-say="${ins.id}">Read aloud</button>` : ""}
-      <span class="fb" role="group" aria-label="Was this useful?"><button class="chip" data-fb="${ins.id}" data-up="1" aria-pressed="${S.fb[ins.id] === 1}">Useful</button><button class="chip" data-fb="${ins.id}" data-up="0" aria-pressed="${S.fb[ins.id] === 0}">Not for me</button></span></div>`;
+      <span class="fb" role="group" aria-label="Was this useful?"><button class="chip" data-fb="${ins.id}" data-up="1" aria-pressed="${S.fb[ins.id] === 1}">Useful</button><button class="chip" data-fb="${ins.id}" data-up="0" aria-pressed="${S.fb[ins.id] === 0}">Not for me</button></span></div></details></div>`;
   return el;
 }
 
@@ -877,7 +901,7 @@ async function openEvidence(id) {
     opponents_bypassed: "Opponents bypassed", xt_added: "Threat added (xT)", win_prob_before: "Win probability before", win_prob_after: "Win probability after",
     minute: "Minute", type: "Event", team: "Team", player: "Player", target: "Receiver", outcome: "Outcome" };
   const rows = Object.entries(f).filter(([k]) => !["event_id"].includes(k)).map(([k, v]) =>
-    `<tr><td>${esc(LABEL[k] || k.replace(/_/g, " "))}</td><td class="num">${esc(typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a === "home" ? S.meta.home.short : a === "away" ? S.meta.away.short : a} ${b}%`).join(", ") : v)}</td></tr>`).join("");
+    `<tr><td>${esc(LABEL[k] || k.replace(/_/g, " "))}</td><td class="num">${esc(v === null ? "Not recorded" : typeof v === "object" ? Object.entries(v).map(([a, b]) => `${a === "home" ? S.meta.home.short : a === "away" ? S.meta.away.short : a} ${b}%`).join(", ") : v)}</td></tr>`).join("");
   const expl = d.xg_explain || d.pass_explain;
   const bars = expl && expl.length ? `<h4 style="margin:14px 0 4px;font:700 16px var(--display)">${d.xg_explain ? "What drove the chance quality" : "What made this pass hard or easy"}</h4>
     <p class="muted" style="margin:0 0 6px;font-size:13px">Compared with a typical ${d.xg_explain ? "shot" : "pass"} in our synthetic league. Right helps, left hurts.</p>
@@ -1208,6 +1232,7 @@ function applyView() {
   const sel = S.prefs.view === "player" ? "player" : S.view;
   $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === sel)));
   $("#pitchBox").classList.toggle("tv", S.view === "tv");
+  if (!S.judge && S.view === "tv") loadPitch3D();
   resizeCanvas();
 }
 
@@ -1221,6 +1246,7 @@ function applyPrefs() {
   document.documentElement.lang = S.prefs.lang;
   rerenderCards();
   S.story?.refresh();
+  S.centre?.refresh();
   updateMetric();
   if (!$("#tab-mine").hidden && S.meta) loadReelPlan();
 }
@@ -1338,7 +1364,7 @@ function bindControls() {
   $("#moreBtn").addEventListener("click", () => {
     const open = $(".prefs").classList.toggle("open");
     $("#moreBtn").setAttribute("aria-expanded", String(open));
-    $("#moreBtn").textContent = open ? "Fewer options" : "More options";
+    $("#moreBtn").textContent = open ? "Close preferences" : "Personalise";
   });
   $("#personaSeg").addEventListener("click", (e) => {
     const b = e.target.closest("button"); if (!b) return;
@@ -1378,8 +1404,21 @@ function bindControls() {
   $("#reelBtn").addEventListener("click", makeReel);
   $("#drawerClose").addEventListener("click", closeDrawer);
   addEventListener("keydown", drawerKeys);
-  $$(".tabs [role=tab]").forEach((t) => t.addEventListener("click", () => {
-    $$(".tabs [role=tab]").forEach((x) => x.setAttribute("aria-selected", String(x === t)));
+  const workspaceTabs = $$(".tabs [role=tab]");
+  workspaceTabs.forEach((tab, index) => {
+    tab.id = `tool-${tab.dataset.tab}`;
+    tab.setAttribute("aria-controls", `tab-${tab.dataset.tab}`);
+    tab.tabIndex = tab.getAttribute("aria-selected") === "true" ? 0 : -1;
+    $("#tab-" + tab.dataset.tab).setAttribute("aria-labelledby", tab.id);
+    tab.addEventListener("keydown", event => {
+      const delta = {ArrowRight:1, ArrowLeft:-1}[event.key];
+      const next = event.key === "Home" ? 0 : event.key === "End" ? workspaceTabs.length - 1 : delta ? (index + delta + workspaceTabs.length) % workspaceTabs.length : null;
+      if (next === null) return;
+      event.preventDefault(); workspaceTabs[next].click(); workspaceTabs[next].focus();
+    });
+  });
+  workspaceTabs.forEach((t) => t.addEventListener("click", () => {
+    workspaceTabs.forEach((x) => { x.setAttribute("aria-selected", String(x === t)); x.tabIndex = x === t ? 0 : -1; });
     $$(".tabpanel").forEach((p) => { p.hidden = p.id !== "tab-" + t.dataset.tab; });
     if (t.dataset.tab === "players") renderPlayers();
     if (t.dataset.tab === "producer") renderProducer();

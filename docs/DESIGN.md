@@ -1,9 +1,15 @@
-# Touchline design system: Floodlit
+# Touchline design system
 
-The studio, on-air graphics and highlight reels use Floodlit below. Judge Mode uses the
-new **Matchday** presentation: graphite/off-white, citron, self-hosted Barlow, system-aware
-light/dark themes and an original generated atmosphere image. The [taste review](TASTE_REVIEW.md)
-records its audit, tokens, scope and verification. No league or club marks are used.
+The current application uses the shared **Match Centre** presentation on `/`, `/judge`,
+`/phone` and `/reel`: plum, off-white and lime, self-hosted Barlow, system-aware light/dark
+themes, a focused match story and progressive disclosure of deeper controls. The
+[main-app review](MATCH_CENTRE.md) records the design, interaction and validation work.
+`web/experience.css` owns the shared tokens; `web/companion.css` adapts the secondary pages.
+No league or club marks are used. This is native CSS, not an official Fluent implementation.
+
+The following Floodlit notes document the original broadcast graphics and exported
+templates. Their earlier colors and UI assumptions are historical; the browser application
+overrides them with the current shared presentation.
 
 ## Principles
 
@@ -74,9 +80,8 @@ reasons, evidence).
 
 ## References we used
 
-- **taste-skill** (Leonxlnx/taste-skill): house rules applied to the app (no gradients, no hairline
-  dividers, tone steps instead of borders, no eyebrow labels) and its full process,
-  lint and browser inspector for the story page (0 FAIL).
+- **taste-skill**: contextual design audit, typography, responsive behavior and visible
+  interaction states. Current evidence is in the main-app review, not a blanket lint claim.
 - **CasparCG** HTML producer conventions (`play`, `stop`, `next`, `update`) and **SPX
   Graphics Controller** template definitions, so the on-air template loads in open
   broadcast playout tools.
