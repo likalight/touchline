@@ -46,11 +46,25 @@ It is a target for usefulness and clarity, not a numerical claim about this vers
 
 ## Highest-value order
 
-1. **Deploy and verify.** First establish hosted execution and the complete downstream chain. A green local build cannot substitute for this.
-2. **Rehearse the judge journey.** Show the story, compare two audiences, open one receipt, then show an actual failure recovery. Record the deployed app.
-3. **Collect a small honest user sample.** Ask whether people can explain why a moment mattered, switch audiences and locate supporting evidence without help. Report the denominator and observations.
-4. **Run the comparison and Foundry evaluation.** Publish all outcomes, including failures. The current baseline isolates narration; it must not be relabeled an end-to-end agent comparison.
-5. **Complete the cloud reliability drill.** Save before/after state, input journal offset and package identity. Keep the one-replica and in-memory outbound limitations visible.
+This is a finishing plan, not a new feature backlog. The submission deadline is **28 October
+2026, 14:59 Singapore time** (27 October, 23:59 Pacific). Judges may assess the entry from
+the video, images and text without running the app, so presentation must carry the evidence.
+
+1. **Confirm entry access now.** Registration closed on 20 October; verify the existing registration before further spending.
+   - [ ] The registered entrant can open the submission form; required fields, public repository and final submission confirmation are recorded before the deadline.
+2. **Make one sourced player story unmistakable, then record it.** Show the mistake, redemption and winner; compare audiences; inspect a receipt and a blocked altered claim. Player Spotlight, camera identity and the compact opening now pass local browser checks; record the final functioning build before adding more screens.
+   - [ ] A public video on an accepted host is under two minutes, shows the functioning final build, explains the user benefit, includes actual recovery evidence, and matches the submitted screenshots and testing instructions. The existing local rehearsal is not this final deliverable.
+3. **Deploy and capture actual execution.** This is the largest implementation proof gap; Azure sign-in, subscription and spending cap remain prerequisites.
+   - [ ] Save the accessible judge URL or functioning test build, an actual hosted Foundry request/trace with its execution path, and the observed Event Hubs → app → Event Hubs → Functions → Blob result. Record a restart, delivery latency, journal offset and package identity; retain the single-writer and outbound-durability limits. Keep judge access available through the judging period.
+4. **Complete the frozen narration comparison and Foundry evaluation.** This is the most direct remaining evidence for purposeful specialist work.
+   - [ ] Use the fingerprinted frozen inputs, record model/configuration and every result including failures, publish the denominator and evaluation outputs, and describe this as a bounded narration comparison. A capable end-to-end single-agent baseline remains a separate experiment.
+5. **Collect human observations when participants are available.** The prepared blank kit is ready; participants remain unavailable. Do not delay submission or invent results.
+   - [ ] Observe 3–5 consented participants attempting the story, audience and evidence tasks; publish completion counts, timing and observed confusion. Until then, label impact and usability claims unvalidated.
+
+Best Multi-Agent System remains the strongest category argument. Foundry and Cloud Native
+depend on live execution evidence; Enterprise has the furthest remaining gap because durable
+editorial audit, delivery guarantees and operator adoption are not established. Improve those
+claims through observed behavior, not additional service names or a broader rewrite.
 
 ## Gaps we will not hide
 
@@ -73,12 +87,15 @@ The sources guide the design. The repository tests and saved run artifacts are t
 The [Premier League Companion](https://www.premierleague.com/en/news/4345260/what-is-the-premier-league-companion)
 already offers personalized, AI-assisted discovery of football statistics and content.
 [WSC Sports Arena](https://wsc-sports.com/platform/) describes AI event analysis and automated,
-personalized sports content. Those official product descriptions establish that a chat box,
+personalized sports content; its [Experiences documentation](https://dev.wsc-sports.com/docs/getting-started)
+also covers personalized stories and videos inside other apps. Those primary sources establish that a chat box,
 personalization or automatic highlights alone is not a credible novelty claim.
 
-Our proposed distinction is the **inspectable decision chain for a live story**: the earlier
-mistake, a later callback, independent checks, an editorial decision and two audience versions
-in one downloadable receipt. That is a positioning choice supported by our implementation,
+Our proposed distinction is: **follow the player's story, inspect the source events behind
+the explanation, and see what the system withheld before an editor publishes it.** The earlier
+mistake, later callback, checks, editorial decision and audience versions form an inspectable
+decision chain in a downloadable receipt. Checks and editorial review are guardrails, not a
+guarantee of semantic correctness. This is a positioning choice supported by our implementation,
 not a claim that competitors lack comparable capabilities. The stronger evidence would be
 observed producer trust, lower correction/editing effort and a clearer fan understanding.
 The project has not been benchmarked against those commercial products.

@@ -57,6 +57,12 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
 
 /* ------------------------------------------------------------------ boot */
 async function boot() {
+  S.playerSpotlight = TouchlinePlayer.create({getState: () => S, getRender: rendersFor, openReceipt,
+    onFollow: pid => {
+      S.prefs.focus = pid; S.prefs.view = "player"; savePrefs(); applyPrefs(); applyView();
+      $("#pitchBox").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center"});
+    }
+  });
   if (!S.judge) S.centre = TouchlineCentre.create({getPrefs: () => S.prefs, getRender: rendersFor, getMemory: TouchlineStory.memoryLine});
   if (S.judge) {
     document.body.classList.add("judge-mode");
@@ -113,7 +119,8 @@ function savePrefs() { store.set("prefs", S.prefs); }
 function connect() {
   if (S.es) S.es.close();
   clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
-  S.insights = []; S.pos = {}; S.draws = [];
+  S.insights = []; S.pos = {}; S.draws = []; S.snap = null;
+  S.playerSpotlight?.reset();
   $("#cards").innerHTML = `<p class="empty">Moments appear here as they happen, each one checked against the match data before it's shown.</p>`;
   $("#trace").innerHTML = "";
   const es = new EventSource(`/api/matches/${S.sid}/stream`);
@@ -131,6 +138,7 @@ function connect() {
     ((ins.renders = ins.renders || {})[m.persona] = ins.renders[m.persona] || {})[m.lang] = m.render;
     S.story?.refresh();
     S.centre?.refresh();
+    S.playerSpotlight?.refresh();
     if (m.persona === S.prefs.persona && m.lang === S.prefs.lang) {
       const old = document.querySelector(`.card[data-id="${CSS.escape(ins.id)}"]`);
       if (old) old.replaceWith(renderCard(ins));
@@ -158,6 +166,8 @@ function onHello(h) {
   // A reconnected SSE stream sends its history again. Rebuild rather than duplicate it.
   clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
   S.insights = []; rerenderCards();
+  S.snap = null;
+  S.playerSpotlight?.reset();
   S.centre?.reset();
   if (S.story) {
     document.body.classList.add("story-playing");
@@ -205,6 +215,7 @@ function tvBug(s) {
 
 function onState(s) {
   S.snap = s;
+  S.playerSpotlight?.refresh();
   if (s.drills && s.drills.length) { for (const d of s.drills) S.drills[d.id] = d; if (!$("#tab-ops").hidden) renderDrills(); }
   tvBug(s);
   const sc = s.score;
@@ -288,6 +299,7 @@ function flushHistory() {
   clearTimeout(S.historyTimer); S.historyTimer = null;
   S.centre?.appendMany(S.pendingHistory); S.pendingHistory = [];
   rerenderCards(); drawTimeline();
+  S.playerSpotlight?.refresh();
   $("#feedCount").textContent = `${S.insights.length} moments explained`;
 }
 
@@ -305,6 +317,7 @@ function onInsight(ins, replayed) {
   }
   S.story?.add(ins);
   S.centre?.add(ins);
+  S.playerSpotlight?.refresh();
   if (S.insights.length > 400) S.insights.shift();
   const card = renderCard(ins);
   const cards = $("#cards");
@@ -538,6 +551,28 @@ function placeTags3D() {
     const [x, y, vis] = TV3D.project(p[0], p[1], 2.15);
     tg.el.style.left = x + "px"; tg.el.style.top = (y + 4) + "px"; tg.el.style.visibility = vis ? "" : "hidden";
   }
+  placePlayerIdentity();
+}
+
+// One persistent identity follows the actual camera subject, including a replay.
+// The label is projected from recorded pitch positions; no new animation meshes.
+function placePlayerIdentity() {
+  let label = $("#playerIdentity");
+  const pid = S.view === "tv" && !S.flat ? window.TV3D?.focusedPlayer?.() : null;
+  const player = S.players[pid], position = S.pos[pid];
+  if (!player || !position) { if (label) label.hidden = true; return; }
+  if (!label) {
+    label = document.createElement("div"); label.id = "playerIdentity";
+    label.className = "player-identity-tag"; $("#overlay").appendChild(label);
+  }
+  const [x, y, visible] = TV3D.project(position[0], position[1], 2.4);
+  label.hidden = !visible;
+  if (label.dataset.player !== pid) {
+    label.textContent = `#${player.number} ${player.name}`; label.dataset.player = pid;
+  }
+  const width = $("#pitchBox").clientWidth, half = label.offsetWidth / 2 + 8;
+  label.style.left = `${Math.max(half, Math.min(width - half, x))}px`;
+  label.style.top = `${Math.max(32, y - 12)}px`;
 }
 
 function stepScene(now) {
@@ -1232,6 +1267,7 @@ function applyView() {
   const sel = S.prefs.view === "player" ? "player" : S.view;
   $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === sel)));
   $("#pitchBox").classList.toggle("tv", S.view === "tv");
+  if ($("#playerIdentity")) $("#playerIdentity").hidden = true;
   if (!S.judge && S.view === "tv") loadPitch3D();
   resizeCanvas();
 }
@@ -1247,6 +1283,7 @@ function applyPrefs() {
   rerenderCards();
   S.story?.refresh();
   S.centre?.refresh();
+  S.playerSpotlight?.refresh();
   updateMetric();
   if (!$("#tab-mine").hidden && S.meta) loadReelPlan();
 }

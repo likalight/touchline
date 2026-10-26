@@ -175,9 +175,9 @@ function init() {
     seats.forEach(([x, y, z], i) => {
       m4.makeTranslation(x, y, z); inst.setMatrixAt(i, m4);
       const fan = fanSide === "home" ? homeCol : fanSide === "away" ? awayCol : (x < 0 ? homeCol : awayCol);
-      // Keep the action legible: fewer bright kit blocks in the judge presentation.
-      const kitShare = S.judge ? 0.30 : 0.55;
-      c.set(rnd() < kitShare ? fan : palette[(rnd() * palette.length) | 0]).multiplyScalar(S.judge ? 0.30 + rnd() * 0.25 : 0.55 + rnd() * 0.35);
+      // Keep the player, ball and evidence graphics ahead of the stadium detail.
+      const kitShare = 0.28;
+      c.set(rnd() < kitShare ? fan : palette[(rnd() * palette.length) | 0]).multiplyScalar(0.26 + rnd() * 0.22);
       inst.setColorAt(i, c); phase[i] = rnd() * 6.28;
     });
     inst.geometry = crowdGeo.clone();
@@ -362,6 +362,7 @@ function init() {
   composer.addPass(new OutputPass());
 
   /* ---------- camera director */
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const cam = { mode: "main", tx: 0, tz: 0, until: 0, shot: null, fov: 30 };
   camera.position.set(0, 23, W / 2 + 40);
   function aim(now, dt) {
@@ -395,9 +396,9 @@ function init() {
         cam.fov += (fovWant - cam.fov) * k;
       }
     } else if (cam.mode === "replay") {
-      const s = cam.shot, k = Math.min(1, (now - s.t0) / (cam.until - s.t0));
+      const s = cam.shot, k = reducedMotion.matches ? 0.5 : Math.min(1, (now - s.t0) / (cam.until - s.t0));
       const a = s.a0 + (s.a1 - s.a0) * k, r = 13 - 3 * k;
-      camera.position.set(s.cx + Math.cos(a) * r, 2.2 + 1.6 * k, s.cz + Math.sin(a) * r);
+      camera.position.set(s.cx + Math.cos(a) * r, 4.8 + 1.2 * k, s.cz + Math.sin(a) * r);
       const P = players[s.pid]; const focus = (P ? P.root.position.clone() : new THREE.Vector3(s.cx, 0, s.cz)).add(new THREE.Vector3(0, 1.0, 0));
       cam.look = cam.look ? cam.look.lerp(focus, 1 - Math.pow(0.002, dt)) : focus;
       camera.lookAt(cam.look); cam.fov += (34 - cam.fov) * 0.1;
@@ -525,6 +526,11 @@ function init() {
     for (const P of Object.values(players)) { P.speed = 0; if (P.oneShot) { P.oneShot.a.stop(); P.oneShot = null; } }
   };
   api.replaying = () => cam.mode === "replay";
+  api.focusedPlayer = () => {
+    if (cam.mode === "replay") return players[cam.shot?.pid]?.pid || null;
+    if (players[S.prefs.focus]) return S.prefs.focus;
+    return cam.mode === "player" ? cam.iso?.pid || null : null;
+  };
   api.reset = () => { for (const P of Object.values(players)) { scene.remove(P.root); } for (const k in players) delete players[k]; excite = 0; cam.mode = "main"; };
   api.teams = (meta) => {
     homeCol.set(meta.home.color); awayCol.set(meta.away.color);

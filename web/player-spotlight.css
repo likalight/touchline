@@ -1,0 +1,40 @@
+/* Editorial player profile. Club kit illustration is not a likeness or official asset. */
+.player-spotlight { max-width:1440px; padding:30px 48px 36px; margin:auto; }
+.spotlight-heading { display:flex; justify-content:space-between; align-items:end; gap:24px; padding-bottom:22px; border-top:1px solid var(--rule); padding-top:26px; }
+.spotlight-heading h2 { font:700 40px/1.05 var(--display); letter-spacing:-.02em; margin:7px 0 0; }
+.spotlight-picker { display:grid; gap:6px; font:500 12px var(--ui); color:var(--muted); }
+.spotlight-picker select { min-height:44px; min-width:260px; max-width:100%; border:1px solid var(--rule); border-radius:4px; color:var(--ink); background:var(--surface-raised); padding:10px 34px 10px 12px; font:400 14px var(--ui); }
+.spotlight-body { display:grid; grid-template-columns:minmax(170px,.7fr) minmax(280px,1.25fr) minmax(270px,1fr); background:var(--surface-raised); border:1px solid var(--rule); }
+.spotlight-portrait { position:relative; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:22px 18px 14px; overflow:hidden; background:#24132e; min-height:290px; color:#f6effb; }
+.spotlight-club-code { align-self:flex-start; font:700 26px var(--display); letter-spacing:.06em; border-top:4px solid var(--spotlight-kit); padding-top:7px; }
+.spotlight-shirt { width:190px; height:200px; background:var(--spotlight-kit); clip-path:polygon(28% 5%,39% 0,43% 9%,57% 9%,61% 0,72% 5%,100% 27%,88% 47%,77% 39%,77% 100%,23% 100%,23% 39%,12% 47%,0 27%); display:flex; flex-direction:column; align-items:center; padding:38px 0 0; box-sizing:border-box; transform:rotate(-5deg); }
+.spotlight-shirt span { background:#24132e; color:#fff; max-width:110px; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; font:600 12px var(--ui); text-transform:uppercase; letter-spacing:.04em; }
+.spotlight-shirt strong { font:700 85px/.95 var(--display); color:white; text-shadow:0 2px 0 #24132e; }
+.spotlight-art-note { font:400 10px var(--ui); color:#cbbad6; margin-top:20px; }
+.spotlight-profile { padding:28px 28px 24px; min-width:0; }
+.spotlight-position { margin:0 0 7px; color:var(--muted); font:500 12px var(--ui); }
+.spotlight-profile h3 { font:700 clamp(34px,3vw,48px)/1.02 var(--display); letter-spacing:-.02em; margin:0; overflow-wrap:anywhere; }
+.spotlight-team { margin:8px 0 22px; color:var(--muted); font-size:14px; }
+.spotlight-time { font:400 11px var(--ui); color:var(--muted); margin:0 0 12px; }
+.spotlight-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:15px; margin:0 0 24px; padding-top:12px; border-top:1px solid var(--rule); }
+.spotlight-stats dt { font:500 11px var(--ui); color:var(--muted); }
+.spotlight-stats dd { font:700 36px/1.2 var(--display); margin:3px 0; font-variant-numeric:tabular-nums; }
+.spotlight-stats small { font:400 10px/1.3 var(--ui); color:var(--muted); display:block; }
+.spotlight-follow-note { font:400 11px/1.5 var(--ui); color:var(--muted); margin:9px 0 0; }
+.spotlight-story { padding:28px; border-left:1px solid var(--rule); display:flex; flex-direction:column; align-items:start; }
+.spotlight-story-label { display:flex; justify-content:space-between; width:100%; gap:12px; align-items:center; font:500 11px var(--ui); color:var(--muted); }
+.spotlight-story-label strong { font:700 28px var(--display); color:var(--accent-ink); }
+.spotlight-story h4 { font:600 26px/1.1 var(--display); margin:14px 0 10px; }
+.spotlight-story > p:not(.spotlight-source) { font:400 14px/1.5 var(--ui); margin:0 0 20px; }
+.spotlight-story .btn { margin-top:auto; }
+.spotlight-moments { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.spotlight-moments:empty { display:none; }
+.spotlight-moments button { min-height:36px; padding:7px 10px; border:1px solid var(--rule); border-radius:3px; color:var(--ink); background:var(--surface); font:500 12px var(--ui); cursor:pointer; }
+.spotlight-moments button[aria-pressed="true"] { background:var(--ink); color:var(--surface); border-color:var(--ink); }
+.spotlight-moment-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; }
+.spotlight-moment-actions .btn { margin-top:0; font-size:12px; }
+.spotlight-source { font:400 10px/1.5 var(--ui); color:var(--muted); margin:12px 0 0; }
+.player-identity-tag { position:absolute; transform:translate(-50%,-100%); z-index:12; background:#24132e; color:#fff; padding:7px 10px; border-left:4px solid var(--accent-fill); font:500 12px/1.4 var(--ui); pointer-events:none; max-width:calc(100% - 32px); }
+.player-identity-tag small { display:block; color:#d6c8df; font-size:11px; }
+@media(max-width:1023px) { .spotlight-body { grid-template-columns:180px minmax(0,1fr); }.spotlight-story { grid-column:1/-1; border-left:0; border-top:1px solid var(--rule); }.spotlight-story .btn { margin-top:0; }.spotlight-portrait { min-height:270px; }.spotlight-shirt { width:160px; } }
+@media(max-width:767px) { .player-spotlight { padding:20px; }.spotlight-heading { align-items:start; flex-direction:column; gap:18px; }.spotlight-picker { width:100%; }.spotlight-picker select { min-width:0; width:100%; }.spotlight-heading h2 { font-size:34px; }.spotlight-body { grid-template-columns:minmax(0,1fr); }.spotlight-portrait { min-height:190px; padding:18px; align-items:start; justify-content:space-between; }.spotlight-shirt { position:absolute; right:22px; top:15px; height:175px; width:165px; padding-top:31px; }.spotlight-shirt strong { font-size:72px; }.spotlight-club-code { font-size:32px; }.spotlight-art-note { max-width:100px; line-height:1.5; }.spotlight-profile,.spotlight-story { padding:22px; }.spotlight-stats { gap:10px; }.player-identity-tag { font-size:11px; padding:5px 8px; } }
