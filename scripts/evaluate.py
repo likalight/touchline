@@ -19,12 +19,15 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
+import json
 import os
 import statistics
 import sys
 import time
 from collections import Counter
 from pathlib import Path
+from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -118,6 +121,7 @@ def main() -> int:
     ap.add_argument("--chaos", type=float, default=0.10)
     ap.add_argument("--gate", action="store_true")
     ap.add_argument("--foundry", action="store_true")
+    ap.add_argument("--json-out", type=Path, help="Save measured metrics and gates as a machine-readable evidence artifact")
     args = ap.parse_args()
     t0 = time.time()
     n_ins, verified, goals, goals_explained, leaks, cite_err = 0, 0, 0, 0, 0, 0
@@ -169,6 +173,20 @@ def main() -> int:
         ok = m[k] <= v if k in ("template_leaks", "citation_errors", "pipeline_ms_p95", "event_ms_p95") else m[k] >= v
         if not ok:
             fails.append(f"{k}={m[k]} (gate {v})")
+    if args.json_out:
+        digest = hashlib.sha256()
+        for directory in ("touchline", "scripts", "tests", "web", "infra"):
+            for path in sorted((ROOT / directory).rglob("*")):
+                if path.suffix in {".py", ".js", ".html", ".css", ".bicep"}:
+                    digest.update(path.relative_to(ROOT).as_posix().encode())
+                    digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
+        report = {"schema": "touchline.evaluation/1", "generated_at": datetime.now(timezone.utc).isoformat(),
+                  "source_sha256": digest.hexdigest(), "mode": "deterministic synthetic evaluation",
+                  "seeds": list(range(5000, 5000 + args.matches)), "metrics": m, "gates": GATES,
+                  "passed": not fails, "failures": fails,
+                  "scope": "Local server pipeline; excludes cloud models, network delivery, speech and human usability."}
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     kinds_md = "\n".join(f"| {k} | {v} |" for k, v in m["kinds"].items())
     (ROOT / "docs" / "EVAL.md").write_text(f"""# Evaluation
 

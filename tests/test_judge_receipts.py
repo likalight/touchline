@@ -1,0 +1,101 @@
+import asyncio
+from unittest.mock import patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from touchline.judge import JudgeSession
+from touchline.receipts import build_receipt
+
+
+@pytest.fixture(scope="module")
+def replay():
+    async def run():
+        session = JudgeSession()
+        session.paused = False
+        waits = []
+
+        async def fast_wait(seconds):
+            waits.append(seconds)
+            await asyncio.sleep(0)
+
+        session._wait = fast_wait
+        with patch("touchline.runtime.outbound.emit") as emit:
+            await session._run()
+            emit.assert_not_called()
+        return session, sum(waits)
+    return asyncio.run(run())
+
+
+def test_judge_replays_chronological_history_for_ninety_seconds(replay):
+    session, seconds = replay
+    assert seconds == pytest.approx(90)
+    assert session.done and session.paused
+    assert session.state.score == {"home": 3, "away": 2}
+    assert session.guard.stats["accepted"] == len(session.state.events)
+    assert session.guard.stats["duplicates"] == 0
+    assert len(session.replay_history()) == 4
+    goals = [i for i in session.insights if i["kind"] == "goal"]
+    assert len(goals) == 5
+    redemption = goals[-2]
+    texts = [line["text"] for line in redemption["renders"]["analyst"]["en"]["lines"]]
+    assert any("redemption" in text.lower() for text in texts)
+    for insight in session.insights:
+        assert all(session.state.events[eid].t <= insight["t"] for eid in insight["event_ids"])
+
+
+def test_receipt_keeps_original_verdict_and_handoffs(replay):
+    session, _ = replay
+    insight = next(i for i in session.insights if i["kind"] == "goal")
+    before = session.checker.stats().copy()
+    session.trace.spans.clear()  # long match: the receipt must not depend on the rolling log
+    receipt = build_receipt(session, insight, "analyst", "es")
+    assert receipt["render"]["lang"] == "es"
+    assert receipt["verification"] == insight["verification"]
+    assert session.checker.stats() == before  # inspecting is read-only
+    assert {a["agent"] for a in receipt["agents"]} >= {"TacticalAnalyst", "StorylineKeeper", "FactChecker", "Producer"}
+    assert {e["event_id"] for e in receipt["evidence"]} == set(insight["event_ids"])
+    assert receipt["editorial"]["decision"] == insight["cue"]["decision"]
+    assert "excludes" in receipt["timing_scope"]
+
+
+def test_judge_isolation_restart_and_receipt_endpoint(monkeypatch, replay):
+    from touchline import server
+    monkeypatch.setenv("TOUCHLINE_AUTH", "entra")
+    with TestClient(server.app) as client:
+        assert client.get("/judge").status_code == 200
+        first = client.post("/api/judge").json()
+        second = client.post("/api/judge").json()
+        assert first["session_id"] != second["session_id"]
+        assert "control_token" not in client.get(f"/api/matches/{first['session_id']}").json()
+        sid = first["session_id"]
+        headers = {"X-Touchline-Judge-Token": first["control_token"]}
+        wrong = {"X-Touchline-Judge-Token": second["control_token"]}
+        assert client.post(f"/api/matches/{sid}/control", json={"action": "resume"}).status_code == 403
+        assert client.post(f"/api/matches/{sid}/control", json={"action": "resume"}, headers=wrong).status_code == 403
+        assert client.post(f"/api/matches/{sid}/control", json={"action": "pause"}, headers=headers).status_code == 200
+        assert client.post(f"/api/matches/{sid}/control", json={"action": "jump", "value": 90}, headers=headers).status_code == 400
+        assert client.get(f"/api/matches/{sid}/insights/future/receipt").status_code == 404
+        assert client.delete(f"/api/judge/{sid}", headers=wrong).status_code == 403
+        assert client.delete(f"/api/judge/{sid}", headers=headers).status_code == 200
+        assert client.get(f"/api/matches/{second['session_id']}").status_code == 200
+        assert client.get("/api/matches/demo").status_code == 200
+        # Read a fully processed fixture through the real HTTP route.
+        session, _ = replay
+        server.sessions[session.id] = session
+        goal = next(i for i in session.insights if i["kind"] == "goal")
+        response = client.get(f"/api/matches/{session.id}/insights/{goal['id']}/receipt")
+        assert response.status_code == 200 and response.json()["schema"] == "touchline.receipt/1"
+
+
+def test_abandoned_judge_sessions_expire(monkeypatch):
+    from touchline import server
+
+    async def run():
+        session = JudgeSession()
+        session.created -= server.SESSION_TTL + 1
+        session.start()
+        monkeypatch.setattr(server, "sessions", {session.id: session})
+        await server.prune_sessions()
+        assert not server.sessions and session.task.cancelled()
+    asyncio.run(run())

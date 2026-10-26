@@ -22,7 +22,15 @@ jobs:
         env:
           TOUCHLINE_LLM: "off"
       - name: Evaluation gate (100% verified, every goal explained, latency, exactly-once ingest)
-        run: python scripts/evaluate.py --matches 12 --gate
+        run: python scripts/evaluate.py --matches 12 --gate --json-out evidence.json
+      - name: Preserve evaluation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touchline-evaluation-${{ github.sha }}
+          path: |
+            evidence.json
+            docs/EVAL.md
       - name: Auto-eventing from video (pass precision/recall, speed error)
         run: python -m touchline.vision.autoevent --seed 7 --from-min 20 --minutes 3
 
@@ -40,7 +48,7 @@ jobs:
       - name: Container smoke test
         run: |
           docker run -d -p 8000:8000 --name touchline-smoke touchline
-          for i in $(seq 1 60); do curl -sf localhost:8000/api/health && break; sleep 1; done
-          curl -sf localhost:8000/api/health > /dev/null || { docker logs touchline-smoke; exit 1; }
+          for i in $(seq 1 60); do curl -sf localhost:8000/api/ready && break; sleep 1; done
+          curl -sf localhost:8000/api/ready > /dev/null || { docker logs touchline-smoke; exit 1; }
           curl -sf localhost:8000/.well-known/agent-card.json > /dev/null
           curl -sf localhost:8000/static/tv3d.js > /dev/null

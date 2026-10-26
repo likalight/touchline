@@ -16,7 +16,7 @@ For them, a stats overlay is invisible unless something describes it.
 
 | For | Before | With Touchline | Evidence |
 |---|---|---|---|
-| Graphics desk | Operators type and check each graphic | Timed, machine-readable cues keyed to the match clock, ready under 5 ms after the moment at p95, played straight into CasparCG or SPX | [EVAL.md](EVAL.md), `web/templates/touchline-graphics.html` |
+| Graphics desk | Operators type and check each graphic | Timed, machine-readable cues keyed to the match clock, server timing reported in EVAL.md, with a CasparCG/SPX template; playout latency remains to be measured | [EVAL.md](EVAL.md), `web/templates/touchline-graphics.html` |
 | Editor | Chooses what airs by hand | The Producer agent scores every moment and airs, cuts in, queues or drops it with a stated reason; review mode keeps a human in charge | Producer console, `tests/test_producer_editorial.py` |
 | Trust and compliance | A wrong number on air is a correction and a headline | Every number re-derived from the raw events; 735 of 735 insights verified; model copy blocked if any figure or name is unsupported | [EVAL.md](EVAL.md), resilience drills |
 | Casual fans | The same graphic as the analyst | Four voices for each moment, their club, their favourite players, one metric, their language | Live app |
@@ -48,3 +48,11 @@ Every card in the app has **Useful** and **Not for me** buttons. Votes are count
 and moment type (`GET /api/matches/{id}/feedback`, also in the audit export and the Agents at
 work panel), so the impact numbers come from viewers rather than from us. The ten-minute session
 we run is in [USER_TEST.md](USER_TEST.md).
+
+## Evidence boundary
+
+The workflows above are intended benefits, not measured adoption or accessibility outcomes.
+No completed participant results are recorded in USER_TEST.md. Do not use general population
+statistics as the count of users served by this prototype. The recorded local measurements
+cover synthetic correctness and server timing; end-to-end graphics delay, actual Azure costs,
+producer time saved and user usefulness require the deployment and pilot observations.

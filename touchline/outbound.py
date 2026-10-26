@@ -26,6 +26,8 @@ class Outbound:
         self.sent = 0
         self.dropped = 0
         self.errors = 0
+        self.retries = 0
+        self.inflight = 0
 
     @property
     def enabled(self) -> bool:
@@ -33,43 +35,72 @@ class Outbound:
             os.getenv("TOUCHLINE_EVENTHUB_NAMESPACE") or os.getenv("TOUCHLINE_EVENTHUB_CONNECTION"))
 
     def status(self) -> dict:
-        return {"enabled": self.enabled, "hub": HUB, "sent": self.sent, "dropped": self.dropped, "errors": self.errors}
+        return {"enabled": self.enabled, "hub": HUB, "sent": self.sent, "dropped": self.dropped, "errors": self.errors,
+                "retries": self.retries, "pending": (self.q.qsize() if self.q else 0) + self.inflight,
+                "durability": "process memory; retries while running, no durable outbound outbox"}
 
     def emit(self, msg: dict) -> None:
         if not self.enabled:
             return
         if self.q is None:
             self.q = asyncio.Queue(maxsize=2000)
+        if self.task is None or self.task.done():
             self.task = asyncio.get_event_loop().create_task(self._run())
         try:
             self.q.put_nowait(msg)
         except asyncio.QueueFull:
             self.dropped += 1
 
-    async def _run(self) -> None:  # pragma: no cover - needs Azure
+    async def _send(self, prod, msg):
         from azure.eventhub import EventData
+        attempt = 0
+        while True:
+            try:
+                await prod.send_batch([EventData(json.dumps(msg, ensure_ascii=False))],
+                                      partition_key=msg.get("match_id"))
+                self.sent += 1
+                return
+            except Exception as exc:
+                self.errors += 1
+                self.retries += 1
+                attempt += 1
+                log.warning("outbound publish failed; retaining event for retry: %s", exc)
+                await asyncio.sleep(min(10, 2 ** min(attempt, 4)))
+
+    async def close(self, timeout=5):
+        if self.task is None:
+            return
+        try:
+            await asyncio.wait_for(self.q.join(), timeout=timeout)
+        except asyncio.TimeoutError:
+            self.dropped += self.q.qsize() + self.inflight
+        self.task.cancel()
+        await asyncio.gather(self.task, return_exceptions=True)
+        self.task = self.q = None
+        self.inflight = 0
+
+    async def _run(self) -> None:  # pragma: no cover - needs Azure
         from azure.eventhub.aio import EventHubProducerClient
 
+        credential = None
         if os.getenv("TOUCHLINE_EVENTHUB_CONNECTION"):
             prod = EventHubProducerClient.from_connection_string(os.environ["TOUCHLINE_EVENTHUB_CONNECTION"], eventhub_name=HUB)
         else:
             from azure.identity.aio import DefaultAzureCredential
 
-            prod = EventHubProducerClient(os.environ["TOUCHLINE_EVENTHUB_NAMESPACE"], HUB, DefaultAzureCredential())
-        async with prod:
-            while True:
-                first = await self.q.get()
-                batch = [first]
-                while not self.q.empty() and len(batch) < 50:
-                    batch.append(self.q.get_nowait())
-                try:
-                    await prod.send_batch([EventData(json.dumps(m, ensure_ascii=False)) for m in batch],
-                                          partition_key=batch[0].get("match_id"))
-                    self.sent += len(batch)
-                except Exception as exc:
-                    self.errors += 1
-                    log.warning("outbound publish failed: %s", exc)
-                    await asyncio.sleep(2)
+            credential = DefaultAzureCredential()
+            prod = EventHubProducerClient(os.environ["TOUCHLINE_EVENTHUB_NAMESPACE"], HUB, credential)
+        try:
+            async with prod:
+                while True:
+                    msg = await self.q.get()
+                    self.inflight = 1
+                    await self._send(prod, msg)
+                    self.inflight = 0
+                    self.q.task_done()
+        finally:
+            if credential:
+                await credential.close()
 
 
 def insight_message(session_id: str, match_id: str, ins: dict) -> dict:

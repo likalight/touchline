@@ -40,6 +40,33 @@ button, select, input { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--sodium); outline-offset: 2px; }
 a { color: var(--sodium); }
 
+/* Judge Mode reuses the broadcast view and its existing audience controls. */
+.judge-panel { margin: 20px; padding: 20px 24px; border: 1px solid var(--line); background: var(--panel); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.judge-panel[hidden] { display: none; }
+.eyebrow { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--sodium); }
+.judge-panel h1 { font: 600 30px/1.15 var(--display); margin: 8px 0; }
+.judge-panel p { margin: 0; color: var(--chalk-dim); }
+.judge-actions { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+.judge-mode #tourBtn, .judge-mode #judgeLink, .judge-mode #moreBtn,
+.judge-mode .phone-link, .judge-mode #viewSeg,
+.judge-mode label:has(#speed), .judge-mode label:has(#jump),
+.judge-mode label:has(#club), .judge-mode label:has(#focus), .judge-mode label:has(#metric),
+.judge-mode .tabs { display: none; }
+.receipt-link { border-color: var(--sodium); color: var(--sodium); }
+.judge-mode .prefs:not(.open) > .field:has(#lang),
+.judge-mode .prefs:not(.open) > .field:has(#speak),
+.judge-mode .prefs:not(.open) > .field:has(#booth) { display: flex; }
+.drawer pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }
+.drawer h4 { margin: 22px 0 8px; font: 600 20px var(--display); }
+.drawer details { border-bottom: 1px solid var(--line); padding: 10px 0; }
+.drawer summary { cursor: pointer; }
+.receipt-agents { padding-left: 20px; }
+.receipt-agents li { margin: 10px 0; }
+@media (max-width: 700px) {
+  .judge-panel { margin: 12px; padding: 16px; align-items: flex-start; flex-direction: column; gap: 16px; }
+  .judge-panel h1 { font-size: 26px; }
+}
+
 /* ---------------------------------------------------------------- top: scorebug + prefs */
 .top {
   display: grid;
@@ -292,6 +319,10 @@ pre.json { background: var(--turf-2); border-radius: var(--r-sm); padding: 10px;
 }
 .drawer[hidden] { display: none; }
 .drawer h3 { font: 700 22px/1.1 var(--display); margin: 0 0 4px; }
+.drawer .eyebrow:first-child { display: block; padding-right: 65px; }
+.receipt-comparison article { border-left: 2px solid var(--sodium); padding: 12px 0 6px 14px; margin-top: 12px; }
+.receipt-comparison article h4 { margin-top: 8px; }
+.qa-proof { margin: 12px 0; overflow-wrap: anywhere; }
 .drawer .close { position: absolute; right: 14px; top: 14px; }
 .bars { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
 .bars .row { display: grid; grid-template-columns: 150px 1fr 48px; gap: 8px; align-items: center; font-size: 13.5px; }

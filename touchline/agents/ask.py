@@ -30,12 +30,11 @@ class AskTheAnalyst:
         self.s = state
         self.insights = insights
         self.llm = get_llm()
-        self._tool_log: list[str] = []
 
     # ------------------------------------------------------------------ tools
-    def tools(self) -> list[Callable]:
+    def tools(self, tool_log: Optional[list[str]] = None) -> list[Callable]:
         s = self.s
-        log = self._tool_log
+        log = tool_log if tool_log is not None else []
 
         def get_scoreboard() -> str:
             """Current score, minute, possession, xG, shots, win probability, momentum and control-vs-chaos phase."""
@@ -111,15 +110,23 @@ class AskTheAnalyst:
     # ------------------------------------------------------------------ answer
     async def ask(self, question: str, lang: str = "en") -> dict:
         if self.llm.available:
-            self._tool_log.clear()
-            text = await self.llm.run("AskTheAnalyst", INSTRUCTIONS, f"[lang={lang}] {question}", timeout=12.0, tools=self.tools())
+            tool_log: list[str] = []
+            text = await self.llm.run("AskTheAnalyst", INSTRUCTIONS, f"[lang={lang}] {question}", timeout=12.0,
+                                      tools=self.tools(tool_log))
             if text:
-                corpus = " ".join(self._tool_log)
-                bad = [n for n in NUM_RE.findall(text) if n not in corpus and n not in question]
+                corpus = " ".join(tool_log)
+                allowed = {n.replace(",", ".") for n in NUM_RE.findall(corpus)}
+                bad = [n for n in NUM_RE.findall(text) if n.replace(",", ".") not in allowed]
+                citations = re.findall(r"E\d{5}", text)
+                bad_citations = set(citations) - set(re.findall(r"E\d{5}", corpus))
                 from touchline.safety import safety
 
-                if not bad and (await safety.moderate(text))["ok"]:
-                    return {"answer": text, "citations": re.findall(r"E\d{5}", text), "source": f"llm:{self.llm.backend}"}
+                if tool_log and not bad and not bad_citations and (await safety.moderate(text))["ok"]:
+                    return {"answer": text, "citations": citations, "source": f"llm:{self.llm.backend}",
+                            "execution": self.llm.execution() if hasattr(self.llm, "execution") else {},
+                            "grounding": {"tool_results": len(tool_log), "numbers_supported": True,
+                                          "citations_supported": True,
+                                          "scope": "Token-level numbers and event IDs in returned tools; not semantic entailment."}}
         return self.route(question)
 
     def route(self, q: str) -> dict:

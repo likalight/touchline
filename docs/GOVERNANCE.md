@@ -46,12 +46,12 @@ Every graphic, line of commentary and answer passes through these, in order. A f
 
 | Target | How it is met | Evidence |
 |---|---|---|
-| Graphics ready inside one broadcast frame | Agent pipeline p95 under 5 ms; the CI workflow fails above 250 ms | [EVAL.md](EVAL.md), run on every push |
+| Server pipeline latency gate | Measured server p95 in EVAL.md; CI fails above 250 ms. Excludes model, speech and browser delivery | [EVAL.md](EVAL.md), run on every push |
 | No wrong number on air | 100% FactChecker verification is a CI gate | [EVAL.md](EVAL.md) |
 | Survives a bad feed | IngestGuard: validation, de-duplication, re-ordering; exactly-once in 100% of faulty-feed matches | [EVAL.md](EVAL.md), drills |
 | Survives a model outage | Circuit breaker; hosted Foundry agent falls back to the same agent run locally, then to phrase banks | Resilience drills |
 | Survives an agent crash | Agents catch and degrade; the workflow supervisor rebuilds and retries a failed run | Resilience drills, `tests/test_drills.py` |
-| Stays up | Container Apps, minimum one replica, health probes, autoscale on HTTP load; the packages Azure Function scales out on the Event Hubs backlog and a watchdog checks health every 5 minutes | `infra/resources.bicep`, `functions/` |
+| Stays up | Container Apps, one warm replica and health probes; shared durable state is needed before app scale-out. The packages Azure Function scales on Event Hubs backlog. The watchdog checks HTTP health, not successful cloud-agent execution. | `infra/resources.bicep`, `functions/`, `scripts/smoke_deployment.py` |
 
 Resilience drills (Agents at work tab) inject each failure on demand in the live system. Building them found and fixed a real gap: the FactChecker did not treat ordinals ("99th") as numbers.
 
@@ -66,3 +66,12 @@ Resilience drills (Agents at work tab) inject each failure on demand in the live
 * One deployment per broadcaster or region (`azd env new`), each with its own Foundry project, so data, agents, policies and costs stay separate.
 * The overlay cue contract (`touchline.overlay/1`) and the CasparCG/SPX template keep it vendor-neutral for graphics.
 * Feeds arrive through Event Hubs, so an existing data provider plugs in without code changes (`scripts/publish_feed.py` shows the format).
+
+## Recovery and storage boundaries
+
+The single-partition input journal atomically stores match history and its resume offset in
+Blob Storage, with conditional ETag writes. Rehydration suppresses historical outbound output.
+Browser sessions, producer actions and feedback are still process-local. Outbound events retry
+while the process is alive but have no durable outbox. Snapshot-based full-time events and stable
+Blob names make repeated package storage idempotent; Teams notifications may repeat. These are
+prototype limits, not a production availability or compliance claim. See [the recovery drill](DEPLOYMENT_PROOF.md).

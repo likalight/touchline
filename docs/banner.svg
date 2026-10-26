@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="640" viewBox="0 0 1600 640" role="img" aria-labelledby="title desc">
+  <title id="title">Touchline — The game, explained.</title>
+  <desc id="desc">A fictional match unfolds from a mistake to redemption to the winner. Touchline connects match facts, agent decisions and audience-specific graphics with inspectable evidence.</desc>
+  <rect width="1600" height="640" fill="#0c241b"/>
+  <path d="M0 590H1600" stroke="#2a5242"/>
+  <path d="M1030 0V590M1315 0V590" stroke="#17392b"/>
+  <g transform="translate(64 54)">
+    <rect width="44" height="44" rx="7" fill="#184232"/>
+    <path d="M7 35H37M22 8V35" stroke="#eef0e8" stroke-width="3"/>
+    <circle cx="22" cy="22" r="7" fill="none" stroke="#f2c14e" stroke-width="3"/>
+  </g>
+  <text x="126" y="85" fill="#a6b3a9" font-family="Arial,sans-serif" font-size="22" letter-spacing="4">MATCH INTELLIGENCE / EXPLAINED</text>
+  <text x="58" y="244" fill="#eef0e8" font-family="Arial,sans-serif" font-size="116" font-weight="700" letter-spacing="-6">TOUCHLINE</text>
+  <text x="64" y="309" fill="#f2c14e" font-family="Georgia,serif" font-size="46">The game, explained.</text>
+  <text x="66" y="379" fill="#d1d9cf" font-family="Arial,sans-serif" font-size="27">One match. A whole story. Every claim inspectable.</text>
+  <g font-family="Arial,sans-serif" font-size="21" fill="#a6b3a9">
+    <text x="67" y="464">MATCH FACTS</text><text x="295" y="464">AGENT DECISIONS</text><text x="581" y="464">YOUR VIEW</text>
+  </g>
+  <path d="M236 457H268M260 451L268 457L260 463M526 457H558M550 451L558 457L550 463" fill="none" stroke="#f2c14e" stroke-width="2"/>
+  <g transform="translate(926 112)">
+    <rect width="594" height="346" rx="2" fill="#0f2b20" stroke="#41634f" stroke-width="2"/>
+    <path d="M297 0V346M0 87H93V259H0M594 87H501V259H594M0 125H37V221H0M594 125H557V221H594" fill="none" stroke="#41634f" stroke-width="2"/>
+    <circle cx="297" cy="173" r="61" fill="none" stroke="#41634f" stroke-width="2"/>
+    <path d="M106 246C187 262 232 179 269 196S342 251 386 148S472 58 535 121" fill="none" stroke="#f2c14e" stroke-width="4" stroke-dasharray="9 8"/>
+    <g fill="#f2c14e" stroke="#0c241b" stroke-width="5"><circle cx="106" cy="246" r="15"/><circle cx="386" cy="148" r="15"/><circle cx="535" cy="121" r="15"/></g>
+    <g fill="#eef0e8" font-family="Arial,sans-serif" font-size="19" font-weight="700">
+      <text x="40" y="287">MISTAKE</text><text x="308" y="112">REDEMPTION</text><text x="455" y="79">WINNER</text>
+    </g>
+    <circle cx="535" cy="121" r="28" fill="none" stroke="#f2c14e" stroke-width="1"/>
+  </g>
+  <text x="927" y="509" fill="#a6b3a9" font-family="Georgia,serif" font-size="26">A match has a memory.</text>
+  <text x="64" y="623" fill="#a6b3a9" font-family="Arial,sans-serif" font-size="18" letter-spacing="1">MICROSOFT AGENT FRAMEWORK  /  FOUNDRY  /  AZURE</text>
+  <text x="1536" y="623" text-anchor="end" fill="#a6b3a9" font-family="Arial,sans-serif" font-size="18">SYNTHETIC FOOTBALL. FICTIONAL CLUBS.</text>
+</svg>

@@ -41,3 +41,23 @@ Plus one open question: "What would you change first?"
 | P3 | | | | | | | | |
 
 Viewer feedback from the app: `GET /api/matches/demo/feedback` (useful rate by persona and moment type).
+
+## Judge-journey validation (record real participants only)
+
+Status: **not conducted for this revision**. Recruit 3–5 consenting participants; do not substitute
+simulated personas or automated browser tests for human results. Use anonymous participant IDs
+and record only the observations needed for the study.
+
+For each task, record success without assistance, elapsed seconds, any assistance and the
+participant's explanation in their own words:
+
+1. Start Judge Mode and explain what happened after the first goal.
+2. Find the connection between the earlier mistake and the later equalizer.
+3. Compare Fan and Analyst and say how the versions differ.
+4. Locate a source fact and download its receipt.
+5. Use keyboard-only navigation to open and close the receipt.
+
+Report counts as “n of N”, including failures. Distinguish software browser checks from this
+study. With a small convenience sample, describe observations rather than claiming population
+impact. For a broadcaster pilot, separately measure producer acceptance, editing time per cue
+and correction rate in a preview-only workflow before any on-air use.

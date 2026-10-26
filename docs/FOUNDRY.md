@@ -12,9 +12,9 @@ before-and-after for this project. The line counts are from this repository.
 | **Safety** | Wire a moderation service, prompt-injection detection and policies separately. | The same Foundry (AI Services) account serves the model, Content Safety (Prompt Shields and moderation) and Speech; the agents carry a Responsible-AI policy. | `touchline/safety.py`, `touchline/speech.py` |
 | **Security** | API keys per service, rotated by hand. | One managed identity, local auth disabled, four least-privilege roles on the one AI account (OpenAI User, Azure AI User, Speech User, Cognitive Services User for Content Safety), plus AcrPull on the registry. No keys. | `infra/resources.bicep` |
 
-## What it means for a broadcaster
+## Intended value for a broadcaster (requires live validation)
 
-* **A new market in an afternoon, not a sprint.** Turning on Tamil, Japanese or Swahili graphics is a setting, and every line is still checked before it airs.
+* **A route to additional languages.** Turning on Tamil, Japanese or Swahili graphics is a setting, with numeric/name checks before display; semantic equivalence and language quality require human review.
 * **Agents are managed like software.** Each version is tied to a commit, carries its safety policy, and can be evaluated and rolled back from the portal.
 * **One place to look.** Model, agents, evaluations, traces and safety live in one Foundry project per broadcaster.
 
@@ -23,3 +23,11 @@ before-and-after for this project. The line counts are from this repository.
 Foundry is the production path, not a single point of failure. If the hosted agent is unreachable the same
 agent runs locally on the Foundry model, and if the model is down the verified phrase banks take over: see the
 resilience drills in the app and [GOVERNANCE.md](GOVERNANCE.md).
+
+## Evidence status
+
+The integration is implemented. A live hosted run, Foundry evaluation and observed rollback
+have not yet been recorded for this revision. Follow [DEPLOYMENT_PROOF.md](DEPLOYMENT_PROOF.md).
+Analyst answers now expose per-request execution provenance; aggregate backend configuration
+is not treated as proof that an individual answer ran in Foundry. The local evaluation trusts
+tool outputs only and validates cited event IDs. These checks do not prove semantic entailment.

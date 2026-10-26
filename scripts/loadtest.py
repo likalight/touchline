@@ -33,6 +33,8 @@ def fan_worker(base: str, sid: str, n: int, seconds: float, q: mp.Queue) -> None
     async def one(client: httpx.AsyncClient, out: dict) -> None:
         try:
             async with client.stream("GET", f"{base}/api/matches/{sid}/stream", timeout=None) as r:
+                r.raise_for_status()
+                out["_connected"] = 1
                 kind = None
                 async for line in r.aiter_lines():
                     if line.startswith("event:"):
@@ -118,8 +120,8 @@ def run(fans: int, seconds: float, port: int) -> dict:
         if len(ts) == len(outs):
             spreads.append((max(ts) - min(ts)) * 1000)
     got = [sum(1 for k in ids if k in o) for o in outs]
-    return {"fans": fans, "connected": len(outs) - errors, "events": len(ids),
-            "complete_share": round(sum(g == len(ids) for g in got) / max(1, len(got)), 3),
+    return {"fans": fans, "connected": sum(bool(o.get("_connected")) and "_error" not in o for o in outs), "events": len(ids),
+            "complete_share": round(sum(g == len(ids) for g in got) / max(1, len(got)), 3) if ids else 0.0,
             "lag_p50_ms": round(statistics.median(spreads), 1) if spreads else None,
             "lag_p95_ms": round(sorted(spreads)[int(0.95 * (len(spreads) - 1))], 1) if spreads else None,
             "cpu_share": round((cpu1 - cpu0) / elapsed, 3), "rss_mib": round(rss_peak)}
@@ -136,7 +138,7 @@ def main() -> int:
         print(r, flush=True)
         rows.append(r)
     # sizing: the largest run where every fan got every event and the server stayed under 70% CPU
-    ok = [r for r in rows if r["cpu_share"] <= 0.7 and r["complete_share"] >= 0.99]
+    ok = [r for r in rows if r["events"] > 0 and r["cpu_share"] <= 0.7 and r["complete_share"] >= 0.99 and r["connected"] == r["fans"] and r["lag_p95_ms"] is not None and r["lag_p95_ms"] <= 500]
     cap = max((r["fans"] for r in ok), default=0)
     replica_match = 2 * 3600 * (VCPU_S * 1 + GIB_S * 2)   # 1 vCPU, 2 GiB, for a 2-hour match window
     per_1000 = replica_match * (1000 / cap) if cap else None
@@ -149,30 +151,31 @@ worker, about one vCPU, like a Container Apps replica with `cpu: 1.0`), plays a 
 real match's event rate, so this is conservative), and connects every fan to the live stream for {a.seconds:g} seconds.
 Fan-out lag is the gap between the first and the last fan receiving the same match event.
 
-The fans ran on the same two-vCPU machine as the server, so at high counts the lag is mostly the load generator
-itself queueing; **server CPU is the capacity signal**, and it stays well below one core.
+The clients and server share a machine. This experiment cannot isolate network, server and client
+contributions to lag. It is a short streaming experiment, not a production capacity test.
 
 | Fans | Connected | Received every event | Fan-out lag p50 / p95 | Server CPU | Memory |
 |---|---|---|---|---|---|
 {table}
 
-p95 fan-out lag reaches {rows[-1]['lag_p95_ms'] / 1000:.1f} s at {rows[-1]['fans']:,} fans, largely the co-located load generator. Events in
+p95 fan-out lag reaches {rows[-1]['lag_p95_ms'] / 1000:.1f} s at {rows[-1]['fans']:,} fans in this co-located experiment. Events in
 the last two seconds of each run are left out of "received every event", and each run lasts {a.seconds:g} seconds, not a whole match.
 
-**One replica serves at least {cap:,} live fans** with every fan receiving every event and the server under 70% of one
-vCPU, at ten times the real event rate. Container Apps adds replicas on HTTP load (`maxReplicas` in
-`infra/resources.bicep`).
+**Largest tested count meeting the short-run gates: {cap:,}.** Gates require connections, at least one
+observed event, 99% completeness, p95 fan-out lag at most 500 ms and server CPU under 70%.
+Completeness uses the union of observed IDs and excludes the final two seconds; it cannot detect an
+event missed by every client. The app is configured for one warm replica. This is not an Azure SLA.
 
-## Cost per 1,000 fans
+## Historical compute-only estimate
 
 A 1 vCPU, 2 GiB replica for a two-hour match window costs about **${replica_match:.2f}** at Azure Container Apps consumption
 prices (East US: ${VCPU_S:.6f} per vCPU-second, ${GIB_S:.6f} per GiB-second, from the Azure Retail Prices API; the monthly free
-grant is ignored here). At {cap:,} fans per replica that is **about ${per_1000:.2f} per 1,000 fans per match** for the
-live experience, before any language-model or speech usage (see [BROADCASTERS.md](BROADCASTERS.md#cost-per-match)).
+grant is ignored here). At {cap:,} fans per replica that is **about ${per_1000:.2f} per 1,000 fans per match** as an illustrative
+compute-only calculation, excluding Event Hubs, storage, Functions, networking, monitoring, model and speech costs (see [BROADCASTERS.md](BROADCASTERS.md#cost-per-match)).
 """ if cap else "# Load test\n\nNo configuration met the targets; see the raw results above.\n"
     (ROOT / "docs" / "LOADTEST.md").write_text(md)
     print(md)
-    return 0
+    return 0 if cap else 1
 
 
 if __name__ == "__main__":

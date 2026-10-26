@@ -26,7 +26,7 @@ frame; language-model work never sits on the hot path.
 | Stage | Measured (p50 / p95) |
 |---|---|
 | Event to updated match state | about 0.15 / under 1 ms |
-| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, editorial producer, commentary) | about 2.5 / under 5 ms |
+| Moment to verified, rendered cue (analyst, storyline, fact-check, 4 narrators x 4 languages, editorial producer, commentary) | See the current measured p50 / p95 in EVAL.md (server pipeline only) |
 | Extra language via Azure OpenAI (async; arrives as a `render` update) | model-bound, typically sub-second |
 | Personal highlights reel (75 s, 1280x720, H.264) | about 45 s on 1 vCPU |
 
@@ -74,8 +74,8 @@ from verified phrase banks.
 - `azd up` provisions Container Apps, Container Registry, Microsoft Foundry (project and
   model deployment), Event Hubs, Log Analytics, Application Insights and a managed
   identity with least-privilege roles. No secrets.
-- One match is one session. Sticky sessions keep a viewer's stream on one replica;
-  replicas scale on HTTP concurrency; `minReplicas: 1` keeps the demo live.
+- One match is one session. The judged deployment pins one warm replica because state is process-local;
+  shared durable state is required before scaling replicas. Judge Mode uses a separate replay per visitor.
 - Event Hubs partitions by match ID, so many concurrent matches ingest independently.
 - Every verified insight also streams out on a second hub; the `packages` Azure Function
   (Flex Consumption) builds social cards and the post-match package for your CMS.
