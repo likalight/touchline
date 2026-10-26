@@ -4,6 +4,16 @@ Research checked 26 October 2026 against the [official rules](https://github.com
 
 The rules give equal weight to implementation, agentic innovation, impact, UX/presentation and category fit. An entrant can receive one Grand Prize and one Category Prize. This is our strategy and evidence register, not a prediction of the judges' decision or an assessment of undisclosed competitors.
 
+**Current focus: Grand Prize + Best Multi-Agent System.** The latest pass adds an interactive
+numeric-check challenge, recorded four-fault recovery evidence, a fingerprinted narration
+comparison dataset, a local captioned video rehearsal workflow and an anonymous observation
+form. The recovery and checker demonstrations are measured locally. The comparison has not
+made model calls, and the user-test form has no participant results. Azure authentication,
+subscription selection and a spending cap are still needed before provisioning.
+
+Evidence: [recovery run](evidence/recovery.json), [frozen comparison inputs](evidence/comparison-inputs.json),
+[comparison scope](AGENT_COMPARISON.md), [observation form](user-test-kit.html), [recording workflow](SUBMISSION.md#local-video-rehearsal).
+
 ## Every prize has a distinct argument
 
 | Prize | Our argument | Evidence available in this repository | Evidence still needed |

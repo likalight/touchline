@@ -402,6 +402,20 @@ async def cues(sid: str):
     return [i["cue"] for i in s.insights if i.get("cue")]
 
 
+@app.get("/api/matches/{sid}/insights/{insight_id}/challenge")
+async def checker_challenge(sid: str, insight_id: str):
+    from touchline.proof import challenge
+
+    s = get(sid)
+    ins = next((i for i in s.insights if i['id'] == insight_id), None)
+    if ins is None:
+        raise HTTPException(404, 'unknown or future insight')
+    try:
+        return challenge(s, ins)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+
 @app.post("/api/matches/{sid}/cues/{cue_id}/decision")
 async def decide(sid: str, cue_id: str, body: Decision, request: Request):
     if sid in (DEMO, "live") and os.getenv("TOUCHLINE_PROTECT_SHARED", "").lower() == "on" and auth_mode() != "entra":

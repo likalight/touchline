@@ -52,6 +52,14 @@ Open **Evidence receipt** to:
 - follow the recorded agent handoffs and editorial decision;
 - download the complete receipt as JSON.
 
+In Judge Mode, **Try an incorrect stat** changes one chance estimate in an isolated copy.
+The real numeric checker compares the original and altered claims with the source; download
+its observed verdict. This is a bounded numeric test, with the match and receipt unchanged.
+The separate [recorded recovery evidence](docs/evidence/recovery.json) exercises four actual
+local pipeline faults. Neither demonstration substitutes for hosted Azure recovery testing.
+
+![An observed checker test: the original 0.07 xG claim passes, while an altered 0.99 xG copy is blocked.](docs/checker-proof.png)
+
 All clubs, players, events and venues are fictional. Verification is against synthetic
 facts and model estimates; it is not a guarantee of semantic accuracy, translation quality,
 or correctness on a real football feed.

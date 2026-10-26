@@ -1,5 +1,10 @@
 # Ten-minute user test
 
+Use the [offline observation form](user-test-kit.html) for the current judge journey.
+Download it and open it locally. It collects anonymous IDs, consent, task outcomes,
+elapsed time, participant explanations and ratings, then exports JSON on this device.
+No observations have been collected yet. The blank form is a preparation artifact.
+
 Run this with 3 to 5 people: at least one casual fan, one person who follows tactics closely, and,
 if you can, one person who uses a screen reader. Use the live app (deployed URL or `localhost:8000`).
 

@@ -36,6 +36,16 @@ jobs:
           path: |
             evidence.json
             docs/EVAL.md
+      - name: Record bounded failure recovery and freeze comparison inputs
+        run: |
+          python scripts/record_recovery.py --output evidence/recovery.json
+          python scripts/compare_agents.py --prepare --limit 12 --output evidence/comparison-inputs.json
+      - name: Preserve agent evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touchline-agent-evidence-${{ github.sha }}
+          path: evidence/
       - name: Auto-eventing from video (pass precision/recall, speed error)
         run: python -m touchline.vision.autoevent --seed 7 --from-min 20 --minutes 3
 

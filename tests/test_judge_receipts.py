@@ -69,6 +69,37 @@ def test_receipt_keeps_original_verdict_and_handoffs(replay):
     assert "excludes" in receipt["timing_scope"]
 
 
+def test_checker_challenge_rejects_tampering_without_mutating_match(replay):
+    import copy
+    from touchline.proof import challenge
+    session, _ = replay
+    insight = next(i for i in session.insights if i['kind'] == 'goal')
+    before = copy.deepcopy(insight)
+    counters = session.checker.stats().copy()
+    result = challenge(session, insight)
+    assert result['passed'] and result['original']['status'] == 'verified'
+    assert result['altered']['status'] == 'blocked'
+    assert any('xg mismatch' in issue for issue in result['altered']['issues'])
+    assert result['source_value'] == round(session.state.enriched[result['event_id']].xg, 2)
+    assert insight == before and session.checker.stats() == counters
+    # A broken original must not be reported as a successful demonstration.
+    wrong = copy.deepcopy(insight)
+    next(f for f in wrong['reasons'] if f['k'] == 'r.chance_quality')['p']['xg'] = -1
+    assert not challenge(session, wrong)['passed']
+
+
+def test_checker_challenge_endpoint_is_bounded_to_delivered_insights(monkeypatch, replay):
+    from touchline import server
+    session, _ = replay
+    monkeypatch.setitem(server.sessions, 'proof-test', session)
+    client = TestClient(server.app)
+    goal = next(i for i in session.insights if i['kind'] == 'goal')
+    assert client.get(f"/api/matches/proof-test/insights/{goal['id']}/challenge").json()['passed']
+    assert client.get('/api/matches/proof-test/insights/future/challenge').status_code == 404
+    other = next(i for i in session.insights if not any(f['k'] == 'r.chance_quality' for f in i['reasons']))
+    assert client.get(f"/api/matches/proof-test/insights/{other['id']}/challenge").status_code == 422
+
+
 def test_story_map_preserves_original_coordinates_and_earlier_memory(replay):
     session, _ = replay
     redemption = [i for i in session.insights if i["kind"] == "goal"][-2]

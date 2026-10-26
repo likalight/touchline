@@ -141,6 +141,11 @@
   <div class="story-alternate"><div><h3>A different ending.</h3><p>What if this goal never happened? Compare the model's simulated endings from that moment.</p><button class="btn" id="storyWhatIf">Explore alternate ending</button></div><div id="storyAlternate" aria-live="polite"><p>Run the comparison to see how this moment changes the model's outlook.</p></div></div>
 </section>
 
+<section class="checker-proof" id="checkerProof" aria-labelledby="checkerHeading" hidden>
+  <div><span class="section-label">Put it to the test</span><h2 id="checkerHeading">Would a wrong stat get through?</h2><p>Change this goal’s chance estimate in an isolated copy. Watch the same numeric checker used by the pipeline compare it with the source.</p><button class="btn primary" id="checkerRun">Try an incorrect stat</button></div>
+  <div><div id="checkerResult" aria-live="polite"><p class="muted">Choose a goal, then run the test. The match and its original receipt stay unchanged.</p></div><button class="btn" id="checkerDownload" hidden>Download test result</button></div>
+</section>
+
 <section class="tabs-wrap" id="workspace" tabindex="-1">
   <div class="workspace-heading studio-only"><div><span class="section-label">Go deeper</span><h2>Make it your match.</h2></div><p>Ask a question. Change a moment.<br>Find the evidence that matters to you.</p></div>
   <div class="tabs" role="tablist" aria-label="Match tools">

@@ -39,10 +39,11 @@
     return `<div class="alternate-legend"><span>${escape(teams.home)} win</span><span>Draw</span><span>${escape(teams.away)} win</span></div>${row("With goal", data.as_it_was.result)}${row("Without goal", data.what_if.result)}<p>${escape(data.summary)}</p><p class="story-scope">${escape(data.replays)} simulations per branch · ${escape(data.scenario.event_id)} · ${escape(data.note)} This does not model changes in tactics or player behaviour caused by the removed goal.</p>`;
   }
 
-  function create({ loadReceipt, openReceipt, openEvent, getPrefs, setPersona, loadWhatIf, getTeams }) {
+  function create({ loadReceipt, openReceipt, openEvent, getPrefs, setPersona, loadWhatIf, getTeams, loadChallenge }) {
     const $ = selector => document.querySelector(selector);
     let chapters = defaults, seen = new Map(), selected = -1, following = true;
     let receipt = null, currentEvent = null, ticket = 0, alternateTicket = 0, cache = new Map();
+    let challengeTicket = 0, challengeResult = null;
     const rail = $("#storyRail");
     $("#storyLens").hidden = false;
     $(".judge-broadcast-label").hidden = false;
@@ -59,6 +60,7 @@
     function reset(next = defaults) {
       chapters = next; seen = new Map(); selected = -1; following = true; receipt = null; cache = new Map(); ticket++;
       currentEvent = null; alternateTicket++;
+      resetChallenge(); $("#checkerProof").hidden = true;
       rail.innerHTML = chapters.map((chapter, index) => `<button disabled data-chapter="${index}" aria-pressed="false"><span><strong>${escape(chapter.title)}</strong><small>Not yet played</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("");
       $("#storyContent").hidden = true; $("#storyEmpty").hidden = false; $("#storyEvidence").hidden = true;
       $("#storyChapter").textContent = "Match memory"; $("#storyMinute").textContent = "Ready";
@@ -117,6 +119,7 @@
     async function choose(index) {
       if (!seen.has(index)) return; // Locked chapters cannot fetch future data.
       selected = index; receipt = null; currentEvent = null;
+      resetChallenge(); $("#checkerProof").hidden = false;
       const request = ++ticket, ins = seen.get(index);
       alternateTicket++;
       $("#storyWhatIf").disabled = false;
@@ -160,6 +163,38 @@
       target?.focus({preventScroll: true});
     });
     $("#storyRawEvent").addEventListener("click", () => { if (currentEvent) openEvent(currentEvent.event_id); });
+    function resetChallenge() {
+      challengeTicket++; challengeResult = null;
+      $("#checkerRun").disabled = false;
+      $("#checkerRun").textContent = "Try an incorrect stat";
+      $("#checkerDownload").hidden = true;
+      $("#checkerResult").innerHTML = '<p class="muted">Run the test for this goal. The match and its original receipt stay unchanged.</p>';
+    }
+    $("#checkerRun").addEventListener("click", async () => {
+      if (!seen.has(selected)) return;
+      const request = ++challengeTicket;
+      $("#checkerRun").disabled = true;
+      $("#checkerResult").textContent = "Checking the original estimate and an altered copy…";
+      try {
+        const result = await loadChallenge(seen.get(selected).id);
+        if (request !== challengeTicket) return;
+        challengeResult = result;
+        const row = (label, item) => `<div class="checker-row"><span>${label}</span><strong>${escape(item.value)} <small>xG</small></strong><span class="checker-verdict">${escape(item.status)}</span></div>`;
+        $("#checkerResult").innerHTML = `<p class="checker-summary">${result.passed ? "Incorrect estimate caught." : "Test did not pass. Inspect the result."}</p>${row("Original claim", result.original)}${row("Altered copy", result.altered)}<p>Source estimate: <strong>${escape(result.source_value)} xG</strong> · ${escape(result.event_id)}</p><p class="story-scope">${escape(result.altered.issues.join("; "))}</p><p class="story-scope">${escape(result.scope)}</p>`;
+        $("#checkerDownload").hidden = false;
+        $("#checkerRun").textContent = "Run test again";
+      } catch {
+        if (request === challengeTicket) $("#checkerResult").textContent = "The checker test could not run. Try again.";
+      } finally {
+        if (request === challengeTicket) $("#checkerRun").disabled = false;
+      }
+    });
+    $("#checkerDownload").addEventListener("click", () => {
+      if (!challengeResult) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(challengeResult, null, 2)], {type:"application/json"}));
+      const link = document.createElement("a"); link.href = url; link.download = "touchline-checker-test.json"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
     $("#storyWhatIf").addEventListener("click", async () => {
       if (!seen.has(selected)) return;
       const request = ++alternateTicket, eventId = chapters[selected].event_id;
