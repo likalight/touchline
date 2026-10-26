@@ -27,7 +27,9 @@ class JudgeSession(MatchSession):
 
     def describe(self):
         return {**super().describe(), "judge": {"duration_s": 90, "chapter": self.chapter,
-                                               "chapters": [c["title"] for c in self.chapters]}}
+                                               "chapters": [c["title"] for c in self.chapters],
+                                               "moments": [{"title": c["title"], "event_id": c["event_id"]}
+                                                           for c in self.chapters]}}
 
     def replay_history(self):
         return [i for i in self.insights if i["kind"] in {"goal", "hat_trick"}

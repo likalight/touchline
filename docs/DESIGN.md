@@ -1,8 +1,9 @@
 # Touchline design system: Floodlit
 
-One visual language across the live app, the on-air graphics, the highlight reels and the
-story page. It is our own: no league or club marks, no licensed typefaces. Where a real
-broadcast package would make a choice, we made one too and wrote down why.
+The studio, on-air graphics and highlight reels use Floodlit below. Judge Mode uses the
+new **Matchday** presentation: graphite/off-white, citron, self-hosted Barlow, system-aware
+light/dark themes and an original generated atmosphere image. The [taste review](TASTE_REVIEW.md)
+records its audit, tokens, scope and verification. No league or club marks are used.
 
 ## Principles
 
@@ -57,6 +58,14 @@ All three are SIL Open Font License, self-hosted and subset to Latin.
 - **Reduced motion** removes all travel and keeps the content.
 
 ## Components
+
+Judge Mode adds an editorial introduction that contracts during playback, a three-chapter
+story rail, a persistent match-memory panel and a source-event pitch diagram. A selected
+chapter controls its explanation and evidence; it does not rewind the live pitch. Future
+chapters stay unavailable until delivered. Alternate endings use separate, labeled model
+comparison bars. The evidence map joins recorded endpoints only and never invents missing
+locations. On small screens the explanation sits below a clear pitch, replacing duplicate
+lower-third copy. See [experience research](EXPERIENCE_RESEARCH.md) for the rationale.
 
 Scorebug (two pips in kit colours, score on chalk, clock on amber); lower-third; side
 panel with an inline chart; player tag that follows the player; story card; evidence

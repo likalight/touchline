@@ -1,0 +1,161 @@
+/* Run against a local server: PLAYWRIGHT_MODULE may point at an existing installation.
+   CHROMIUM_EXECUTABLE is optional. Screenshots go to STORY_SCREENSHOTS (default work/story).
+   This exercises a real 90-second replay; no synthetic browser events or mocked match data. */
+const {chromium} = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const base = process.env.TOUCHLINE_URL || 'http://127.0.0.1:8765';
+const output = process.env.STORY_SCREENSHOTS || 'work/story';
+
+(async () => {
+  await fs.mkdir(output, {recursive:true});
+  const browser = await chromium.launch({headless:true, ...(process.env.CHROMIUM_EXECUTABLE ? {executablePath:process.env.CHROMIUM_EXECUTABLE} : {})});
+  try {
+    const page = await browser.newPage({viewport:{width:1440,height:1050},acceptDownloads:true});
+    const errors = []; page.on('pageerror', error => errors.push(error.message));
+    await page.goto(`${base}/judge`);
+    await page.waitForFunction(() => document.querySelectorAll('#storyRail button').length === 3);
+    assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme), 'light');
+    assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').some(item=>item.name.endsWith('/tv3d.js'))), false);
+    await page.locator('#judgeHeroImage').evaluate(image=>image.decode());
+    assert.equal(await page.locator('[role="main"]:visible,main:visible').count(), 1);
+    await page.screenshot({path:path.join(output,'entrance-light.png'),fullPage:true,animations:'disabled'});
+    await page.locator('#storyTheme').selectOption('dark');
+    assert.equal(await page.evaluate(()=>document.documentElement.dataset.theme), 'dark');
+    assert.equal(await page.locator('#storyRail button:disabled').count(), 3);
+    await page.screenshot({path:path.join(output,'ready.png'),fullPage:true,animations:'disabled'});
+    const streamResponse = page.waitForResponse(response => response.headers()['content-type']?.startsWith('text/event-stream'));
+    await page.locator('#judgeStart').click();
+    assert.equal((await streamResponse).headers()['content-encoding'], undefined);
+    await page.waitForFunction(() => !document.querySelector('#storyEvidence').hidden, null, {timeout:25000});
+    await page.getByRole('button',{name:'Pause',exact:true}).click();
+    assert.equal(await page.locator('[role="main"]:visible,main:visible').count(), 1);
+    assert.equal(await page.locator('#storyRail button:disabled').count(), 2);
+    assert.equal(await page.locator('#storyMinute').innerText(), '36′');
+    assert((await page.locator('#storyMemory').innerText()).includes('Ravi Varga'));
+    assert(!(await page.locator('#storyMapNote').innerText()).includes('No recorded position'));
+    const fan = await page.locator('#storyLines').innerText();
+    await page.locator('#storyCompare').click();
+    assert.notEqual(await page.locator('#storyLines').innerText(), fan);
+    await page.locator('#storyCompare').click();
+    await page.locator('#storyWhatIf').click();
+    await page.locator('.alternate-row').first().waitFor();
+    assert.equal(await page.locator('.alternate-row').count(), 2);
+    assert((await page.locator('#storyAlternate').innerText()).includes('1000 simulations per branch'));
+    assert((await page.locator('#storyAlternate').innerText()).includes('does not model changes in tactics'));
+    await page.screenshot({path:path.join(output,'mistake.png'),fullPage:true,animations:'disabled'});
+    console.log('PASS: first chapter, locked future chapters, evidence geometry and perspective switch.');
+    await page.locator('#storyLinks button').first().click();
+    assert((await page.locator('#storyEventTitle').innerText()).includes('Ravi Varga'));
+    await page.locator('#storyRawEvent').click();
+    await page.locator('#drawer').waitFor({state:'visible'});
+    await page.keyboard.press('Escape');
+    await page.locator('#storyReceipt').click();
+    await page.getByText('Compare Fan and Analyst',{exact:true}).click();
+    assert.equal(await page.locator('.receipt-comparison article').count(), 2);
+    await page.locator('#drawerClose').focus(); await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.evaluate(()=>document.activeElement.id), 'downloadReceipt');
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('#downloadReceipt').click();
+    const download = await downloadPromise;
+    await download.saveAs(path.join(output,'receipt.json'));
+    const receipt = JSON.parse(await fs.readFile(path.join(output,'receipt.json'),'utf8'));
+    assert(receipt.evidence.every(e=>e.position && Number.isFinite(e.t)));
+    await page.keyboard.press('Escape');
+    assert.equal(await page.evaluate(()=>document.activeElement.id), 'storyReceipt');
+    // An alternate-ending reply must also be discarded when its chapter is deselected.
+    await page.route('**/whatif', async route => {
+      const response = await route.fetch();
+      await new Promise(resolve=>setTimeout(resolve,1200));
+      await route.fulfill({response});
+    });
+    const alternateRequest = page.waitForRequest(request=>request.url().endsWith('/whatif'));
+    await page.locator('#storyWhatIf').click(); await alternateRequest;
+    await page.locator('[data-chapter="0"]').click();
+    await page.waitForTimeout(1500);
+    assert.equal(await page.locator('.alternate-row').count(), 0);
+    await page.unroute('**/whatif');
+    // Pin chapter one while later chapters arrive: incoming events must not move this selection.
+    await page.locator('[data-chapter="0"]').click();
+    await page.getByRole('button',{name:'Resume',exact:true}).click();
+    await page.waitForFunction(()=>!document.querySelector('[data-chapter="1"]').disabled, null, {timeout:55000});
+    assert.equal(await page.locator('#storyMinute').innerText(), '36′');
+    await page.locator('#storyFollow').click();
+    await page.waitForFunction(()=>document.querySelector('#storyMinute').textContent==='76′' && !document.querySelector('#storyEvidence').hidden);
+    assert((await page.locator('#storyMemory').innerText()).includes('Redemption'));
+    await page.locator('#storyLinks button').first().click();
+    assert((await page.locator('#storyEventTime').innerText()).startsWith('35′'));
+    await page.locator('#lang').selectOption('pt');
+    assert.equal(await page.locator('#storyMemory').getAttribute('lang'), 'pt');
+    await page.locator('#lang').selectOption('en');
+    await page.screenshot({path:path.join(output,'redemption.png'),fullPage:true,animations:'disabled'});
+    await page.waitForFunction(()=>!document.querySelector('[data-chapter="2"]').disabled, null, {timeout:55000});
+    await page.waitForFunction(()=>document.querySelector('#pauseBtn').disabled, null, {timeout:40000});
+    assert.equal(await page.locator('#storyMinute').innerText(), '94′');
+    assert.equal(await page.locator('#score').innerText(), '3-2');
+    await page.locator('#storyWhatIf').click();
+    await page.locator('.alternate-row').first().waitFor();
+    await page.screenshot({path:path.join(output,'complete.png'),fullPage:true,animations:'disabled'});
+    console.log('PASS: full replay, pinned selection, redemption source link, translation and 3–2 finish.');
+    // Delay the oldest receipt on reconnect. It must not overwrite the newest chapter.
+    await page.route('**/receipt', async route => {
+      const response = await route.fetch();
+      const body = await response.json();
+      if (body.minute === 36) await new Promise(resolve=>setTimeout(resolve,1500));
+      await route.fulfill({response});
+    });
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#storyMinute').textContent==='94′' && !document.querySelector('#storyEvidence').hidden);
+    await page.waitForTimeout(1800);
+    assert((await page.locator('#storyEvidenceCount').innerText()).includes('94′ goal'));
+    await page.unroute('**/receipt');
+    // One failed receipt must expose a retry and recover without restarting the match.
+    let failed = false;
+    const winnerId = await page.evaluate(()=>S.insights.find(ins=>ins.kind==='goal' && ins.minute===94).id);
+    await page.route('**/receipt', async route => {
+      if (!failed && route.request().url().includes(winnerId)) { failed = true; return route.abort(); }
+      await route.continue();
+    });
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#storyScope').textContent.includes('Evidence could not load'));
+    assert.equal(await page.locator('#storyEvidence').isVisible(), false);
+    await page.locator('[data-chapter="2"]').click();
+    await page.waitForFunction(()=>document.querySelector('#storyEvidenceCount').textContent.includes('94′ goal') && !document.querySelector('#storyEvidence').hidden);
+    await page.locator('[data-chapter="0"]').click();
+    await page.waitForFunction(()=>document.querySelector('#storyEvidenceCount').textContent.includes('36′ goal') && !document.querySelector('#storyEvidence').hidden);
+    assert.equal(await page.locator('#score').innerText(), '3-2');
+    await page.unroute('**/receipt');
+    const mobile = await browser.newPage({viewport:{width:390,height:844},isMobile:true,reducedMotion:'reduce'});
+    mobile.on('pageerror',error=>errors.push(error.message));
+    await mobile.goto(`${base}/judge`); await mobile.locator('#judgeStart').click();
+    await mobile.waitForFunction(()=>!document.querySelector('#storyEvidence').hidden, null, {timeout:25000});
+    await mobile.getByRole('button',{name:'Pause',exact:true}).click();
+    assert.notEqual(await mobile.evaluate(()=>S.sid),await page.evaluate(()=>S.sid));
+    for (const width of [320,390,768]) {
+      await mobile.setViewportSize({width,height:844});
+      assert.equal(await mobile.evaluate(()=>document.documentElement.scrollWidth > innerWidth), false, `overflow at ${width}`);
+    }
+    await mobile.setViewportSize({width:390,height:844});
+    await mobile.locator('#storyWhatIf').click();
+    await mobile.locator('.alternate-row').first().waitFor();
+    assert.equal(await mobile.evaluate(()=>document.documentElement.scrollWidth > innerWidth), false);
+    await mobile.screenshot({path:path.join(output,'mobile.png'),fullPage:true,animations:'disabled'});
+    await mobile.locator('#storyReceipt').click();
+    assert.equal(await mobile.locator('#drawer').evaluate(el=>el.scrollWidth > el.clientWidth), false);
+    await mobile.keyboard.press('Escape');
+    const sid = await mobile.evaluate(()=>S.sid);
+    await mobile.reload();
+    await mobile.waitForFunction(()=>document.querySelector('#pauseBtn').textContent==='Resume');
+    assert.equal(await mobile.evaluate(()=>S.sid),sid);
+    await mobile.locator('#judgeStart').click();
+    await mobile.waitForFunction(old=>S.sid!==old,sid);
+    assert.equal(await mobile.locator('#storyEvidence').isVisible(), false);
+    await page.goto(base);
+    await page.waitForFunction(()=>S.meta !== null);
+    assert.equal(await page.locator('#storyLens').isVisible(), false);
+    assert.equal(await page.locator('#cards').isVisible(), true);
+    assert.deepEqual(errors, []);
+    console.log('PASS: stale receipt/simulation isolation, paired alternate endings, retry, mobile 320/390/768, keyboard focus, receipt download, pause/refresh, independent restart and full-app regression.');
+  } finally { await browser.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

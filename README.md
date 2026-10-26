@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/banner.svg" width="100%" alt="Touchline — The game, explained. One fictional match unfolds from mistake to redemption to winner, with inspectable evidence.">
+<img src="docs/banner.png" width="100%" alt="Touchline Judge Mode: Football, with memory. A matchday entrance with three story chapters and a Start demonstration action.">
 
 # Touchline
 
-**Explain why the moment mattered. Show the evidence. Tell it for every fan.**
+**Football, with memory. Watch the story. Follow the evidence.**
 
 A Microsoft Agent Framework system that turns synthetic football events into match-long stories,
 personalized graphics and broadcaster-ready outputs. Built for the Microsoft × Premier League
@@ -26,7 +26,20 @@ Touchline remembers the earlier moment and explains the connection. A fan gets t
 an analyst gets the tactical evidence; a producer gets a timed graphics cue.
 
 **Judge Mode** (`/judge`) takes you through three excerpts in 90 seconds. Each visitor owns
-an isolated replay with pause, refresh and restart. Open **Evidence receipt** on any card to:
+an isolated replay with pause, refresh and restart. **Match memory** puts the explanation
+beside the pitch, with three chapters that unlock as their goals arrive:
+
+- revisit a goal without interrupting the live replay, or follow the latest chapter;
+- switch between Fan and Analyst explanations in place;
+- follow the redemption back to the earlier loss of possession on an evidence map;
+- ask what changes without the selected goal, using 1,000 model simulations per branch.
+
+The matchday presentation supports light, dark and system themes, keyboard navigation,
+reduced motion and mobile layouts. Its original generated hero is clearly labeled;
+the interactive pitch and evidence map use the synthetic match data. See the
+[design audit and local performance results](docs/TASTE_REVIEW.md).
+
+Open **Evidence receipt** to:
 
 - compare Fan and Analyst versions of the same moment;
 - inspect cited events, model factors and original verification results;
@@ -37,7 +50,10 @@ All clubs, players, events and venues are fictional. Verification is against syn
 facts and model estimates; it is not a guarantee of semantic accuracy, translation quality,
 or correctness on a real football feed.
 
-<img src="docs/judge-receipt.png" width="1000" alt="Judge Mode shows a goal alongside its evidence receipt, comparing Fan and Analyst explanations">
+The map uses recorded event coordinates. Lines join recorded endpoints, not tracked ball
+trajectories. Alternate endings are model estimates, not predictions of what really would happen.
+
+<img src="docs/match-memory.png" width="1000" alt="Touchline Match memory: three chapter markers, a live pitch, the redemption explanation and its cited source events">
 
 ## Try the 90-second demo
 
@@ -52,7 +68,8 @@ uvicorn touchline.server:app --reload
 ```
 
 Open [Judge Mode](http://localhost:8000/judge). Select **Start demonstration**, then open a
-receipt after a goal. Compare the two audiences and inspect the evidence. The full app at
+chapter after a goal. Compare perspectives, select a memory link, and try the alternate ending.
+Open its receipt to inspect the checks and download the proof. The full app at
 [localhost:8000](http://localhost:8000) adds player focus, four built-in languages, commentary,
 recaps, counterfactuals, a phone view and personalized highlights.
 
@@ -69,6 +86,7 @@ live Foundry evaluation and Azure delivery results are not yet recorded. Follow 
 | [Single-agent comparison protocol](docs/AGENT_COMPARISON.md) | Reproducible, bounded comparison of narration strategies on identical inputs | Live-model results until the run is actually performed |
 | [Load experiment](docs/LOADTEST.md) | A historical 30-second, co-located streaming experiment | Full-match capacity, multi-replica operation or an Azure SLA |
 | [CI](https://github.com/likalight/touchline/actions/workflows/ci.yml) | Automated tests, evaluation gate, Bicep build and container smoke checks | Successful provisioning in a particular Azure subscription |
+| [Match memory browser journey](tests/story-browser.cjs) | Full replay, navigation, original-event map, audience switching, stale-request isolation, downloads and responsive layouts | A human usability study or cross-browser accessibility certification |
 
 CI uploads the measured evaluation JSON and report as an artifact tied to its commit.
 Receipts preserve the checks performed at the original moment; opening one does not rerun

@@ -8,6 +8,16 @@ from touchline.judge import JudgeSession
 from touchline.receipts import build_receipt
 
 
+def test_judge_assets_are_compressed_and_decodable():
+    from touchline import server
+    client = TestClient(server.app)
+    response = client.get("/static/app.js", headers={"Accept-Encoding": "gzip"})
+    assert response.status_code == 200
+    assert response.headers["content-encoding"] == "gzip"
+    assert "Accept-Encoding" in response.headers["vary"]
+    assert "async function boot()" in response.text
+
+
 @pytest.fixture(scope="module")
 def replay():
     async def run():
@@ -57,6 +67,22 @@ def test_receipt_keeps_original_verdict_and_handoffs(replay):
     assert {e["event_id"] for e in receipt["evidence"]} == set(insight["event_ids"])
     assert receipt["editorial"]["decision"] == insight["cue"]["decision"]
     assert "excludes" in receipt["timing_scope"]
+
+
+def test_story_map_preserves_original_coordinates_and_earlier_memory(replay):
+    session, _ = replay
+    redemption = [i for i in session.insights if i["kind"] == "goal"][-2]
+    receipt = build_receipt(session, redemption)
+    memory = next(c for c in receipt["claims"] if c["key"] == "s.redemption")
+    assert len(memory["event_ids"]) == 2
+    evidence = {e["event_id"]: e for e in receipt["evidence"]}
+    assert evidence[memory["event_ids"][0]]["t"] < redemption["t"] - 60
+    for eid, item in evidence.items():
+        original = session.state.events[eid]
+        assert item["t"] == original.t <= redemption["t"]
+        assert item["position"] == {k: getattr(original, k) for k in ("x", "y", "end_x", "end_y")}
+    chapters = session.describe()["judge"]["moments"]
+    assert [c["event_id"] for c in chapters] == [c["event_id"] for c in session.chapters]
 
 
 def test_judge_isolation_restart_and_receipt_endpoint(monkeypatch, replay):

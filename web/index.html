@@ -5,16 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Touchline</title>
 <meta name="description" content="Explainable match intelligence for a live synthetic football match: verified insights, personalised for every fan.">
+<link rel="preload" href="/static/fonts/BarlowCondensed-Bold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/static/fonts/Barlow-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<script src="/static/theme.js"></script>
 <link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/story.css">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
 </head>
 <body>
+<a class="skip-link" href="#mainStage">Skip to match</a>
 <header class="top">
   <div class="brand">
     <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#184232"/><path d="M4 26h24M16 6v20" stroke="#eef0e8" stroke-width="2.5"/><circle cx="16" cy="16" r="5" fill="none" stroke="#f2c14e" stroke-width="2.5"/></svg>
     <div>Touchline <small id="matchLabel">Connecting to the live match…</small></div>
     <button class="btn small primary tour-btn" id="tourBtn">Show me around</button>
     <a class="btn small" href="/judge" id="judgeLink">90-second demo</a>
+    <label class="judge-theme-control" hidden>Appearance <select id="storyTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
   </div>
   <div class="meters">
     <div class="scorebug" aria-live="polite">
@@ -67,17 +73,19 @@
 </header>
 
 <section class="judge-panel" id="judgePanel" aria-label="Judge Mode" hidden>
-  <div><span class="eyebrow">Judge Mode · Synthetic match replay</span>
-    <h1>One mistake. One redemption. One winner.</h1>
-    <p id="judgeStatus" role="status">Three moments in 90 seconds. Open a receipt to compare Fan and Analyst, follow the evidence, and save the proof.</p>
+  <div class="judge-intro"><span class="eyebrow">Synthetic football. Real connections.</span>
+    <h1>Football, with memory.</h1>
+    <p>Follow one player's mistake, redemption and winner. Then inspect every connection.</p>
+    <div class="judge-actions"><button class="btn primary" id="judgeStart">Start demonstration <span>90 sec</span></button><a href="/">Explore the full app</a></div>
   </div>
-  <div class="judge-actions"><button class="btn primary" id="judgeStart">Start demonstration</button>
-    <a href="/">Explore the full app</a></div>
+  <figure class="judge-cover"><img id="judgeHeroImage" width="1536" height="1024" data-src="/static/assets/matchday-hero.webp" alt="An original AI-generated football scene under stadium floodlights" fetchpriority="high"><figcaption>AI-generated atmosphere. The interactive match uses fictional event data.</figcaption></figure>
+  <div class="judge-progress"><p id="judgeStatus" role="status">Your own replay. Ready when you are.</p>
+    <nav id="storyRail" class="story-rail" aria-label="Match story chapters"></nav></div>
 </section>
 
-<main class="stage">
+<main class="stage" id="mainStage" tabindex="-1">
   <section class="pitch-wrap" aria-label="Live pitch">
-    <div class="view-bar"><div class="seg" id="viewSeg" role="group" aria-label="Camera">
+    <div class="view-bar"><span class="judge-broadcast-label" hidden>On the pitch <span>Match replay · fictional clubs</span></span><div class="seg" id="viewSeg" role="group" aria-label="Camera">
       <button data-view="tv" aria-pressed="true">TV camera</button><button data-view="player" aria-pressed="false" title="Follows your focus player, or whoever has the ball">Player cam</button><button data-view="tactical" aria-pressed="false">Tactical view</button></div>
       <a class="btn small phone-link" href="/phone" target="_blank" rel="noopener" title="A second screen for your phone">On your phone</a></div>
     <div class="pitch-box" id="pitchBox">
@@ -94,10 +102,30 @@
   </section>
 
   <aside class="feed" aria-label="Insights">
+    <section id="storyLens" class="story-lens" aria-label="Match memory" hidden>
+      <div class="story-heading"><span id="storyChapter">Match memory</span><span id="storyMinute">Ready</span></div>
+      <h2 id="storyTitle">A goal is a moment.<br>A comeback is a story.</h2>
+      <p id="storyEmpty">Start the replay. Each chapter unlocks as it happens. You can return to any chapter you have seen.</p>
+      <div id="storyContent" hidden>
+        <div class="story-perspective"><span id="storyPerspective">Fan perspective</span><button class="btn small" id="storyCompare">Read as Analyst</button></div>
+        <ul id="storyLines" class="story-lines"></ul>
+        <div class="story-memory"><span class="memory-label">Match memory</span><p id="storyMemory"></p><div id="storyLinks" class="chips"></div></div>
+        <div class="story-footer"><button class="btn primary" id="storyReceipt">Open evidence receipt</button><button class="btn" id="storyFollow" hidden>Follow latest chapter</button></div>
+        <p id="storyProof" class="story-proof"></p>
+        <p class="story-scope" id="storyScope"></p>
+      </div>
+    </section>
     <div class="feed-head"><h2>Why it matters</h2><span id="feedCount"></span></div>
     <div class="cards" id="cards"><p class="empty">Moments appear here as they happen, each one checked against the match data before it's shown.</p></div>
   </aside>
 </main>
+
+<section id="storyEvidence" class="story-evidence" aria-label="Evidence explorer" hidden>
+  <div class="evidence-intro"><h2>Go back to the source.</h2><p>Select a cited event to see its recorded position. Follow the memory across the match.</p></div>
+  <div class="evidence-layout"><div class="evidence-map-wrap"><div class="evidence-map-label"><strong id="storyEventTitle"></strong><span id="storyEventTime"></span></div><div id="storyMap"></div><p id="storyMapNote" class="story-scope"></p></div>
+    <div><div class="evidence-list-heading"><h3>Cited match events</h3><span id="storyEvidenceCount"></span></div><ol id="storyEvents" class="story-events"></ol><button class="btn" id="storyRawEvent">Inspect source event</button></div></div>
+  <div class="story-alternate"><div><h3>A different ending.</h3><p>What if this goal never happened? Compare the model's simulated endings from that moment.</p><button class="btn" id="storyWhatIf">Explore alternate ending</button></div><div id="storyAlternate" aria-live="polite"><p>Run the comparison to see how this moment changes the model's outlook.</p></div></div>
+</section>
 
 <section class="tabs-wrap">
   <div class="tabs" role="tablist">
@@ -143,7 +171,8 @@
   </div>
 
   <div class="tabpanel" id="tab-ask" role="tabpanel" hidden>
-    <form class="ask-form" id="askForm"><input id="askInput" placeholder="Ask about this match: “Why did they score?”, “How is the number 9 playing?”" autocomplete="off" maxlength="300"><button class="btn primary">Ask</button></form>
+    <label class="ask-label" for="askInput">Ask the analyst</label>
+    <form class="ask-form" id="askForm"><input id="askInput" placeholder="Why did they score?" autocomplete="off" maxlength="300"><button class="btn primary">Ask</button></form>
     <div class="suggest" id="suggest"></div>
     <div class="qa" id="qa"></div>
   </div>
@@ -245,7 +274,7 @@
   <p id="tourText"></p>
   <div class="tour-ctl"><button class="btn small" id="tourBack">Back</button><button class="btn small primary" id="tourNext">Next</button><button class="btn small ghost" id="tourClose">Close</button></div>
 </div>
-<script src="/static/app.js"></script>
-<script type="module" src="/static/tv3d.js"></script>
+<script defer src="/static/story.js"></script>
+<script defer src="/static/app.js"></script>
 </body>
 </html>

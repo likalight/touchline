@@ -15,7 +15,11 @@ def build_receipt(session, insight, persona="casual", lang="en"):
             drivers = session.state.models.xg.explain(enriched.xg_features, session.state.models.shot_baseline)
         elif enriched.pass_features:
             drivers = session.state.models.pass_.explain(enriched.pass_features, session.state.models.pass_baseline)
-        evidence.append({"event_id": eid, "facts": enriched.facts(), "model_drivers": drivers})
+        event = enriched.ev
+        evidence.append({"event_id": eid, "facts": enriched.facts(), "model_drivers": drivers,
+                         "t": event.t,
+                         "position": {"x": event.x, "y": event.y,
+                                      "end_x": event.end_x, "end_y": event.end_y}})
     cue = insight.get("cue")
     return {
         "schema": "touchline.receipt/1", "synthetic": True, "session_id": session.id,

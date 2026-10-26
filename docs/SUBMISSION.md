@@ -20,7 +20,7 @@ after they are observed. Do not submit claims that these steps have already pass
 
 ## The argument, in three demonstrations
 
-1. **Memory:** show the mistake, then the same player's redemption and the late winner.
+1. **Memory:** show the mistake, then the same player's redemption and the late winner. Click the redemption's earlier-event link: the map returns to the recorded loss of possession.
 2. **Personalization with proof:** compare Fan and Analyst, then open and download one receipt.
 3. **Purposeful agents:** show an actual failure being caught and a successful hosted request's execution evidence.
 
@@ -38,8 +38,8 @@ chapters while preserving their actual order. Never represent a local run as an 
 |---|---|---|
 | 0:00–0:09 | Start Judge Mode, fictional match visible | “A football graphic tells you what happened. Touchline explains why it mattered—and shows its evidence.” |
 | 0:09–0:24 | The mistake and its source event | “This goal began with Varga losing possession. The match memory keeps that connection.” |
-| 0:24–0:38 | Redemption chapter; Analyst view | “Forty minutes later, he scores. The agents recognize redemption because they retained the earlier event.” |
-| 0:38–0:50 | Winner and hat-trick | “Then the winner. The explanation connects the moment to the whole match.” |
+| 0:24–0:38 | Redemption chapter; earlier-event link on the evidence map | “Forty minutes later, he scores. Follow this connection back to the actual loss of possession. The match has a memory.” |
+| 0:38–0:50 | Winner; run the selected goal's alternate ending | “Then the winner. Remove that goal and compare the model's simulated endings. Estimates are labeled separately from match facts.” |
 | 0:50–1:07 | Receipt: Fan/Analyst comparison, source facts | “One moment, two audiences. Every receipt shows the facts, checks and agent handoffs behind the graphic.” |
 | 1:07–1:22 | A recorded isolated failure drill and recovery | “The specialists have different jobs. When we inject an unsupported number, the checker catches it.” |
 | 1:22–1:38 | Actual hosted analyst request and execution proof; corresponding Foundry trace | “Foundry runs the tool-using analyst. This request shows its execution path and the evidence it used.” |

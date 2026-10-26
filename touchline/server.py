@@ -18,6 +18,7 @@ from touchline.mcp_server import build as build_mcp
 from touchline.auth import mode as auth_mode
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel, Field
 
 from touchline.a2a import mount_a2a
@@ -171,6 +172,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 mount_a2a(app, lambda: sessions.get(DEMO), os.getenv("TOUCHLINE_PUBLIC_URL", "http://localhost:8000"))
 

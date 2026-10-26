@@ -22,6 +22,8 @@ It is a target for usefulness and clarity, not a numerical claim about this vers
 | Improvement | Acceptance evidence | State |
 |---|---|---|
 | Judges find the core story immediately | Start → mistake → redemption → winner, no manual seeking required | Implemented; browser-tested |
+| Memory is visible, rather than buried in a feed | Three visited chapters; redemption links directly to earlier source coordinates; latest/selected state stays distinct | Implemented in Match memory; full replay and delayed-response browser checks |
+| A viewer can investigate importance | Selected goal opens paired 1,000-run alternate endings, with model limits beside the result | Existing simulation engine surfaced in the judge journey |
 | A claim can be inspected and shared | Receipt shows original facts, checks, decisions and audience versions; JSON downloads | Implemented; regression and browser checks |
 | Hosted execution cannot be confused with fallback | A concurrent request carries its own execution path, request ID and tool-evidence count | Implemented; concurrency tests; live cloud run pending |
 | A question or answer cannot verify itself | Evaluator trusts tool outputs only and rejects fabricated event citations | Implemented; adversarial regression tests |
@@ -70,3 +72,6 @@ in one downloadable receipt. That is a positioning choice supported by our imple
 not a claim that competitors lack comparable capabilities. The stronger evidence would be
 observed producer trust, lower correction/editing effort and a clearer fan understanding.
 The project has not been benchmarked against those commercial products.
+
+See [experience research and remaining gaps](EXPERIENCE_RESEARCH.md) for the source-backed
+design rationale, the changes shipped, and the remaining evidence priorities.
