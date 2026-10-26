@@ -68,7 +68,7 @@ window.TouchlinePlayer = {
       const fragment = document.createDocumentFragment();
       for (const [value, label, note] of items) {
         const cell = document.createElement("div"), dt = document.createElement("dt"), dd = document.createElement("dd"), small = document.createElement("small");
-        dt.textContent = label; dd.textContent = value; small.textContent = note; cell.append(dt, dd, small); fragment.appendChild(cell);
+        dt.textContent = label; dd.textContent = value; small.textContent = note; dd.appendChild(small); cell.append(dt, dd); fragment.appendChild(cell);
       }
       $("#spotlightStats").replaceChildren(fragment);
       const following = focus === selected;
@@ -82,7 +82,7 @@ window.TouchlinePlayer = {
         if (!button) { button = document.createElement("button"); button.type = "button"; button.dataset.moment = ins.id; }
         button.textContent = `${ins.minute}′ ${kinds[ins.kind] || "Moment"}`;
         button.setAttribute("aria-pressed", String(ins.id === moment?.id));
-        button.setAttribute("aria-label", `Explore ${kinds[ins.kind]?.toLowerCase() || "moment"} at ${ins.minute} minutes`);
+        button.setAttribute("aria-label", `${button.textContent}, explore moment at ${ins.minute} minutes`);
         if (rail.children[index] !== button) rail.insertBefore(button, rail.children[index] || null);
       });
       $("#spotlightLatest").hidden = !pinnedMoment;

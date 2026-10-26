@@ -39,7 +39,10 @@ journey checks player selection, snapshot values, earlier-moment pinning, goal/m
 deduplication, keyboard focus, receipt access, follow camera and identity. The shared-route
 checks cover both themes, all eight tools, and 320/390/768px layouts. Screenshots in the
 README show the running application, not a design mockup. These checks are functional
-and visual verification, not human usability evidence.
+and visual verification, not human usability evidence. Lighthouse 13.5.0's local mobile
+accessibility audit scored 100 after correcting description-list markup and matching the
+moment buttons' accessible names to their visible labels; automated checks do not replace
+screen-reader or participant testing.
 
 [Microsoft's Fluent principles](https://fluent2.microsoft.design/design-principles) emphasize
 focus, familiar behavior and inclusion. We apply those principles through progressive
