@@ -1,0 +1,25 @@
+{
+  "scope": "One separately filmed deployed Q&A reproduction, outside the six-case bounded Foundry evaluation. Original response retained unchanged below; capture timestamp was not recorded in the source payload.",
+  "deployment_source_revision": "b13985bb2b7267a8d8b8685059b38620540e072c",
+  "source_path": "work/brag-video-recording-refresh/varga-reproduction.json",
+  "original_response": {
+    "question": "Explain how Varga recovered from his possession loss, using the linked match events.",
+    "answer": "Kofi Varga (Kestrel Bay FC, #9 ST): rating 10.0, 73 passes at 82% (avg difficulty 22/100), 1.72 xG, goals: 3, 0.302 xT added, top speed 30.2 km/h, 8.04 km covered.",
+    "citations": [],
+    "source": "router",
+    "language": "en",
+    "requested_language": "en",
+    "fallback_reason": "unbound_model_answer",
+    "execution": {
+      "request_id": "8434829821f94ed2b0793b3e034c8bce",
+      "agent": "AskTheAnalyst",
+      "backend": "foundry",
+      "model": "gpt-4.1-mini",
+      "path": "foundry_hosted",
+      "completed": true,
+      "fallback": false,
+      "duration_ms": 5949.38
+    },
+    "ms": 6053.4
+  }
+}

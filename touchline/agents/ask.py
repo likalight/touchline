@@ -154,10 +154,12 @@ class AskTheAnalyst:
     # ------------------------------------------------------------------ answer
     async def ask(self, question: str, lang: str = "en") -> dict:
         fallback_reason = "model_unavailable"
+        model_attempt = None
+        tool_log: list[str] = []
         if self.llm.available:
-            tool_log: list[str] = []
             text = await self.llm.run("AskTheAnalyst", INSTRUCTIONS, f"[lang={lang}] {question}", timeout=12.0,
                                       tools=self.tools(tool_log))
+            model_attempt = self.llm.execution() if hasattr(self.llm, "execution") else {}
             if text:
                 approved = {a["id"]: a for result in tool_log for a in json.loads(result).get("verified_answers", [])}
                 selected = []
@@ -187,7 +189,47 @@ class AskTheAnalyst:
                 fallback_reason = "model_no_result"
         return {**self.route(question), "language": "en", "requested_language": lang,
                 "fallback_reason": fallback_reason,
-                "execution": self.llm.execution() if hasattr(self.llm, "execution") else {}}
+                "composition": "deterministic_source_route",
+                "grounding": {"tool_results": len(tool_log), "tool_results_accepted": 0,
+                              "scope": "The application rendered this answer from match data or verified story frames. No model answer was accepted."},
+                "execution": {"path": "application_fallback", "completed": True, "fallback": True,
+                              "fallback_reason": fallback_reason, "model_attempted": model_attempt is not None,
+                              "model_attempt": model_attempt}}
+
+    def _player_memory(self, player, recovery: bool) -> dict:
+        """Use existing checked story frames, never a free-form causal explanation."""
+        from touchline.agents.narrator import _render_frame
+        keys = {"s.redemption", "s.error"} if recovery else {"s.redemption", "s.error", "s.duel", "s.keeper", "s.waste"}
+        matches = []
+        for ins in self.insights():
+            if ins.get("verification", {}).get("status") != "verified":
+                continue
+            for frame in ins.get("reasons", []):
+                if (frame.get("k") in keys and player.name in frame.get("p", {}).values()
+                        and frame.get("ev") and all(eid in self.s.events for eid in frame["ev"])):
+                    matches.append((ins, frame))
+        # An error by itself does not establish recovery; don't accept the question's premise.
+        if not matches or (recovery and not any(fr["k"] == "s.redemption" for _, fr in matches)):
+            scope = "recovery storyline" if recovery else "player storyline"
+            return {"answer": f"I don't have a verified {scope} for {player.name} in the available match insights. "
+                              "I can't confirm the linked sequence described in the question.",
+                    "citations": [], "source": "router", "answer_type": "story_unavailable"}
+        if recovery:
+            redemption = next(pair for pair in reversed(matches) if pair[1]["k"] == "s.redemption")
+            # Only pair the callback with the same cited possession loss, not an unrelated later error.
+            errors = [pair for pair in matches if pair[1]["k"] == "s.error"
+                      and pair[1]["ev"][0] == redemption[1]["ev"][0]]
+            matches = errors[-1:] + [redemption]
+        else:
+            matches = matches[-3:]
+        lines, citations = [], []
+        for ins, frame in matches:
+            lines.append(f"{ins['minute']}': {_render_frame(ins['headline'], 'en', 'analyst')} — "
+                         + _render_frame(frame, "en", "analyst"))
+            citations.extend(ins["headline"].get("ev", []))
+            citations.extend(frame["ev"])
+        return {"answer": " ".join(lines), "citations": list(dict.fromkeys(citations)),
+                "source": "router", "answer_type": "verified_player_story"}
 
     def route(self, q: str) -> dict:
         s = self.s
@@ -209,6 +251,10 @@ class AskTheAnalyst:
         # player mentioned?
         for p in s.players.values():
             if p.name.lower() in ql or re.search(rf"\b{re.escape(p.name.split()[-1].lower())}\b", ql):
+                recovery = bool(re.search(r"\brecover(?:ed|y)?\b|\bredemption\b|\bredeem(?:ed)?\b|\bbounc(?:e|ed) back\b", ql))
+                memory = bool(re.search(r"\bstory(?:line)?\b|\bremember\b|\blinked (?:match )?events\b|\bpossession loss\b", ql))
+                if recovery or memory:
+                    return self._player_memory(p, recovery)
                 ps = s.player_summary(p.id)
                 return {"answer": (f"{ps['name']} ({tn[p.team]}, #{ps['number']} {ps['position']}): rating {s.player_rating(p.id)}, "
                                    f"{ps['passes']} passes at {ps['pass_accuracy']}% (avg difficulty {ps['avg_pass_difficulty']}/100), "

@@ -977,6 +977,23 @@ function renderSuggestions() {
   $("#suggest").innerHTML = qs.map((q) => `<button class="btn small" data-q="${esc(q)}">${esc(q)}</button>`).join("");
 }
 
+function answerExecution(r) {
+  if (!r.execution) return "";
+  const e = r.execution;
+  const fallback = r.source === "router" || e.path === "application_fallback";
+  const attempt = fallback ? (e.model_attempt || (e.path !== "application_fallback" ? e : null)) : e;
+  const label = (path) => path === "foundry_hosted" ? "Microsoft Foundry hosted agent"
+    : path === "local_agent" ? "Local Agent Framework agent"
+    : path === "capacity_limit" ? "Model capacity limit" : "Model execution unavailable";
+  const heading = fallback ? "Application fallback · answered from match data" : label(e.path);
+  const detail = fallback ? (attempt ? `Model attempt: ${label(attempt.path)} · ${attempt.completed ? "completed; answer not accepted" : "did not complete"}` : "No model attempt for this answer")
+    : `${e.fallback ? "Model transport fallback used · " : ""}${r.grounding?.tool_results || 0} tool results checked`;
+  return `<details class="qa-proof"><summary>How this answer ran</summary><p>${esc(heading)}</p>
+    <p>${esc(detail)}${attempt?.model ? ` · ${esc(attempt.model)}` : ""}</p>
+    ${fallback ? `<p>Reason: ${esc(r.fallback_reason || e.fallback_reason || "source route")}</p>` : ""}
+    <p class="muted">${esc(r.grounding?.scope || "")}${attempt?.request_id ? ` Request ${esc(attempt.request_id)}` : ""}</p></details>`;
+}
+
 async function ask(q) {
   const box = document.createElement("div");
   box.innerHTML = `<div class="q">${esc(q)}</div><div class="a muted">Thinking…</div>`;
@@ -986,9 +1003,7 @@ async function ask(q) {
     box.innerHTML = `<div class="q">${esc(q)}</div><div class="a">${esc(r.answer)}</div>
       <div class="chips">${(r.citations || []).slice(0, 6).map((id) => `<button class="chip" data-ev="${id}">${id}</button>`).join("")}</div>
       <div class="by">${r.source === "router" ? "Answered from the live match data" : r.composition === "source_rendered_selection" ? "Composed from source facts selected by the analyst agent" : "Analyst response · inspect its validation scope below"} in ${r.ms} ms${r.language ? ` · ${esc(r.language)}` : ""}</div>
-      ${r.execution ? `<details class="qa-proof"><summary>How this answer ran</summary><p>${r.execution.path === "foundry_hosted" ? "Microsoft Foundry hosted agent" : "Local Agent Framework agent"}${r.execution.fallback ? " · fallback used" : ""}</p>
-        <p>${esc(r.execution.model || "")} · ${r.grounding?.tool_results || 0} tool results checked</p>
-        <p class="muted">${esc(r.grounding?.scope || "")} Request ${esc(r.execution.request_id || "")}</p></details>` : ""}`;
+      ${answerExecution(r)}`;
   } catch { box.querySelector(".a").textContent = "The analyst couldn't be reached. Check your connection and ask again."; }
 }
 

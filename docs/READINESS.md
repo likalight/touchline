@@ -30,6 +30,16 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 
 ## Audit disposition
 
+The separately [filmed Varga recovery question](evidence/qa-fallback-before.json) exposed a
+gap outside the six fixed hosted cases: an unbound model answer fell back to generic stats,
+while its completed Foundry attempt was shown as the final answer's execution. The repository
+now separates `application_fallback` from nested model-attempt evidence and labels the UI
+accurately. Named-player recovery questions render verified loss/redemption frames with
+citations, or explicitly report no supported recovery storyline. Offline regression tests
+cover the exact question and absent/blocked/other-player stories. Deployment and a new live
+answer still need verification; this change is not a new hosted evaluation pass. See
+[scope and preserved failure](FOUNDRY_EVAL.md#separate-filmed-recovery-question-failure).
+
 | ID | Audit gap | Current disposition / remaining acceptance |
 |---|---|---|
 | 01 | Public video and submission confirmation | **Unverified.** Local film exists; accepted-host URL and submission receipt must be confirmed. |
