@@ -24,6 +24,30 @@ log = logging.getLogger("touchline.foundry")
 PUBLISHED = {"AskTheAnalyst": "touchline-analyst", "Narrator": "touchline-narrator"}
 
 
+def strict_tool_schemas(definition):
+    """Complete the strict function schema contract omitted by to_prompt_agent.
+
+    Foundry accepts agent creation with an incomplete schema, then rejects every
+    invocation. Normalize before publication so the deployed definition is usable.
+    """
+    def normalize(node):
+        if isinstance(node, list):
+            for item in node:
+                normalize(item)
+        elif isinstance(node, dict):
+            node.pop("default", None)
+            if node.get("type") == "object" or "properties" in node:
+                node["additionalProperties"] = False
+                node["required"] = list(node.get("properties", {}))
+            for child in node.values():
+                if isinstance(child, (dict, list)):
+                    normalize(child)
+    for tool in definition.tools or []:
+        if tool.type == "function" and tool.strict:
+            normalize(tool.parameters)
+    return definition
+
+
 def definitions() -> dict[str, dict]:
     """Agent name -> description, instructions and (for tool-using agents) the tool functions."""
     from touchline.agents.ask import INSTRUCTIONS as ASK
@@ -57,11 +81,18 @@ def hosted_agent(runtime_name: str, tools: Optional[list[Callable]] = None):
         return None
     try:
         from agent_framework.foundry import FoundryAgent
+        from azure.ai.projects import AIProjectClient
         from azure.identity import DefaultAzureCredential
 
+        credential = DefaultAzureCredential()
+        version = os.getenv(f"TOUCHLINE_AGENT_VERSION_{PUBLISHED[runtime_name].split('-')[-1].upper()}")
+        if not version:
+            # Prompt agents require a version. Resolve the service's latest
+            # explicitly instead of allowing an implicit older default.
+            with AIProjectClient(endpoint=endpoint, credential=credential) as project:
+                version = project.agents.get(agent_name=PUBLISHED[runtime_name]).versions.latest.version
         return FoundryAgent(project_endpoint=endpoint, agent_name=PUBLISHED[runtime_name],
-                            agent_version=os.getenv(f"TOUCHLINE_AGENT_VERSION_{PUBLISHED[runtime_name].split('-')[-1].upper()}") or None,
-                            credential=DefaultAzureCredential(), tools=tools or None)
+                            agent_version=version, credential=credential, tools=tools or None)
     except Exception as exc:  # pragma: no cover - depends on Azure
         log.warning("Foundry hosted agent %s unavailable, using a local agent: %s", runtime_name, exc)
         return None
@@ -82,7 +113,7 @@ def publish(endpoint: str, model: str, rai_policy: str, git_sha: str = "") -> li
     for name, d in definitions().items():
         tools = tool_stubs() if d["tools"] == "analyst" else None
         agent = Agent(client, d["instructions"], name=name, description=d["description"], tools=tools)
-        definition = to_prompt_agent(agent, rai_config=RaiConfig(rai_policy_name=rai_policy))
+        definition = strict_tool_schemas(to_prompt_agent(agent, rai_config=RaiConfig(rai_policy_name=rai_policy)))
         v = project.agents.create_version(agent_name=name, definition=definition, description=d["description"],
                                           metadata={"app": "touchline", "git": git_sha[:12] or "local"})
         out.append({"name": name, "version": getattr(v, "version", None) or v.get("version"), "tools": len(tools or [])})

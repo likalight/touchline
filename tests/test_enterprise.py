@@ -75,6 +75,12 @@ def test_functions_app_registers():
     spec = importlib.util.spec_from_file_location("function_app", p)
     m = importlib.util.module_from_spec(spec); sys.modules["function_app"] = m; spec.loader.exec_module(m)
     assert {f.get_function_name() for f in m.app.get_functions()} == {"on_insight", "packages", "watchdog"}
+    # The deployed Python 3.11 worker rejects PEP 585 list[EventHubEvent]
+    # during indexing; its batch-binding contract uses typing.List.
+    from typing import List, get_type_hints
+    import azure.functions as func
+    handler = m.on_insight.build().get_user_function()
+    assert get_type_hints(handler)["events"] == List[func.EventHubEvent]
 
 
 def test_viewer_feedback_is_counted(monkeypatch):

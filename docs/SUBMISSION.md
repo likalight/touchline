@@ -15,8 +15,7 @@ and model-backed language generation. Azure Container Apps, Event Hubs, Function
 Storage connect the live experience to downstream packages. Inspect a receipt to see the
 facts, original checks, handoffs and audience versions behind a graphic.
 
-**Readiness:** public deployment, live Foundry evidence and participant results must be added
-after they are observed. Do not submit claims that these steps have already passed.
+**Readiness:** [public Azure demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) and [hosted Foundry/downstream evidence](evidence/cloud-chain.json) are verified. Real participant results are still unavailable. The [final Brag film](FINAL_VIDEO.md) is rendered from this deployed app; publish its actual output URL before submitting.
 
 ## The argument, in three demonstrations
 
@@ -45,7 +44,7 @@ do not substitute Brag's default short launch format for the required demonstrat
 Enable narration explicitly (`/brag --voice` in the documented full workflow), retain
 readable captions and synthetic-data disclosures, and verify rights for any music used.
 Read the current `skills/brag/SKILL.md` and check its prerequisites when video production
-starts. This selection records the production plan; Brag has not yet been installed or run.
+starts. Brag and Hyperframes have been run against the corrected app; the final film uses actual Azure UI footage.
 
 Record the deployed app after the cloud checks pass. Use only fictional match assets. Use
 original narration; avoid copyrighted music and unrelated marks. Trim transitions and rehearse.
@@ -97,5 +96,3 @@ excludes model rewrites, speech and browser delivery. Describe the [ablation](AB
 component-removal experiments, not a complete single-agent comparison. Describe the historical
 [load experiment](LOADTEST.md) as a short co-located run, not a capacity guarantee. Report user
 study results only after conducting and documenting the sessions.
-
-

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import datetime as dt
 import json
+from typing import List
 import hashlib
 import logging
 import os
@@ -63,7 +64,7 @@ def teams_card(pkg: dict, app_url: str = "") -> dict:
 
 @app.event_hub_message_trigger(arg_name="events", event_hub_name="touchline-insights", connection="EventHubConnection",
                                consumer_group="packages", cardinality=func.Cardinality.MANY)
-def on_insight(events: list[func.EventHubEvent]) -> None:
+def on_insight(events: List[func.EventHubEvent]) -> None:
     c = _blobs()
     for e in events:
         try:

@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/judge-editorial.png" width="100%" alt="Touchline: One player. Every turning point. The functioning judge entrance with an original AI illustration of fictional striker Kofi Varga.">
+<img src="docs/film-poster.jpg" width="100%" alt="Touchline: The goal is only half the story. Final film poster featuring the fictional striker Varga, labeled synthetic match and original AI illustration.">
 
 # Touchline
 
@@ -15,7 +15,7 @@ personalized graphics and broadcaster-ready outputs. Built for the Microsoft × 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-0f2b20.svg)
 ![Microsoft Agent Framework](https://img.shields.io/badge/Agent%20Framework-1.22-0f6cbd.svg)
 
-[Try it locally](#try-the-90-second-demo) · [Evidence](#what-we-have-measured) · [Architecture](#how-it-works) · [Deploy](#deploy-to-azure) · [Category case](docs/WINNING_CASE.md)
+[Open the live demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) · [Run locally](#try-the-90-second-demo) · [Evidence](#what-we-have-measured) · [Architecture](#how-it-works) · [Deploy](#deploy-to-azure) · [Category case](docs/WINNING_CASE.md)
 
 </div>
 
@@ -102,9 +102,7 @@ Open its receipt to inspect the checks and download the proof. The full app at
 [localhost:8000](http://localhost:8000) adds player focus, four built-in languages, commentary,
 recaps, counterfactuals, a phone view and personalized highlights.
 
-**Deployment status:** this repository contains tested deployment code. A public demo URL,
-live Foundry evaluation and Azure delivery results are not yet recorded. Follow the
-[deployment evidence runbook](docs/DEPLOYMENT_PROOF.md); do not treat local tests as cloud proof.
+**Live on Azure:** [open Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge). The public app passed readiness, a version-2 hosted Foundry analyst request completed without fallback, and the Event Hubs → Functions → Blob path produced the corrected 3–2 match package and social cards. [Observed cloud evidence](docs/evidence/cloud-chain.json) and [deployment notes](docs/DEPLOYMENT_PROOF.md) record the scope. This is functional proof, not an availability SLA or participant validation.
 
 ## What we have measured
 
@@ -114,6 +112,8 @@ live Foundry evaluation and Azure delivery results are not yet recorded. Follow 
 | [Specialist ablation](docs/ABLATION.md) | Effects of removing the ingest guard, scout, storyline, checker and editorial scheduler | A head-to-head comparison against a capable single-agent system |
 | [Single-agent comparison protocol](docs/AGENT_COMPARISON.md) | Reproducible, bounded comparison of narration strategies on identical inputs | Live-model results until the run is actually performed |
 | [Load experiment](docs/LOADTEST.md) | A historical 30-second, co-located streaming experiment | Full-match capacity, multi-replica operation or an Azure SLA |
+| [Cloud execution](docs/evidence/cloud-chain.json) and [downloaded Blob proof](docs/evidence/blob-packages.json) | A hosted Foundry answer without fallback and actual demo/live Functions packages | Semantic truth, production SLA or human validation |
+| [Final film validation](docs/FINAL_VIDEO.md) | 115-second Brag film recorded from the deployed app, with narration and captions | Public video hosting or completed hackathon submission |
 | [CI](https://github.com/likalight/touchline/actions/workflows/ci.yml) | Automated tests, evaluation gate, Bicep build and container smoke checks | Successful provisioning in a particular Azure subscription |
 | [Match memory browser journey](tests/story-browser.cjs) | Full replay, navigation, original-event map, audience switching, stale-request isolation, downloads and responsive layouts | A human usability study or cross-browser accessibility certification |
 
@@ -190,7 +190,7 @@ python scripts/smoke_deployment.py https://YOUR_APP --output evidence/cloud-smok
 
 The command makes a billable model request. It rejects offline/router answers and fallback
 execution. To verify the downstream chain for a published, completed synthetic match, add
-`--match-id SYN-00221` using the exact match ID returned by your feed. The full procedure,
+`--match-id SYN-00087` using the exact match ID returned by your feed. The full procedure,
 recovery drill and result requirements are in [DEPLOYMENT_PROOF.md](docs/DEPLOYMENT_PROOF.md).
 
 ### Reliability boundaries

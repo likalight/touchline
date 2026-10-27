@@ -9,9 +9,9 @@
 | Goals explained | 100.0% (28 goals) | 100% |
 | Citations resolving to a real, non-future event | 0 errors | 0 |
 | Renders per insight (4 personas x 4 languages) | 16, 0 template leaks | 0 leaks |
-| Moments explained per match | 61.2 | - |
-| Agent pipeline latency per moment, p50 / p95 | 4.55 / 7.12 ms | p95 < 250 ms |
-| Event -> state update, p50 / p95 | 0.32 / 1.22 ms | p95 < 5 ms |
+| Moments explained per match | 60.8 | - |
+| Agent pipeline latency per moment, p50 / p95 | 2.97 / 3.81 ms | p95 < 250 ms |
+| Event -> state update, p50 / p95 | 0.19 / 0.53 ms | p95 < 5 ms |
 | Faulty feed recovered exactly-once, in order | 100% of matches | 100% |
 
 
@@ -19,25 +19,25 @@ Moment kinds explained across the run:
 
 | Kind | Count |
 |---|---|
-| line_break | 114 |
+| line_break | 116 |
 | momentum | 87 |
 | sprint | 71 |
-| hard_pass | 68 |
+| hard_pass | 67 |
 | phase | 62 |
 | long_carry | 38 |
 | standout | 36 |
-| press | 31 |
-| saves | 29 |
 | goal | 28 |
+| press | 28 |
+| saves | 28 |
 | story_duel | 25 |
-| card_yellow | 25 |
+| card_yellow | 24 |
 | rhythm | 23 |
-| story_channel | 15 |
-| story_fatigue | 14 |
+| story_channel | 14 |
 | chance_missed | 14 |
+| story_fatigue | 13 |
 | half_time | 12 |
 | full_time | 12 |
-| chance_saved | 9 |
+| chance_saved | 10 |
 | brace | 8 |
 | story_waste | 6 |
 | wp_swing | 3 |
@@ -45,9 +45,9 @@ Moment kinds explained across the run:
 | story_keeper | 2 |
 | card_red | 1 |
 
-Storyline callbacks woven into live insights (match-long memory): s.error 11, s.comeback 11, s.keeper 3, s.run_of_play 2.
+Storyline callbacks woven into live insights (match-long memory): s.error 11, s.comeback 11, s.run_of_play 2.
 
-Gate: PASSED. Wall time 26.5 s.
+Gate: PASSED. Wall time 14.3 s.
 
 ## Auto-eventing from video (top-down feed)
 

@@ -1,0 +1,15 @@
+{
+  "schema": "touchline.restart-observation/1",
+  "observed_at": "2026-10-27T16:08:27.080982+00:00",
+  "match_id": "SYN-00087",
+  "before_score": {
+    "home": 3,
+    "away": 2
+  },
+  "after_score": {
+    "home": 3,
+    "away": 2
+  },
+  "passed": true,
+  "scope": "Completed match restored across a deployment configuration restart; not a mid-match crash or outbound exactly-once guarantee."
+}

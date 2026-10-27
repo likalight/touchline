@@ -1,8 +1,24 @@
 # Deployment evidence runbook
 
-Status: **not yet executed against Azure for this revision**. Do not mark a step passed until
-its actual output is saved. Commands create billable activity; use the chosen subscription,
-region and spending cap. Keep synthetic-only test data and do not publish credentials.
+Status: **functional cloud chain verified on 28 October 2026 (Singapore time)**.
+
+- [Live Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge): public readiness passed.
+- [Request-level evidence](evidence/cloud-chain.json): hosted Foundry analyst, `gpt-4.1-mini`, completed without fallback and used a scoreboard tool. The numeric/citation checker does not establish semantic entailment.
+- Corrected agent versions: analyst **2**, narrator **2**, pinned in the deployment.
+- Functions indexed after changing the Event Hubs batch annotation to `typing.List[EventHubEvent]` for the deployed Python 3.11 worker.
+- Event Hubs received seed 87 (1,917 events). Functions produced score 3–2, recaps and social-card paths in Blob Storage. The demo and live feed can produce separate packages for the same synthetic match ID.
+- The completed live session restored score 3–2 after an application configuration restart. This observation alone does not prove mid-match crash recovery or an exactly-once outbound outbox.
+- Original deployed container: CI commit `7914b673e8ddb56b005e2989a75a5762e3b967f9`, digest `sha256:ebd23a1d90a89452eb101395261c8ff4756d0566b14726fea87ef184a3aa4454`.
+
+### Deployment lessons
+
+The student subscription rejects ACR Tasks. CI builds and smoke-tests the image, then exports a short-lived container artifact; the deployer pushes it to the existing ACR with `crane`. No Azure credential is sent to GitHub Actions.
+
+The installed Container Apps CLI dropped the Express environment's registry identity configuration. Applying the registry identity and image digest together with Azure REST API `2026-07-01` succeeded. Preserve the current ingress, environment variables and identity when patching. Do not reprovision the placeholder image over a working deployment.
+
+Foundry accepted publication with an incomplete strict function schema but rejected invocation. Publication now supplies `additionalProperties: false` and requires every declared property. Runtime uses an explicit pinned agent version, or resolves the latest published version. Preserve the published version IDs in deployment evidence.
+
+The remaining runbook below includes stronger experiments and governance setup; those are **not** implied to have passed by this functional deployment.
 
 ## 1. Provision and establish the public URL
 
@@ -43,8 +59,8 @@ Set `TOUCHLINE_EVENTHUB_NAMESPACE` from the provisioned environment. The publish
 needs Event Hubs Data Sender. Publish only one active match on partition 0:
 
 ```bash
-python scripts/publish_feed.py --seed 221 --speed 40
-python scripts/smoke_deployment.py https://YOUR_APP --match-id SYN-00221 --output evidence/cloud-chain.json
+python scripts/publish_feed.py --seed 87 --speed 40
+python scripts/smoke_deployment.py https://YOUR_APP --match-id SYN-00087 --output evidence/cloud-chain.json
 ```
 
 Wait for Functions to finish before running the second command. It makes another hosted model

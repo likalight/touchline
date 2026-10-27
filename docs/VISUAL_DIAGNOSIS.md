@@ -106,3 +106,7 @@ after full time. Prioritize football validity and the final demonstration over m
 Source: [official rules](https://github.com/microsoft/insidethegamehackathon/blob/main/OFFICIAL%20RULES.md).
 The submission deadline is 28 October 2026, 14:59 Singapore time. Protect time for a valid
 functioning build, a public video under two minutes, and actual submission confirmation.
+
+## Follow-up: active-roster fix
+
+PR #7 resolves the dismissed-player blocker. The corrected simulator removes dismissed players from actions, targets, restarts and tracking; the pitch removes absent players. Seed 221 is a regression case. Judge Mode was regenerated from seed 87: Kofi Varga, mistake at 28 minutes, redemption at 44, winner at 90 (3–2). All 92 Python tests, six JavaScript tests and both full browser journeys passed. A targeted browser check also confirmed h8 disappears from the pitch interpolation state after his second yellow. The findings above describe the earlier audited revision.

@@ -1,8 +1,8 @@
 {
   "schema": "touchline.recovery-evidence/1",
-  "observed_at": "2026-10-26T10:47:23.552861+00:00",
-  "source_sha256": "cfcfbc2849122177b5a99a95a3f66cb3264d55036a23270877d9b430940e2fa9",
-  "seed": 221,
+  "observed_at": "2026-10-27T15:44:16.967316+00:00",
+  "source_sha256": "02b1bb4dbfbdafe970229bd5240ecc8140cafaec23ca64cfaf9a042b759915ca",
+  "seed": 87,
   "injected_at_sequence": 200,
   "passed": true,
   "checks": {
@@ -17,26 +17,26 @@
       "id": "D1",
       "name": "feed_storm",
       "label": "Corrupt the feed",
-      "minute": 11,
-      "started": 1793011641.956491,
-      "detected": 1793011641.9574883,
+      "minute": 10,
+      "started": 1793115856.1923468,
+      "detected": 1793115856.1930945,
       "detected_by": "IngestGuard",
-      "recovered": 1793011641.994613,
-      "ms": 38,
+      "recovered": 1793115856.2119424,
+      "ms": 20,
       "notes": [
-        "7 malformed events quarantined, 4 duplicates dropped, 10 re-ordered; every real event applied exactly once, in order"
+        "7 malformed events quarantined, 6 duplicates dropped, 7 re-ordered; every real event applied exactly once, in order"
       ]
     },
     {
       "id": "D2",
       "name": "narrator_crash",
       "label": "Crash a narrator",
-      "minute": 11,
-      "started": 1793011641.956491,
-      "detected": 1793011641.984323,
+      "minute": 10,
+      "started": 1793115856.1923625,
+      "detected": 1793115856.2022634,
       "detected_by": "Narrator[analyst]",
-      "recovered": 1793011642.0258632,
-      "ms": 69,
+      "recovered": 1793115856.228508,
+      "ms": 36,
       "notes": [
         "caught; the studio narrator's verified copy stood in",
         "next moment ran the full pipeline cleanly"
@@ -46,12 +46,12 @@
       "id": "D3",
       "name": "storyline_crash",
       "label": "Crash the storyline agent",
-      "minute": 11,
-      "started": 1793011641.956491,
-      "detected": 1793011641.981576,
+      "minute": 10,
+      "started": 1793115856.192371,
+      "detected": 1793115856.2002022,
       "detected_by": "StorylineKeeper",
-      "recovered": 1793011642.0258632,
-      "ms": 69,
+      "recovered": 1793115856.228549,
+      "ms": 36,
       "notes": [
         "caught in the agent; the moment went on without storyline callbacks",
         "next moment ran the full pipeline cleanly"
@@ -61,14 +61,14 @@
       "id": "D4",
       "name": "hallucination",
       "label": "Inject a made-up number",
-      "minute": 11,
-      "started": 1793011641.956491,
-      "detected": 1793011641.984323,
+      "minute": 10,
+      "started": 1793115856.192377,
+      "detected": 1793115856.2020109,
       "detected_by": "FactChecker",
-      "recovered": 1793011642.0263536,
-      "ms": 70,
+      "recovered": 1793115856.228556,
+      "ms": 36,
       "notes": [
-        "blocked \"Tariq Calloway breaks the lines, his 99th goal of the season\" (unsupported number '99'); the verified copy aired",
+        "blocked \"Precision pass from Joao Sato, his 99th goal of the season\" (unsupported number '99'); the verified copy aired",
         "next moment ran the full pipeline cleanly"
       ]
     }
@@ -77,12 +77,12 @@
     "home": 3,
     "away": 2
   },
-  "insights": 70,
+  "insights": 66,
   "ingest": {
-    "accepted": 1851,
-    "duplicates": 4,
+    "accepted": 1917,
+    "duplicates": 6,
     "quarantined": 7,
-    "reordered": 10,
+    "reordered": 7,
     "gaps_skipped": 0
   },
   "escaped_insight_ids": [],
