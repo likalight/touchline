@@ -63,6 +63,7 @@ output AZURE_OPENAI_ENDPOINT string = resources.outputs.openAiEndpoint
 output AZURE_OPENAI_MODEL string = modelName
 output FOUNDRY_PROJECT_ENDPOINT string = resources.outputs.foundryProjectEndpoint
 output FOUNDRY_MODEL string = modelName
+output FOUNDRY_RAI_POLICY string = resources.outputs.foundryRaiPolicyId
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = resources.outputs.appInsightsConnectionString
 output TOUCHLINE_EVENTHUB_NAMESPACE string = resources.outputs.eventHubNamespace
 output SERVICE_PACKAGES_URI string = resources.outputs.packagesUri

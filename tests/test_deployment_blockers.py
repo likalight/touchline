@@ -92,6 +92,14 @@ def test_publish_failure_is_not_success(monkeypatch):
     assert module.main() == 1
     monkeypatch.setenv("FOUNDRY_PROJECT_ENDPOINT", "https://example.test/project")
     monkeypatch.setenv("FOUNDRY_MODEL", "model")
+    def unexpected_publication(*args):
+        raise AssertionError("An invalid policy must be rejected before calling Foundry")
+    monkeypatch.setattr(module, "publish", unexpected_publication)
+    monkeypatch.delenv("FOUNDRY_RAI_POLICY", raising=False)
+    assert module.main() == 1
+    monkeypatch.setenv("FOUNDRY_RAI_POLICY", "Microsoft.DefaultV2")
+    assert module.main() == 1
+    monkeypatch.setenv("FOUNDRY_RAI_POLICY", "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/ai/raiPolicies/Microsoft.DefaultV2")
     monkeypatch.setattr(module, "publish", lambda *args: [{"name": "analyst", "version": None}])
     assert module.main() == 1
     monkeypatch.setattr(module, "publish", lambda *args: [{"name": "analyst", "version": "1"}, {"name": "narrator", "version": "2"}])

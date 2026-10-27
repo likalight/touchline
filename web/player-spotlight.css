@@ -1,15 +1,16 @@
-/* Editorial player profile. Club kit illustration is not a likeness or official asset. */
+/* Editorial player profile. Generated portrait is exclusively Ravi Varga;
+   other fictional players use typographic squad numbers, not borrowed likenesses. */
 .player-spotlight { max-width:1440px; padding:30px 48px 36px; margin:auto; }
 .spotlight-heading { display:flex; justify-content:space-between; align-items:end; gap:24px; padding-bottom:22px; border-top:1px solid var(--rule); padding-top:26px; }
 .spotlight-heading h2 { font:700 40px/1.05 var(--display); letter-spacing:-.02em; margin:7px 0 0; }
 .spotlight-picker { display:grid; gap:6px; font:500 12px var(--ui); color:var(--muted); }
 .spotlight-picker select { min-height:44px; min-width:260px; max-width:100%; border:1px solid var(--rule); border-radius:4px; color:var(--ink); background:var(--surface-raised); padding:10px 34px 10px 12px; font:400 14px var(--ui); }
-.spotlight-body { display:grid; grid-template-columns:minmax(170px,.7fr) minmax(280px,1.25fr) minmax(270px,1fr); background:var(--surface-raised); border:1px solid var(--rule); }
+.spotlight-body { display:grid; grid-template-columns:minmax(230px,1fr) minmax(280px,1.15fr) minmax(270px,1fr); background:var(--surface-raised); border:1px solid var(--rule); }
 .spotlight-portrait { position:relative; display:flex; flex-direction:column; justify-content:space-between; align-items:center; padding:22px 18px 14px; overflow:hidden; background:#24132e; min-height:290px; color:#f6effb; }
 .spotlight-club-code { align-self:flex-start; font:700 26px var(--display); letter-spacing:.06em; border-top:4px solid var(--spotlight-kit); padding-top:7px; }
-.spotlight-shirt { width:190px; height:200px; background:var(--spotlight-kit); clip-path:polygon(28% 5%,39% 0,43% 9%,57% 9%,61% 0,72% 5%,100% 27%,88% 47%,77% 39%,77% 100%,23% 100%,23% 39%,12% 47%,0 27%); display:flex; flex-direction:column; align-items:center; padding:38px 0 0; box-sizing:border-box; transform:rotate(-5deg); }
+.spotlight-shirt { width:100%; min-height:200px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px 0; box-sizing:border-box; border-top:1px solid #70577f; border-bottom:1px solid #70577f; }
 .spotlight-shirt span { background:#24132e; color:#fff; max-width:110px; overflow:hidden; text-overflow:ellipsis; padding:3px 8px; font:600 12px var(--ui); text-transform:uppercase; letter-spacing:.04em; }
-.spotlight-shirt strong { font:700 85px/.95 var(--display); color:white; text-shadow:0 2px 0 #24132e; }
+.spotlight-shirt strong { font:700 132px/.95 var(--display); color:white; letter-spacing:-.04em; }
 .spotlight-art-note { font:400 10px var(--ui); color:#cbbad6; margin-top:20px; }
 .spotlight-profile { padding:28px 28px 24px; min-width:0; }
 .spotlight-position { margin:0 0 7px; color:var(--muted); font:500 12px var(--ui); }
@@ -36,5 +37,15 @@
 .spotlight-source { font:400 10px/1.5 var(--ui); color:var(--muted); margin:12px 0 0; }
 .player-identity-tag { position:absolute; transform:translate(-50%,-100%); z-index:12; background:#24132e; color:#fff; padding:7px 10px; border-left:4px solid var(--accent-fill); font:500 12px/1.4 var(--ui); pointer-events:none; max-width:calc(100% - 32px); }
 .player-identity-tag small { display:block; color:#d6c8df; font-size:11px; }
+.spotlight-player-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:76% center; }
+.spotlight-featured .spotlight-portrait { min-height:360px; background:#100e16; }
+.spotlight-featured .spotlight-shirt { visibility:hidden; }
+.spotlight-featured .spotlight-club-code, .spotlight-featured .spotlight-art-note { position:relative; z-index:1; background:#100e16d9; padding:7px 9px; }
+.spotlight-featured .spotlight-art-note { max-width:200px; text-align:center; line-height:1.5; color:#e4dfec; }
+.spotlight-profile h3 { font-size:clamp(42px,4.3vw,64px); }
+.spotlight-stats small, .spotlight-source, .spotlight-follow-note, .spotlight-time { font-size:12px; }
+.spotlight-stats dt { font-size:12px; }
+.spotlight-story > p:not(.spotlight-source) { font-size:16px; }
+.spotlight-moments button { min-height:40px; }
 @media(max-width:1023px) { .spotlight-body { grid-template-columns:180px minmax(0,1fr); }.spotlight-story { grid-column:1/-1; border-left:0; border-top:1px solid var(--rule); }.spotlight-story .btn { margin-top:0; }.spotlight-portrait { min-height:270px; }.spotlight-shirt { width:160px; } }
 @media(max-width:767px) { .player-spotlight { padding:20px; }.spotlight-heading { align-items:start; flex-direction:column; gap:18px; }.spotlight-picker { width:100%; }.spotlight-picker select { min-width:0; width:100%; }.spotlight-heading h2 { font-size:34px; }.spotlight-body { grid-template-columns:minmax(0,1fr); }.spotlight-portrait { min-height:190px; padding:18px; align-items:start; justify-content:space-between; }.spotlight-shirt { position:absolute; right:22px; top:15px; height:175px; width:165px; padding-top:31px; }.spotlight-shirt strong { font-size:72px; }.spotlight-club-code { font-size:32px; }.spotlight-art-note { max-width:100px; line-height:1.5; }.spotlight-profile,.spotlight-story { padding:22px; }.spotlight-stats { gap:10px; }.player-identity-tag { font-size:11px; padding:5px 8px; } }

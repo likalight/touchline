@@ -128,6 +128,8 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   parent: foundry
   name: 'touchline'
   location: location
+  // Model and project creation both update the parent account; Azure rejects concurrent writes.
+  dependsOn: [model]
   identity: { type: 'SystemAssigned' }
   properties: {
     displayName: 'Touchline match intelligence'
@@ -399,11 +401,11 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
   properties: {
     managedEnvironmentId: env.id
     configuration: {
+      activeRevisionsMode: 'Single'
       ingress: {
         external: true
         targetPort: 8000
         transport: 'auto'
-        stickySessions: { affinity: 'sticky' } // live sessions and SSE stay on one replica
       }
       registries: [
         {
@@ -497,6 +499,7 @@ output registryLoginServer string = registry.properties.loginServer
 output webUri string = 'https://${web.properties.configuration.ingress.fqdn}'
 output openAiEndpoint string = 'https://${foundry.properties.customSubDomainName}.openai.azure.com'
 output foundryProjectEndpoint string = 'https://${foundry.properties.customSubDomainName}.services.ai.azure.com/api/projects/${project.name}'
+output foundryRaiPolicyId string = '${foundry.id}/raiPolicies/Microsoft.DefaultV2'
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output eventHubNamespace string = hubNamespaceFqdn
 output packagesUri string = enableEventHubs ? 'https://${packagesFn!.properties.defaultHostName}' : ''

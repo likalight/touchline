@@ -70,8 +70,8 @@ async function boot() {
     panel.hidden = false; panel.setAttribute("role", "main"); panel.tabIndex = -1;
     $(".skip-link").href = "#judgePanel";
     $("#judgeStart").disabled = true;
-    hero.sizes = "(max-width: 767px) calc(100vw - 40px), 50vw";
-    hero.srcset = "/static/assets/matchday-hero-480.webp 480w, /static/assets/matchday-hero-960.webp 960w, /static/assets/matchday-hero.webp 1536w";
+    hero.sizes = "(max-width: 767px) calc(100vw - 32px), min(100vw - 64px, 1376px)";
+    hero.srcset = "/static/assets/varga-editorial-480.webp 480w, /static/assets/varga-editorial-960.webp 960w, /static/assets/varga-editorial.webp 1600w";
     hero.src = hero.dataset.src;
   }
   try {
@@ -897,7 +897,7 @@ async function openReceipt(id) {
           <span class="eyebrow">${persona === "casual" ? "Fan" : "Analyst"} · ${esc(copy.lang)}</span>
           <h4>${esc(copy.title)}</h4>${(copy.lines || []).map(line => `<p>${esc(line.text)}</p>`).join("")}</article>`).join("")}
       </details>
-      <h4>Checks performed</h4><p><strong>${esc(v.status)}</strong> · ${v.checks} frame checks at this moment.</p>
+      <h4>Checks performed</h4><p><strong>${v.status === "verified" ? "Source checks passed" : esc(v.status)}</strong> · ${v.checks} frame checks at this moment.</p>
       ${v.issues.length ? `<ul>${v.issues.map(issue => `<li>${esc(issue)}</li>`).join("")}</ul>` : ""}
       <p class="muted">${esc(d.scope)}</p>
       <h4>Editorial decision</h4><p>${esc(ed?.decision?.reason || "No cue emitted: the insight did not pass verification.")}</p>

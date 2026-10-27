@@ -265,3 +265,136 @@ button, a, select { -webkit-tap-highlight-color: transparent; }
   .judge-page .wordmark span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+
+/* Broadcast editorial revision. Match imagery leads; controls stay compact.
+   Photographic cover has its own dark scrim for text legibility in either theme. */
+body, .judge-page body {
+  --surface:#f4f5f7; --surface-raised:#fff; --surface-hover:#e8eaf0;
+  --ink:#21142d; --muted:#5c5866; --rule:#d4d5de;
+  --accent-fill:#d5f778; --accent-text:#20300a; --accent-ink:#425b0c;
+}
+[data-theme="dark"] body, .judge-page[data-theme="dark"] body {
+  --surface:#100e16; --surface-raised:#1b1723; --surface-hover:#292332;
+  --ink:#f7f5fa; --muted:#c0b9ca; --rule:#3e3549; --accent-ink:#d5f778;
+}
+.btn, .btn.small, .seg button, .judge-mode .seg button { min-height:40px; }
+.studio-page .top { padding:0 32px; grid-template-columns:minmax(0,1fr) minmax(300px,.7fr); }
+.studio-page .brand { min-height:68px; }
+.studio-intro { padding:15px 0; }
+.studio-intro h1 { font-size:30px; margin:5px 0; }
+.studio-intro h1 br { display:none; }
+.studio-intro h1 br::after { content:' '; }
+.studio-intro > p { font-size:14px; }
+.studio-intro .match-location { margin-top:5px; }
+.studio-page .scorebug { grid-template-columns:1fr auto 1fr auto; gap:12px; }
+.studio-page .scorebug .club { font-size:28px; gap:4px; }
+.studio-page .scorebug .club-name { font-size:12px; }
+.studio-page .scorebug .club i { top:-8px; width:32px; left:calc(50% - 16px); height:3px; }
+.studio-page .scorebug .score { font-size:48px; min-width:80px; }
+.studio-page .scorebug .clock { grid-column:auto; min-width:48px; padding:9px; }
+.studio-page .prefs { padding:7px 0; }
+.studio-page .stage { padding:20px 32px 0; gap:24px; grid-template-columns:minmax(0,1.7fr) minmax(290px,1fr); }
+.broadcast-heading { margin-bottom:12px; }
+.studio-page .view-bar { margin-bottom:10px; }
+.studio-page .pitch-box, .judge-mode .pitch-box { border-radius:4px; }
+.studio-page .centre-story { border-radius:4px; background:#251432; color:#fff; padding:28px; }
+.centre-story h2 { font-size:clamp(28px,3vw,42px); }
+.centre-story .centre-story-meta, .centre-story .centre-source { color:#d0c4da; }
+.centre-story .centre-memory { border-color:#5c456b; }
+.studio-page .feed-head { margin-top:24px; }
+.studio-page .cards { max-height:520px; }
+.judge-page .top { padding:12px 32px 0; }
+.judge-page .brand { min-height:46px; }
+.judge-page .judge-theme-control { margin-left:auto; }
+.judge-mode .judge-panel { margin:20px 32px 0; padding:0; max-width:1376px; gap:0; grid-template-columns:1fr; align-items:stretch; }
+.judge-mode:not(.story-playing) .judge-intro { grid-area:1/1; z-index:2; align-self:center; padding:46px; pointer-events:none; }
+.judge-mode:not(.story-playing) .judge-intro > .eyebrow { color:#d5f778; font:600 12px var(--ui); letter-spacing:.12em; }
+.judge-mode:not(.story-playing) .judge-intro h1 { color:#fff; font-size:clamp(52px,6.2vw,88px); line-height:1.01; max-width:12ch; margin:20px 0; text-wrap:initial; }
+.judge-mode:not(.story-playing) .judge-intro > p { color:#e4dfec; max-width:32ch; font-size:17px; }
+.judge-mode:not(.story-playing) .judge-actions { pointer-events:auto; margin-top:26px; }
+.judge-mode:not(.story-playing) .judge-actions > a { color:#e4dfec; }
+.judge-mode:not(.story-playing) .judge-cover { grid-area:1/1; position:relative; min-height:510px; overflow:hidden; border-radius:4px; background:#100e16; }
+.judge-mode:not(.story-playing) .judge-cover::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,#100e16b8 0%,#100e1640 43%,transparent 70%); pointer-events:none; }
+.judge-page .judge-cover img { height:100%; width:100%; object-fit:cover; aspect-ratio:16/9; border-radius:0; }
+.judge-mode .judge-cover figcaption { position:absolute; z-index:1; bottom:16px; right:20px; margin:0; padding:6px 10px; background:#100e16cc; color:#e4dfec; font-size:11px; }
+.judge-mode:not(.story-playing) .judge-progress { padding-top:20px; }
+.judge-mode .story-rail { counter-reset:chapter; }
+.judge-mode .story-rail button { counter-increment:chapter; gap:14px; }
+.judge-mode .story-rail button::before { content:'0' counter(chapter); font:500 13px var(--ui); color:var(--muted); }
+.judge-mode .story-rail strong { font-size:22px; }
+.judge-mode .story-rail button[aria-pressed="true"] { background:var(--surface-raised); border-top:3px solid var(--accent-ink); }
+.judge-mode.story-playing .top { gap:8px 24px; }
+.judge-mode.story-playing .prefs { padding:6px 0; }
+.judge-mode.story-playing .judge-panel { margin-top:12px; gap:10px; }
+.judge-mode.story-playing .judge-intro h1 { font-size:24px; line-height:1.15; }
+.judge-mode.story-playing .judge-intro h1 br { display:none; }
+.judge-mode.story-playing .judge-actions > .btn { padding:6px 12px; min-height:36px; font-size:12px; }
+.judge-mode.story-playing .judge-progress { display:flex; flex-direction:column; }
+.judge-mode.story-playing .judge-progress > p { order:2; min-height:0; font-size:12px; margin:8px 0 0; }
+.judge-mode.story-playing .story-rail button { padding:12px; }
+.judge-mode.story-playing .story-rail small { margin-top:4px; font-size:11px; }
+.judge-mode .stage { padding:18px 32px 0; gap:28px; grid-template-columns:minmax(0,1.65fr) minmax(300px,1fr); }
+.story-lens { border-top:3px solid var(--accent-ink); padding:16px 0 0; }
+.story-lens h2 { font-size:clamp(27px,2.8vw,38px); margin:12px 0 16px; }
+.story-memory { padding:16px 18px; background:var(--surface-raised); border:1px solid var(--rule); border-left:3px solid var(--accent-ink); margin-bottom:16px; }
+.story-memory p { font-size:19px; line-height:1.45; margin:8px 0 14px; }
+.story-memory .memory-label { letter-spacing:.08em; text-transform:uppercase; font-size:11px; }
+.story-memory .chip { background:var(--surface-hover); min-height:36px; }
+.story-lines { margin:12px 0 18px; }
+.story-footer { margin-top:16px; }
+.story-proof { font-weight:600; }
+.story-scope { font-size:12px; }
+.drawer { width:min(620px,100%); box-shadow:-20px 0 80px #100e1638; }
+.drawer h3 { font-size:36px; line-height:1.08; padding-right:36px; margin:14px 0; }
+.drawer h4 { font:600 19px var(--ui); margin-top:28px; padding-top:20px; border-top:1px solid var(--rule); }
+.drawer p, .drawer summary { font-size:15px; line-height:1.6; }
+.drawer .chip { min-height:36px; padding:7px 10px; }
+.drawer .muted { font-size:13px; }
+.drawer details { margin-top:14px; }
+.drawer summary { padding:10px 0; }
+.drawer #downloadReceipt { min-height:44px; }
+.story-evidence, .checker-proof { padding-left:32px; padding-right:32px; }
+@media(min-width:1440px) { .judge-mode .judge-panel { margin-left:auto; margin-right:auto; } }
+@media(max-width:1023px) {
+  .studio-page .stage, .judge-mode .stage { gap:20px; grid-template-columns:minmax(0,1.25fr) minmax(280px,1fr); }
+  .studio-page .top { grid-template-columns:minmax(0,1fr) minmax(260px,.8fr); }
+  .studio-page .scorebug .club-name { display:none; }
+  .judge-mode:not(.story-playing) .judge-intro { padding:32px; }
+  .judge-mode:not(.story-playing) .judge-intro > p { max-width:27ch; }
+  .judge-mode:not(.story-playing) .judge-cover { min-height:480px; }
+  .judge-mode:not(.story-playing) .judge-cover img { object-position:63% center; }
+}
+@media(max-width:767px) {
+  .studio-page .top, .judge-page .top { padding:8px 16px 0; }
+  .studio-page .top { display:block; }
+  .studio-page .brand { min-height:56px; }
+  .studio-intro { padding:14px 0; }
+  .studio-intro h1 { font-size:28px; }
+  .studio-page .meters { padding:14px 0; }
+  .studio-page .scorebug { grid-template-columns:1fr auto 1fr auto; }
+  .studio-page .scorebug .score { font-size:42px; }
+  .studio-page .stage, .judge-mode .stage { display:flex; flex-direction:column; padding:18px 16px 0; gap:24px; }
+  .judge-mode .judge-panel { margin:16px 16px 0; }
+  .judge-mode:not(.story-playing) .judge-intro { align-self:end; padding:200px 22px 24px; }
+  .judge-mode:not(.story-playing) .judge-intro h1 { font-size:52px; max-width:12ch; }
+  .judge-mode:not(.story-playing) .judge-intro > p { max-width:30ch; font-size:16px; }
+  .judge-mode:not(.story-playing) .judge-cover { min-height:620px; }
+  .judge-mode:not(.story-playing) .judge-cover img { position:absolute; inset:0; object-position:74% top; }
+  .judge-mode:not(.story-playing) .judge-cover::after { background:linear-gradient(0deg,#100e16 8%,#100e16f2 38%,#100e1640 76%,transparent); }
+  .judge-mode .judge-cover figcaption { top:12px; right:12px; bottom:auto; font-size:10px; max-width:180px; text-align:right; }
+  .judge-mode .story-rail button { padding:12px 6px; gap:6px; }
+  .judge-mode .story-rail strong { font-size:17px; }
+  .judge-mode .story-rail small { font-size:10px; }
+  .judge-mode .chapter-arrow { display:none; }
+  .judge-mode.story-playing .judge-intro { display:flex; flex-wrap:wrap; gap:10px; }
+  .judge-mode.story-playing .judge-intro h1 { font-size:24px; }
+  .judge-mode.story-playing .judge-actions { margin-top:0; gap:12px; }
+  .judge-mode.story-playing .story-rail button { padding:10px 6px; }
+  .judge-mode.story-playing .story-rail button::before { display:none; }
+  .judge-mode .judge-broadcast-label { font-size:12px; }
+  .judge-mode .judge-broadcast-label span { font-size:11px; }
+  .story-memory p { font-size:20px; }
+  .story-evidence, .checker-proof { padding-left:16px; padding-right:16px; }
+  .drawer { padding:24px 20px; }
+  .drawer h3 { font-size:30px; }
+}
