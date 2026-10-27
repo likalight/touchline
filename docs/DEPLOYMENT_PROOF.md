@@ -2,8 +2,38 @@
 
 ## Current deployed build — 28 October 2026 Singapore time
 
+Source `a69d6af8ad7d67cb99463cefcb4b884380e6307f` is deployed as digest
+`sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6`.
+The observation at 02:23 Singapore time (27 October 18:23 UTC) records:
+
+- [Final deployment](evidence/final-deployment.json), [health](evidence/final-health.json) and
+  [readiness](evidence/final-ready.json): healthy/ready service after the application update.
+- [Final hosted answer](evidence/final-hosted-answer.json): version-4 `gpt-4.1-mini` source
+  selection, bound claims and four citations, no fallback, 6,859 ms model execution.
+- [Outbox restoration](evidence/final-outbox-restore-observation.json): all 198 previously
+  acknowledged delivery IDs restored; zero pending, errors or new sends at the observation.
+  This is a normal application-update experiment, not an injected pending-message crash.
+- [Final code CI](https://github.com/likalight/touchline/actions/runs/40558254712): 171 Python
+  tests, 11 JavaScript contracts and all four required jobs passed at `a69d6af`.
+- [Checked player-story fallback](evidence/final-qa-final-story.json): the exact Varga recovery
+  question now returns the verified loss/redemption story with three source citations. The
+  model attempt was still rejected as unbound; `application_fallback` correctly identifies
+  the final answer. This is a useful deterministic fallback, not a hosted model-answer pass.
+- [Private-match output boundary](evidence/final-private-output-observation.json): a complete
+  isolated seed-8642 match finished 2–3 with its local package available. Shared outbound
+  counters stayed at 198 acknowledged IDs and zero new sends/pending. This is one observed
+  run alongside regression tests, not a distributed isolation certification.
+
+The update adds truthful Q&A fallback metadata, a bounded checked-player story route and
+prevents public-created private matches from publishing to the shared downstream pipeline.
+Earlier hosted, streaming and film observations below retain their original source/image;
+they are not represented as reruns on this final image. The existing input journal was
+restored, so these checks do not establish new Event Hubs ingestion or an availability SLA.
+
+## Prior readiness and filmed build — 28 October 2026 Singapore time
+
 The reviewed source `b13985bb2b7267a8d8b8685059b38620540e072c`, merged as `587a150`,
-is deployed as container digest
+was deployed as container digest
 `sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd`.
 The observation at 01:54 Singapore time (27 October 17:54 UTC) records:
 
@@ -15,7 +45,7 @@ The observation at 01:54 Singapore time (27 October 17:54 UTC) records:
   source-rendered statements, with bound claims and four goal citations for the 3–1 result.
 - [Downstream observation](evidence/readiness-downstream.json) and [downloaded package](evidence/readiness-stored-package.json):
   Functions built a fresh `SYN-00091` package at 17:53:54 UTC from replay of the saved input
-  journal. This is a new output observation on the current image, **not a freshly ingested match**.
+  journal. This is a new output observation on that image, **not a freshly ingested match**.
 - [External MCP client exchanges](evidence/external-mcp-current.json): six gates passed,
   covering protocol negotiation, discovery, score shape, source-event resolution, recap source
   checks and readiness. This is interoperability evidence for this client and these calls.

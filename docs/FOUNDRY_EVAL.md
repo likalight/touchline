@@ -58,8 +58,11 @@ event citations. When no verified recovery frame exists, the answer explicitly s
 the requested storyline is unavailable. It does not infer recovery from statistics or accept
 the question's premise. No model tools, published agent version or selection rules changed.
 Offline regressions cover the exact filmed question, blocked/missing/other-player storylines,
-stale execution metadata and the UI label. A post-deployment observation is still required;
-these tests are not a new hosted quality pass.
+stale execution metadata and the UI label. The [final deployed observation](evidence/final-qa-final-story.json)
+on `a69d6af` returned the verified loss/redemption story and three source citations. The model
+attempt remained unbound and was rejected; the final answer explicitly reports
+`application_fallback`, with that attempt nested separately. This is a successful checked
+fallback observation, not a new hosted model-answer quality pass or universal relevance claim.
 
 ## Foundry portal evaluation
 

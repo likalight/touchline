@@ -1,0 +1,40 @@
+{
+  "answer": "Full time: Kestrel Bay FC 3-1 Ironmoor Athletic. Kestrel Bay FC beat Ironmoor Athletic 3-1.",
+  "citations": [
+    "E00361",
+    "E00451",
+    "E01081",
+    "E01412"
+  ],
+  "source": "llm:foundry",
+  "language": "en",
+  "composition": "source_rendered_selection",
+  "execution": {
+    "request_id": "eefe685e777941fb8076a524a32e0538",
+    "agent": "AskTheAnalyst",
+    "backend": "foundry",
+    "model": "gpt-4.1-mini",
+    "path": "foundry_hosted",
+    "completed": true,
+    "fallback": false,
+    "duration_ms": 6859.35
+  },
+  "grounding": {
+    "tool_results": 1,
+    "numbers_supported": true,
+    "citations_supported": true,
+    "claims_bound": true,
+    "scope": "Exact source-rendered statements selected by the model; no free paraphrase."
+  },
+  "ms": 7899.8,
+  "_evidence_context": {
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "observation_batch_utc": "2026-10-27T18:23:28.997813+00:00",
+    "source_artifact_sha256": "c4bcbdb229bee2a0c1f59e85e55d619f61ae7537ddd3b9ebec84d6d47966d8fe",
+    "scope": "Final deployment. Existing SYN-00091 input journal and acknowledged outbox ledger restored after normal application update; not new input ingestion or a pending-message crash injection. Health snapshot precedes hosted request.",
+    "publication": "Public application observations only; no credentials, subscription identifiers or billing included."
+  }
+}

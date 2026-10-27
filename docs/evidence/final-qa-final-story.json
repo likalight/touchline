@@ -1,0 +1,97 @@
+{
+  "observed_at": "2026-10-27T18:25:10.063504+00:00",
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "question": "Explain how Varga recovered from his possession loss, using the linked match events.",
+  "session": "m-8435f623",
+  "answer": {
+    "answer": "28': GOAL! Theo Mensah scores for Ironmoor Athletic — In the preceding sequence, Kofi Varga lost possession 22 seconds earlier 44': GOAL! Kofi Varga scores for Kestrel Bay FC — Redemption for Kofi Varga: his earlier possession loss preceded the opposition goal in minute 28",
+    "citations": [
+      "E00562",
+      "E00554",
+      "E00921"
+    ],
+    "source": "router",
+    "answer_type": "verified_player_story",
+    "language": "en",
+    "requested_language": "en",
+    "fallback_reason": "unbound_model_answer",
+    "composition": "deterministic_source_route",
+    "grounding": {
+      "tool_results": 2,
+      "tool_results_accepted": 0,
+      "scope": "The application rendered this answer from match data or verified story frames. No model answer was accepted."
+    },
+    "execution": {
+      "path": "application_fallback",
+      "completed": true,
+      "fallback": true,
+      "fallback_reason": "unbound_model_answer",
+      "model_attempted": true,
+      "model_attempt": {
+        "request_id": "cb82ab014c054c7db76dd494bb6538d2",
+        "agent": "AskTheAnalyst",
+        "backend": "foundry",
+        "model": "gpt-4.1-mini",
+        "path": "foundry_hosted",
+        "completed": true,
+        "fallback": false,
+        "duration_ms": 3873.59
+      }
+    },
+    "ms": 4092.0
+  },
+  "checks": {
+    "story_answer": true,
+    "linked_sources": true,
+    "correct_score": true,
+    "honest_execution": true,
+    "checked_story_fallback": true
+  },
+  "passed": true,
+  "scope": "One real deployed analyst request after a complete isolated Judge replay. No universal relevance or availability claim.",
+  "deployment": {
+    "live_validation": "passed",
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "updated_at": "2026-10-27T18:22:49.5494051Z",
+    "previous_image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+    "observed_at": "2026-10-27T18:23:28.997813+00:00",
+    "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+    "checks": {
+      "ready": true,
+      "health": true,
+      "hosted_source_selection": true
+    },
+    "outbound": {
+      "enabled": true,
+      "hub": "touchline-insights",
+      "sent": 0,
+      "dropped": 0,
+      "errors": 0,
+      "degraded": false,
+      "oldest_pending_seconds": 0,
+      "retries": 0,
+      "pending": 0,
+      "acknowledged": 198,
+      "outbox_ready": true,
+      "sender_running": true,
+      "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+    },
+    "live_match": {
+      "match_id": "SYN-00091",
+      "score": {
+        "home": 3,
+        "away": 1
+      }
+    }
+  },
+  "_evidence_context": {
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "source_artifact_sha256": "086c30764d071cb1e3520adfb98152767b627024dec0ef9c70ca050ddabdd9ad",
+    "scope": "One real deployed analyst request after a complete isolated Judge replay. No universal relevance or availability claim.",
+    "publication": "Synthetic application observations; no credentials, subscription identifiers or billing included."
+  }
+}

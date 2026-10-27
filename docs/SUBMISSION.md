@@ -15,7 +15,7 @@ and model-backed language generation. Azure Container Apps, Event Hubs, Function
 Storage connect the live experience to downstream packages. Inspect a receipt to see the
 facts, original checks, handoffs and audience versions behind a graphic.
 
-**Readiness:** the [public Azure demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) has [current source/image proof](DEPLOYMENT_PROOF.md): version-4 hosted source selection, acknowledged outbox outputs, a fresh Functions package from saved-input replay and external MCP checks. Real participant results are still unavailable. See the [Brag film's actual revision and validation](FINAL_VIDEO.md); publish its actual accepted-host URL before submitting.
+**Readiness:** the [public Azure demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) has [final source/image proof](DEPLOYMENT_PROOF.md): version-4 hosted source selection, restored acknowledged output IDs, a useful checked-story fallback and a private-match output boundary check. Earlier Functions, MCP and external streaming observations retain their actual build. Real participant results are still unavailable. See the [Brag film's actual revision and validation](FINAL_VIDEO.md); publish its actual accepted-host URL before submitting.
 
 ## The argument, in three demonstrations
 

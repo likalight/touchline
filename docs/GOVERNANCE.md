@@ -22,6 +22,9 @@ and packages remain available. Shared demo and external-feed sessions retain out
 This prevents anonymous seed variation from accumulating durable delivery identities; the
 finite ledger still requires an archival policy for legitimate long-running feeds. The earlier
 cloud soak on `b13985b` preceded this boundary and may have emitted synthetic downstream outputs.
+The [final deployed boundary check](evidence/final-private-output-observation.json) completed
+one private match with its local package retained and no change to shared outbound counters.
+This supports the tested boundary for that run, not distributed tenant-isolation certification.
 
 ## Controls and boundaries
 
@@ -67,8 +70,9 @@ It does not prove exactly-once outbound delivery, zero downtime or a service-lev
 An input journal and an output outbox solve different problems. Current code includes an optional
 single-writer Blob outbox (`TOUCHLINE_OUTBOX_URL`) with durable pending/acknowledged records;
 it is at-least-once, has a finite ledger and requires idempotent downstream effects. The current
-deployment reported 66 acknowledgements and zero pending/errors after saved-input replay;
-this establishes observed send/ack completion, not crash-between-send-and-ack recovery.
+deployment restored 198 acknowledged IDs after a normal application update with zero new
+sends, pending messages or errors observed. Earlier send/ack completion is separately recorded;
+neither observation establishes crash-between-send-and-ack recovery.
 Sequential-match metadata waits for processor completion and durable output acceptance before
 replacing the prior input history. Replacement is atomic on storage failure. Acknowledgement-only
 retry avoids repeated sends in the same process after a successful transmission, and aged pending

@@ -1,0 +1,74 @@
+{
+  "status": "ok",
+  "feed": {
+    "status": "running"
+  },
+  "sessions": 2,
+  "llm": {
+    "backend": "foundry",
+    "model": "gpt-4.1-mini",
+    "breaker_open": false,
+    "request_budget": {
+      "maximum": 120,
+      "window_seconds": 600,
+      "concurrency": 4,
+      "active": 0,
+      "rejected": 0,
+      "scope": "single process"
+    },
+    "calls": 0,
+    "errors": 0,
+    "hosted_agents": [],
+    "hosted_fallbacks": 0,
+    "avg_ms": null
+  },
+  "speech": {
+    "available": true,
+    "mode": "entra",
+    "calls": 0,
+    "errors": 0,
+    "request_budget": {
+      "maximum": 120,
+      "window_seconds": 600,
+      "concurrency": 3,
+      "active": 0,
+      "rejected": 0,
+      "scope": "single process"
+    }
+  },
+  "content_safety": {
+    "mode": "azure",
+    "threshold": 4,
+    "checked": 0,
+    "blocked": 0,
+    "shield_attacks": 0,
+    "errors": 0,
+    "unavailable": 0
+  },
+  "auth": "open",
+  "outbound": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 0,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 198,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "_evidence_context": {
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "observation_batch_utc": "2026-10-27T18:23:28.997813+00:00",
+    "source_artifact_sha256": "128d10013edbfffce29f07746ba5406d9a1b0b2e912778933ede52690bfce5c7",
+    "scope": "Final deployment. Existing SYN-00091 input journal and acknowledged outbox ledger restored after normal application update; not new input ingestion or a pending-message crash injection. Health snapshot precedes hosted request.",
+    "publication": "Public application observations only; no credentials, subscription identifiers or billing included."
+  }
+}

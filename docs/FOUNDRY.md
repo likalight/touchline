@@ -14,7 +14,7 @@ core synthetic broadcast independent of model latency.
 | Service authentication | Managed identity | Separate from human producer identity |
 | Observability | Tracing integration and request-level execution metadata | Do not infer that every trace has been inspected in the portal |
 
-[Current hosted request proof](evidence/readiness-hosted-answer.json) records an actual invocation,
+[Current hosted request proof](evidence/final-hosted-answer.json) records an actual invocation,
 model, duration and fallback status. [Deployment proof](DEPLOYMENT_PROOF.md) records its revision
 and the wider cloud chain. GitHub Actions provides CI; it is not GitHub Copilot Agent Mode.
 

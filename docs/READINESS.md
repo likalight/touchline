@@ -6,9 +6,9 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 
 ## Verification checkpoints
 
-- [Final PR9 CI](https://github.com/likalight/touchline/actions/runs/40553039454) passed 152 Python
-  tests at `b13985b`, merged as `587a150`. All four jobs passed, including both full browser journeys.
-  This is the reviewed code deployed in the current image; later evidence-only edits have their own CI.
+- [Final code CI](https://github.com/likalight/touchline/actions/runs/40558254712) passed 171 Python
+  tests, 11 JavaScript contracts and all four jobs at `a69d6af`, the final deployed code image.
+  Both full browser journeys passed. Later documentation-only revisions retain separate CI.
 - Four required checks (`test`, `browser`, `bicep`, `docker`) now
   gate merges, including administrators. Repository auto-merge is enabled; it is not permission
   to bypass required checks.
@@ -36,8 +36,9 @@ while its completed Foundry attempt was shown as the final answer's execution. T
 now separates `application_fallback` from nested model-attempt evidence and labels the UI
 accurately. Named-player recovery questions render verified loss/redemption frames with
 citations, or explicitly report no supported recovery storyline. Offline regression tests
-cover the exact question and absent/blocked/other-player stories. Deployment and a new live
-answer still need verification; this change is not a new hosted evaluation pass. See
+cover the exact question and absent/blocked/other-player stories. The [final deployed request](evidence/final-qa-final-story.json)
+returned the checked story with three citations and honest fallback metadata. The model answer
+was still rejected; this is deterministic fallback validation, not a new hosted-answer pass. See
 [scope and preserved failure](FOUNDRY_EVAL.md#separate-filmed-recovery-question-failure).
 
 | ID | Audit gap | Current disposition / remaining acceptance |
@@ -48,7 +49,7 @@ answer still need verification; this change is not a new hosted evaluation pass.
 | 04 | Late event emitted behind current state | **Implemented and regression-tested:** quarantine behind-watermark arrivals; expose late count. This discards late data rather than retroactively correcting state. |
 | 05 | Moderation outage treated as safe | **Implemented and regression-tested:** unavailable/malformed Azure results fail closed and are not cached as clean. Offline mode stays explicitly limited. |
 | 06 | Contradictory deployment/governance claims | **Updated:** current evidence register, privacy and identity boundaries, historical labels and measured-cost limitation. |
-| 07 | Film undersells Microsoft proof | **Remaining:** revise final film to show actual hosted execution/downstream evidence, preserve under-two-minute limit and public upload. |
+| 07 | Film undersells Microsoft proof | **Refreshed and validated:** 115-second Brag film includes successful hosted source selection and the actual separately labelled Functions package, captured on `b13985b`. Accepted-host upload remains unverified. |
 | 08 | Agent advantage unmeasured | **Bounded comparison measured:** 12 stored model outputs rescored after a disclosed evidence-corpus bug; format/citation results are not semantic accuracy or end-to-end agent superiority. Human comparison remains. |
 | 09 | Foundry quality evaluation absent | **Bounded application run measured:** version 4 passed six of six hosted cases, including explicit historical-record scope. Full portal evaluation, broad relevance/language testing and observed rollback remain. |
 | 10 | Spotlight misses secondary involvement | **Implemented:** cited participant roles include turnover player and recipient; event time bounds remain explicit. |
@@ -59,7 +60,7 @@ answer still need verification; this change is not a new hosted evaluation pass.
 | 15 | Historical chapter vs current pitch | **Implemented:** explicit selected/live timestamps and source view; chapter selection does not pretend to rewind current state. |
 | 16 | Producer UI overstates permissions | **Implemented:** capability-aware controls and honest shared-read-only status. |
 | 17 | Enterprise producer identity unproven | **Partly addressed:** untrusted headers ignored; explicit verified-proxy opt-in required. Supported gateway setup and authenticated operator exercise remain. |
-| 18 | Outbound queue not durable | **Implemented, locally tested and configured live:** 66 acknowledgements, zero pending/errors after saved-input replay. Acknowledgement-only retries, protected sequential handoff and atomic journal replacement have regressions. Live crash-between-send-and-ack remains untested; consumers deduplicate stable delivery IDs. |
+| 18 | Outbound queue not durable | **Implemented, locally tested and configured live:** 198 acknowledged IDs restored after the final normal application update, zero new sends/pending/errors observed. Acknowledgement-only retries, protected sequential handoff and atomic journal replacement have regressions. Live crash-between-send-and-ack remains untested; consumers deduplicate stable delivery IDs. |
 | 19 | Audit/privacy claims too broad | **Partly addressed:** question text removed from application trace notes. Durable editorial retention, deletion and tenant policy remain. |
 | 20 | Anonymous work/spend unbounded | **Implemented:** process-local HTTP and model admission/concurrency budgets. Currency cap, per-tenant fairness and distributed limits remain. |
 | 21 | Scale/availability unsupported | **Bounded external observation passed:** 12/12 clients received all 1,923 events and correct final score in one 206.68-second accelerated cloud match. One observer machine and deployment; real-time match-length soak, reconnect, capacity ceiling and multi-replica ownership remain. |
@@ -70,8 +71,8 @@ answer still need verification; this change is not a new hosted evaluation pass.
 | 26 | No human benefit evidence | **Remaining:** test kit prepared, participants unavailable. No measured savings, comprehension or adoption claim. |
 | 27 | Mobile/accessibility unvalidated | **Partly measured:** automated narrow-view and keyboard journeys passed. Screen reader, low-vision and real-device participant evaluation remain. |
 | 28 | CV broadcast accuracy limited | **Scope corrected:** experimental synthetic-camera result, not real broadcast-video accuracy. No inflated CV claim. |
-| 29 | Browser journey absent from CI | **Implemented, passed and enforced:** both real journeys with retained screenshots/logs; all four jobs green at `b13985b`, including browser; required checks gate merges/admins. |
-| 30 | Strongest cloud proof outside repo | **Published:** current source/image, health/readiness, version-4 hosted source selection, acknowledged outbox outputs, regenerated Functions package and external MCP exchanges. Prior mid-match input recovery remains separately dated. |
+| 29 | Browser journey absent from CI | **Implemented, passed and enforced:** both real journeys with retained screenshots/logs; all four jobs green at `a69d6af`, including browser; required checks gate merges/admins. |
+| 30 | Strongest cloud proof outside repo | **Published:** final source/image, health/readiness, version-4 hosted source selection and acknowledged ledger restoration. Earlier Functions, MCP, streaming, film and input-recovery evidence remains source-bound. |
 | 31 | Total operating cost unknown | **Remaining:** billing query returned incomplete service coverage, so no total or per-match estimate is published. Deployment-wide ledger and judging-period budget remain. |
 
 ## Durable delivery scope
@@ -88,8 +89,8 @@ pauses at the next metadata boundary until processing and durable output accepta
 previous match complete. An internal boundary also closes interrupted matches. Metadata/history
 replacement commits atomically; a failed replacement preserves prior replay history. Local
 handoff and journal tests cover these behaviours. This is sequential handoff, not parallel
-multi-match ownership. The [current live observation](DEPLOYMENT_PROOF.md) records 66 durable
-acknowledgements after saved-input replay; it does not inject a live crash at the send/ack boundary.
+multi-match ownership. The [current live observation](DEPLOYMENT_PROOF.md) records restoration of 198 acknowledged IDs
+after a normal application update; it does not inject a live crash at the send/ack boundary.
 
 After a successful send, a failed storage acknowledgement is retried without repeatedly sending
 again in that process. A crash still permits redelivery. Pending-message age and sender state

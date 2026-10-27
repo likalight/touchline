@@ -24,7 +24,7 @@ personalized graphics and broadcaster-oriented cue contracts. Built for the Micr
 | Status | What a judge can verify | Boundary |
 |---|---|---|
 | Implemented | Isolated three-chapter replay, player context, source inspection, audience comparison and JSON receipts | Synthetic data and model estimates; not real broadcast footage |
-| Observed on the current deployed build | Version-4 hosted source selection, ready/healthy service, 66 acknowledged durable outputs, fresh Functions package from saved input replay; external MCP checks | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); replay is not a new input feed or restart-failure experiment |
+| Observed on the current deployed build | Version-4 hosted source selection, ready/healthy service and restoration of 198 acknowledged output IDs after a normal update | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); earlier Functions, MCP, streaming and film observations retain their original build |
 | Reproducible locally / CI | Python, JS contracts, real browser journeys, deterministic pipeline gate, source/model fingerprints | Tests cover specific cases; they do not establish universal truth |
 | Measured bounded model runs | Published analyst version 4: six of six fixed hosted cases; 12-output narration contract comparison with disclosed scorer correction | [Raw cases and scope](docs/FOUNDRY_EVAL.md); no broad accuracy, language or superiority claim |
 | Needs further evidence | Portal-quality evaluation, equivalent-budget end-to-end agent comparison, real operator/user benefit and accessibility evaluation | See [Foundry status](docs/FOUNDRY_EVAL.md), [comparison](docs/AGENT_COMPARISON.md) and [impact](docs/IMPACT.md) |
@@ -120,7 +120,7 @@ Open its receipt to inspect the checks and download the proof. The full app at
 [localhost:8000](http://localhost:8000) adds player focus, four built-in languages, commentary,
 recaps, counterfactuals, a phone view and personalized highlights.
 
-**Live on Azure:** [open Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge). The reviewed build `b13985b` (merged as `587a150`) is deployed with Foundry version 4. Its hosted answer selected exact source statements without fallback; the Blob outbox reported 66 acknowledged outputs, zero pending and zero errors. Functions produced a fresh seed-91 package from replay of the saved input journal. [Current source/image evidence](docs/DEPLOYMENT_PROOF.md) distinguishes this from the earlier fresh-feed and mid-match recovery experiments. These observations do not establish an SLA or human usefulness.
+**Live on Azure:** [open Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge). The final code build `a69d6af` is deployed with Foundry version 4. Its hosted answer selected exact source statements without fallback; the outbox restored 198 acknowledged IDs after a normal application update, with zero pending, errors or new sends observed. [Current source/image evidence](docs/DEPLOYMENT_PROOF.md) keeps the earlier Functions package, external streaming test, film capture and mid-match recovery experiments tied to their actual builds. These observations do not establish an SLA or human usefulness.
 
 ## What we have measured
 
@@ -132,15 +132,16 @@ recaps, counterfactuals, a phone view and personalized highlights.
 | [Single-agent narration comparison](docs/AGENT_COMPARISON.md) | 12 actual model outputs, raw failures and a disclosed scorer correction applied to both alternatives | Semantic accuracy, statistical superiority or an end-to-end agent-count comparison |
 | [Load experiment](docs/LOADTEST.md) | A historical 30-second, co-located streaming experiment | Full-match capacity, multi-replica operation or an Azure SLA |
 | [External cloud streaming](docs/CLOUD_SOAK.md) | All 12 attempted clients received all 1,923 ordered events and the correct 1–1 finish in one accelerated match, over 206.68 seconds | Maximum capacity, sustained real-time match-length availability, reconnect or end-to-end latency |
-| [Current cloud execution](docs/DEPLOYMENT_PROOF.md) and [downloaded package](docs/evidence/readiness-stored-package.json) | Hosted source selection, acknowledged Blob outbox outputs and a fresh Functions package from stored input replay | Exactly-once external effects, restart-failure recovery of this outbox, production SLA or human validation |
+| [Dated cloud execution](docs/DEPLOYMENT_PROOF.md) and [prior-build package](docs/evidence/readiness-stored-package.json) | Final-image hosted source selection and ledger restoration; earlier Functions package from stored input replay | Exactly-once external effects, restart-failure recovery of this outbox, production SLA or human validation |
 | [Version-4 bounded Foundry run](docs/FOUNDRY_EVAL.md) | Six fixed hosted cases passed stronger score/player/citation/record-scope checks; all raw outputs retained | General answer quality, multilingual parity or a completed portal evaluation |
+| [Final live fallback and isolation checks](docs/DEPLOYMENT_PROOF.md) | Varga recovery returns a checked story with three citations after rejecting unbound model prose; one private match retains its package without shared output | A hosted-answer success for that fallback, universal relevance or distributed tenant isolation |
 | [Final film validation](docs/FINAL_VIDEO.md) | 115-second Brag film recorded from the deployed app, with narration and captions | Public video hosting or completed hackathon submission |
 | [CI](https://github.com/likalight/touchline/actions/workflows/ci.yml) | Automated tests, evaluation gate, Bicep build and container smoke checks | Successful provisioning in a particular Azure subscription |
 | [Match memory browser journey](tests/story-browser.cjs) | Full replay, navigation, original-event map, audience switching, stale-request isolation, downloads and responsive layouts | A human usability study or cross-browser accessibility certification |
 
 CI uploads the measured evaluation JSON and report as an artifact tied to its commit.
-[PR9's final run](https://github.com/likalight/touchline/actions/runs/40553039454) passed
-152 Python tests and all four jobs, including both real browser journeys, at `b13985b`.
+[Final code CI](https://github.com/likalight/touchline/actions/runs/40558254712) passed
+171 Python tests, 11 JavaScript contracts and all four jobs, including both real browser journeys, at `a69d6af`.
 Four required checks (`test`, `browser`, `bicep`, `docker`) gate merges, including administrators.
 Auto-merge is enabled and waits for those checks; consult the run for the submitted revision.
 Receipts preserve the checks performed at the original moment; opening one does not rerun
@@ -222,7 +223,7 @@ recovery drill and result requirements are in [DEPLOYMENT_PROOF.md](docs/DEPLOYM
 
 - **One warm replica.** Browser sessions remain in memory; scaling out requires shared session state. Judge replays expire after 15 minutes and do not publish broadcast outputs.
 - **One active input match on partition 0.** A Blob journal stores current match history and the Event Hubs resume offset atomically. ETag conflicts stop competing writers. With a durable outbox, replay reconciles missing outputs against acknowledged IDs; without it, historical outputs are suppressed. The journal alone does not provide distributed ownership or atomic input-to-output delivery.
-- **Configured durable outbound.** The current Azure build uses `TOUCHLINE_OUTBOX_URL`: pending messages and acknowledgements use a single-writer Blob ledger, with 66 acknowledgements observed after input replay. Delivery is at least once with stable IDs; consumers must deduplicate. Without that setting, the development queue is process memory. Crash-between-send-and-ack recovery remains a separate live experiment; [scope and capacity](docs/READINESS.md#durable-delivery-scope).
+- **Configured durable outbound.** The current Azure build uses `TOUCHLINE_OUTBOX_URL`: pending messages and acknowledgements use a single-writer Blob ledger, with 198 acknowledged IDs restored after the final normal application update. Delivery is at least once with stable IDs; consumers must deduplicate. Without that setting, the development queue is process memory. Crash-between-send-and-ack recovery remains a separate live experiment; [scope and capacity](docs/READINESS.md#durable-delivery-scope).
 - **Stable full-time packages.** Events carry the completed package snapshot, so Functions does not depend on a mutable `live` or `demo` session. Duplicate delivery writes the same package key. Teams notifications remain best-effort and may repeat.
 - **Isolated failure drills.** A model-outage drill affects its own match, without disabling other viewers' model access. Failed input ingestion reports degraded health and fails the readiness probe.
 - **Protected shared playback.** Anonymous viewers can run their own Judge Mode. Shared production controls require the configured producer role; without Entra, deployed shared controls stay read-only.
