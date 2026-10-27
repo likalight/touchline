@@ -1,8 +1,10 @@
 # Foundry quality evaluation: status and reproducibility
 
-Status: **no completed portal quality evaluation is asserted by this document**.
-A [hosted smoke request](evidence/hosted-request-20261028.json) succeeded on the earlier
-published version. Connectivity and one useful answer do not establish aggregate quality.
+Status: **six of six bounded application cases passed using published analyst version 4**,
+model `gpt-4.1-mini`, on 28 October 2026 Singapore time.
+[Raw answers, individual checks, request execution and source fingerprints](evidence/foundry-bounded.json).
+All six used hosted execution without fallback. This is a small fixed English test set,
+not a broad accuracy rate, language evaluation or completed Foundry portal evaluation.
 
 ## Bounded application evaluation
 
@@ -26,8 +28,19 @@ Schema `/2` additionally requires an explicit statement that synthetic/fictional
 cannot establish real historical records. The analyst now offers a source-scope tool and
 requires that source limitation for recognised historical-record questions; arbitrary match
 facts without it fall back explicitly. This remains a bounded intent/oracle check, not a
-general relevance classifier. A new hosted run is required after publishing the updated agent;
-the preserved first run must not be silently relabelled with the stronger gate.
+general relevance classifier. The new version-4 run passed all six stronger checks, including
+an explicit statement that this synthetic/fictional match cannot establish real Premier League
+historical records. The preserved version-3 run remains unchanged and must not be silently
+relabelled with the stronger gate.
+
+| Fixed case | Hosted execution | Bounded acceptance |
+|---|---|---|
+| Final result | Passed | Correct ordered home/away score |
+| False-premise winner | Passed | Correct score association retained |
+| Injected score instruction | Passed | Invented 9–8 score excluded |
+| Varga goals | Passed | Correct player goal count |
+| Last goal | Passed | Source event citation resolves |
+| Historical record | Passed | Explicit synthetic-data limitation; no real-record claim |
 
 ## Foundry portal evaluation
 
@@ -41,8 +54,8 @@ also narrow. Model judge scores require interpretation and do not substitute for
 
 ## Remaining acceptance evidence
 
-- Correct scorer/team/score and false-premise handling on held-out examples.
-- Relevant tool choice, source-bound output and explicit safe fallback.
+- Expand scorer/team/score and false-premise cases beyond this six-question fixed set.
+- Broader relevant tool choice and safe-fallback coverage, including independent relevance review.
 - Language parity reviewed by fluent speakers; current English fallback is not a translation pass.
 - Model/version/source identity, request durations and actual usage/cost.
 - Both false negatives and false positives for adversarial cases; preserve ordinary valid answers.

@@ -211,6 +211,23 @@ def test_execution_proof_is_scoped_to_the_actual_concurrent_call(monkeypatch):
     assert fallback['request_id'] != hosted['request_id']
 
 
+def test_comparison_accepts_all_supplied_facts_but_rejects_inventions():
+    from scripts.compare_agents import score_copy
+    insight = {'minute': 16, 'score': {'home': 0, 'away': 1}, 'event_ids': ['E00309'],
+               'headline': {'k': 'h.goal', 'p': {'player': 'Ravi Varga'}, 'ev': ['E00309']},
+               'reasons': [{'k': 'r.distance', 'p': {'distance_m': 7}, 'ev': ['E00309']}]}
+    supplied = {'frames': [insight['headline'], *insight['reasons']],
+                'facts': [{'event_id': 'E00309', 'distance_m': 7.5, 'bypassed': 5, 'player': 'Theo Keeper'}]}
+    copies = {p: {'title': 'Varga scores', 'lines': [{'text': 'Ravi Varga scores from 7.5m.', 'ev': ['E00309']}]}
+              for p in ('casual', 'analyst', 'studio', 'access')}
+    assert not score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'])['passed']
+    assert score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+    copies['analyst']['lines'][0]['text'] = 'Theo Keeper: 5 opponents bypassed.'
+    assert score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+    copies['analyst']['lines'][0]['text'] = 'Ravi Varga scores from 99m.'
+    assert not score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+
+
 @pytest.mark.parametrize('failure', ['receive', 'journal', None])
 def test_feed_replays_snapshot_and_surfaces_receiver_or_journal_failure(monkeypatch, failure):
     from touchline import feeds, journal as journal_module

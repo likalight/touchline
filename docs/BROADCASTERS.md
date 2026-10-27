@@ -24,7 +24,8 @@ Supported source checks reduce specific errors, but do not certify all output fo
 
 ## Cost ledger required
 
-No current total Azure bill or per-viewer cost is published. Earlier per-language and free-grant
+No current total Azure bill or per-viewer cost is published. A billing query returned incomplete
+service coverage, which cannot support a deployment-wide estimate. Earlier per-language and free-grant
 estimates were incomplete and should not be used as deployment costs. Account for:
 
 - Container Apps active and idle compute, registry and storage;

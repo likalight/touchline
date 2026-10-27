@@ -17,8 +17,8 @@ the centre of the product. A larger agent count is not evidence of a better resu
 |---|---|---|
 | Grand Prize | A 90-second isolated story, audience switching, sources, receipts, player context and complete synthetic ingest-to-render path | Observed first-time user success; public video and submission confirmation |
 | Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions package generation; one real mid-match restart with 1,870 final input events matching seed 91 | External sustained capacity test; final submitted build smoke; durable output delivery before production claims |
-| Multi-Agent System | Agent Framework orchestration, deterministic specialists, separate verification and editorial scheduling, local fault drills and component ablations | Measured bounded narration comparison; equivalent-budget end-to-end single-agent baseline; blinded usefulness ratings |
-| Microsoft Foundry | Published agent versions and one request-level hosted invocation without fallback; model and safety integration | Completed quality evaluation with raw failures and portal run identity; translation review; observed rollback |
+| Multi-Agent System | Agent Framework orchestration, deterministic specialists, separate verification and editorial scheduling, local fault drills, component ablations and a disclosed 12-case narration contract comparison | Equivalent-budget end-to-end single-agent baseline; semantic and blinded usefulness ratings |
+| Microsoft Foundry | Published version 4 passed six fixed hosted application checks with raw outputs; model and safety integration; earlier weak oracle retained and corrected transparently | Full portal evaluation; broader relevance and translation review; observed rollback |
 | Enterprise Solution | Machine-readable cues, evidence export, isolated demos, managed service identity and optional Blob outbox code | Supported authenticated producer deployment, durable editorial audit, live outbox recovery validation, operator pilot and measured cost |
 
 ## Evidence a judge can inspect

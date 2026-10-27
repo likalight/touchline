@@ -26,7 +26,8 @@ personalized graphics and broadcaster-oriented cue contracts. Built for the Micr
 | Implemented | Isolated three-chapter replay, player context, source inspection, audience comparison and JSON receipts | Synthetic data and model estimates; not real broadcast footage |
 | Observed on the prior deployed build | Hosted Foundry request, Event Hubs → Functions → Blob, restart during minute 75 with all 1,870 reference events recovered | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); later changes need their own smoke |
 | Reproducible locally / CI | Python, JS contracts, real browser journeys, deterministic pipeline gate, source/model fingerprints | Tests cover specific cases; they do not establish universal truth |
-| Needs measured results | Foundry quality evaluation, equivalent-budget agent comparison, real operator/user benefit and accessibility evaluation | See [Foundry status](docs/FOUNDRY_EVAL.md), [comparison](docs/AGENT_COMPARISON.md) and [impact](docs/IMPACT.md) |
+| Measured bounded model runs | Published analyst version 4: six of six fixed hosted cases; 12-output narration contract comparison with disclosed scorer correction | [Raw cases and scope](docs/FOUNDRY_EVAL.md); no broad accuracy, language or superiority claim |
+| Needs further evidence | Portal-quality evaluation, equivalent-budget end-to-end agent comparison, real operator/user benefit and accessibility evaluation | See [Foundry status](docs/FOUNDRY_EVAL.md), [comparison](docs/AGENT_COMPARISON.md) and [impact](docs/IMPACT.md) |
 | Submission gate | Local 115-second Brag film exists | Public video URL and submission receipt are not yet confirmed here |
 
 **Our strongest current category evidence is Azure Cloud Native Integration.** Agent Framework
@@ -128,14 +129,17 @@ recaps, counterfactuals, a phone view and personalized highlights.
 | [12-match evaluation](docs/EVAL.md) and [machine-readable results](docs/evidence.json) | Verification, goal coverage, citations, rendering and server pipeline timing on held-out synthetic matches | Real-match accuracy, browser latency, model quality or human usefulness |
 | [Specialist ablation](docs/ABLATION.md) | Effects of removing the ingest guard, scout, storyline, checker and editorial scheduler | A head-to-head comparison against a capable single-agent system |
 | [Frozen-model check](docs/FROZEN_MODEL_EVAL.md) | Unchanged logistic models evaluated on fresh corrected synthetic matches, with calibration bins and fingerprints | Real-match generalisation, xT validation or a new training run |
-| [Single-agent comparison protocol](docs/AGENT_COMPARISON.md) | Reproducible, bounded comparison of narration strategies on identical inputs | Live-model results until the run is actually performed |
+| [Single-agent narration comparison](docs/AGENT_COMPARISON.md) | 12 actual model outputs, raw failures and a disclosed scorer correction applied to both alternatives | Semantic accuracy, statistical superiority or an end-to-end agent-count comparison |
 | [Load experiment](docs/LOADTEST.md) | A historical 30-second, co-located streaming experiment | Full-match capacity, multi-replica operation or an Azure SLA |
 | [Cloud execution](docs/evidence/cloud-chain.json) and [downloaded Blob proof](docs/evidence/blob-packages.json) | A hosted Foundry answer without fallback and actual demo/live Functions packages | Semantic truth, production SLA or human validation |
+| [Version-4 bounded Foundry run](docs/FOUNDRY_EVAL.md) | Six fixed hosted cases passed stronger score/player/citation/record-scope checks; all raw outputs retained | General answer quality, multilingual parity or a completed portal evaluation |
 | [Final film validation](docs/FINAL_VIDEO.md) | 115-second Brag film recorded from the deployed app, with narration and captions | Public video hosting or completed hackathon submission |
 | [CI](https://github.com/likalight/touchline/actions/workflows/ci.yml) | Automated tests, evaluation gate, Bicep build and container smoke checks | Successful provisioning in a particular Azure subscription |
 | [Match memory browser journey](tests/story-browser.cjs) | Full replay, navigation, original-event map, audience switching, stale-request isolation, downloads and responsive layouts | A human usability study or cross-browser accessibility certification |
 
 CI uploads the measured evaluation JSON and report as an artifact tied to its commit.
+Four required checks (`test`, `browser`, `bicep`, `docker`) gate merges, including administrators.
+Auto-merge is enabled and waits for those checks; consult the run for the submitted revision.
 Receipts preserve the checks performed at the original moment; opening one does not rerun
 verification against the later match state. Server pipeline timing excludes model rewrites,
 speech and browser delivery.

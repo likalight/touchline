@@ -61,6 +61,11 @@ An input journal and an output outbox solve different problems. Current code inc
 single-writer Blob outbox (`TOUCHLINE_OUTBOX_URL`) with durable pending/acknowledged records;
 it is at-least-once, has a finite ledger and requires idempotent downstream effects. Its new live
 deployment/recovery observation is pending; the prior cloud proof used the process-memory queue.
+Sequential-match metadata waits for processor completion and durable output acceptance before
+replacing the prior input history. Replacement is atomic on storage failure. Acknowledgement-only
+retry avoids repeated sends in the same process after a successful transmission, and aged pending
+messages/sender failure contribute to degraded health. Local regression tests cover these paths;
+live observation is still required for the deployed configuration.
 See [delivery scope](READINESS.md#durable-delivery-scope). Current application code adds
 bounded expensive public requests and a global model request/concurrency budget. These are
 process-local admission controls, not a currency spending cap or distributed rate limit.
