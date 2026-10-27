@@ -1,6 +1,15 @@
 {
   "schema": "touchline.narration-comparison/2",
-  "observed_at": "2026-10-27T15:44:20.567633+00:00",
+  "observed_at": "2026-10-27T17:20:01.855618+00:00",
+  "provenance": {
+    "generated_at": "2026-10-27T17:20:01.855618+00:00",
+    "git_head": "103713674de92570c613e9a07460d34d3c101c4a",
+    "working_tree_dirty": true,
+    "python_source_sha256": "efd6bd591f47613b0e8f1a364410be49267c173ab9e900dd60ef577985357394",
+    "simulator_sha256": "b7570cd0c19b2b462d85e23a113bcbb31b96d976da8e76ae4d16448967d27695",
+    "model_artifact_sha256": "e2f64797a51e6362240ea1846a907b97eb16bc0a2d9e82b0bf31077af5eed142",
+    "scope": "Hashes bind the files actually read, including uncommitted changes. A Git HEAD alone does not identify a dirty working tree."
+  },
   "status": "prepared_not_run",
   "cases": [
     {
@@ -243,7 +252,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Emeka Esposito, 7 seconds earlier",
+                "text": "In the preceding sequence, Emeka Esposito lost possession 7 seconds earlier",
                 "ev": [
                   "E00306",
                   "E00310"
@@ -267,14 +276,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00309"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "It began with a loss of possession by Emeka Esposito, 7 seconds earlier",
+                "text": "In the preceding sequence, Emeka Esposito lost possession 7 seconds earlier",
                 "ev": [
                   "E00306",
                   "E00310"
@@ -282,7 +291,7 @@
                 "k": "s.error"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.8 xG (+0.37)",
+                "text": "Model estimate: Taken five metres closer, 0.8 xG (+0.37)",
                 "ev": [
                   "E00309"
                 ],
@@ -342,7 +351,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Emeka Esposito, 7 seconds earlier",
+                "text": "In the preceding sequence, Emeka Esposito lost possession 7 seconds earlier",
                 "ev": [
                   "E00306",
                   "E00310"
@@ -354,7 +363,7 @@
             "lang": "en",
             "persona": "access",
             "source": "phrasebank",
-            "speech": "GOAL! Malik Rasmussen scores for Ironmoor Athletic. Malik Rasmussen, inside the penalty area, 7 m from goal. A chance like that goes in about 43 percent of the time. It began with a loss of possession by Emeka Esposito, 7 seconds earlier."
+            "speech": "GOAL! Malik Rasmussen scores for Ironmoor Athletic. Malik Rasmussen, inside the penalty area, 7 m from goal. A chance like that goes in about 43 percent of the time. In the preceding sequence, Emeka Esposito lost possession 7 seconds earlier."
           }
         },
         "checks": {
@@ -943,7 +952,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00378"
                 ],
@@ -958,7 +967,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.85 xG (+0.39)",
+                "text": "Model estimate: Taken five metres closer, 0.85 xG (+0.39)",
                 "ev": [
                   "E00378"
                 ],
@@ -1659,7 +1668,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: defender pressure (hurt)",
+                "text": "Biggest factor: defender pressure (lowered the model estimate versus baseline)",
                 "ev": [
                   "E00554"
                 ],
@@ -1674,7 +1683,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.16 xG (+0.09)",
+                "text": "Model estimate: Taken five metres closer, 0.16 xG (+0.09)",
                 "ev": [
                   "E00554"
                 ],
@@ -2340,7 +2349,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Hugo Reyes, 20 seconds earlier",
+                "text": "In the preceding sequence, Hugo Reyes lost possession 20 seconds earlier",
                 "ev": [
                   "E00646",
                   "E00653"
@@ -2364,14 +2373,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00652"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "It began with a loss of possession by Hugo Reyes, 20 seconds earlier",
+                "text": "In the preceding sequence, Hugo Reyes lost possession 20 seconds earlier",
                 "ev": [
                   "E00646",
                   "E00653"
@@ -2387,7 +2396,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.51 xG (+0.32)",
+                "text": "Model estimate: Taken five metres closer, 0.51 xG (+0.32)",
                 "ev": [
                   "E00652"
                 ],
@@ -2440,7 +2449,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Hugo Reyes, 20 seconds earlier",
+                "text": "In the preceding sequence, Hugo Reyes lost possession 20 seconds earlier",
                 "ev": [
                   "E00646",
                   "E00653"
@@ -2452,7 +2461,7 @@
             "lang": "en",
             "persona": "access",
             "source": "phrasebank",
-            "speech": "GOAL! Malik Rasmussen scores for Ironmoor Athletic. Malik Rasmussen, inside the penalty area, 11 m from goal. A chance like that goes in about 19 percent of the time. It began with a loss of possession by Hugo Reyes, 20 seconds earlier."
+            "speech": "GOAL! Malik Rasmussen scores for Ironmoor Athletic. Malik Rasmussen, inside the penalty area, 11 m from goal. A chance like that goes in about 19 percent of the time. In the preceding sequence, Hugo Reyes lost possession 20 seconds earlier."
           }
         },
         "checks": {
@@ -2729,7 +2738,7 @@
           {
             "k": "r.top_factor",
             "p": {
-              "factor": "@v.factor.under_pressure",
+              "factor": "@v.factor.no_under_pressure",
               "effect": "@v.effect.up"
             },
             "ev": [
@@ -2969,7 +2978,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: defender pressure (helped)",
+                "text": "Biggest factor: absence of defender pressure (raised the model estimate versus baseline)",
                 "ev": [
                   "E01194"
                 ],
@@ -2984,7 +2993,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.35 xG (+0.18)",
+                "text": "Model estimate: Taken five metres closer, 0.35 xG (+0.18)",
                 "ev": [
                   "E01194"
                 ],
@@ -3103,7 +3112,7 @@
             {
               "k": "r.top_factor",
               "p": {
-                "factor": "@v.factor.under_pressure",
+                "factor": "@v.factor.no_under_pressure",
                 "effect": "@v.effect.up"
               },
               "ev": [
@@ -3701,7 +3710,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Samir Yilmaz, 8 seconds earlier",
+                "text": "In the preceding sequence, Samir Yilmaz lost possession 8 seconds earlier",
                 "ev": [
                   "E00820",
                   "E00826"
@@ -3725,14 +3734,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00825"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "It began with a loss of possession by Samir Yilmaz, 8 seconds earlier",
+                "text": "In the preceding sequence, Samir Yilmaz lost possession 8 seconds earlier",
                 "ev": [
                   "E00820",
                   "E00826"
@@ -3740,7 +3749,7 @@
                 "k": "s.error"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.41 xG (+0.25)",
+                "text": "Model estimate: Taken five metres closer, 0.41 xG (+0.25)",
                 "ev": [
                   "E00825"
                 ],
@@ -3800,7 +3809,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Samir Yilmaz, 8 seconds earlier",
+                "text": "In the preceding sequence, Samir Yilmaz lost possession 8 seconds earlier",
                 "ev": [
                   "E00820",
                   "E00826"
@@ -3812,7 +3821,7 @@
             "lang": "en",
             "persona": "access",
             "source": "phrasebank",
-            "speech": "GOAL! Ibrahim Larsen scores for Ironmoor Athletic. Ibrahim Larsen, inside the penalty area, 11 m from goal. A chance like that goes in about 16 percent of the time. It began with a loss of possession by Samir Yilmaz, 8 seconds earlier."
+            "speech": "GOAL! Ibrahim Larsen scores for Ironmoor Athletic. Ibrahim Larsen, inside the penalty area, 11 m from goal. A chance like that goes in about 16 percent of the time. In the preceding sequence, Samir Yilmaz lost possession 8 seconds earlier."
           }
         },
         "checks": {
@@ -4382,7 +4391,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E01072"
                 ],
@@ -4397,7 +4406,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.46 xG (+0.27)",
+                "text": "Model estimate: Taken five metres closer, 0.46 xG (+0.27)",
                 "ev": [
                   "E01072"
                 ],
@@ -5067,7 +5076,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Lucas Lindqvist, 19 seconds earlier",
+                "text": "In the preceding sequence, Lucas Lindqvist lost possession 19 seconds earlier",
                 "ev": [
                   "E01388",
                   "E01395"
@@ -5091,14 +5100,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: it was a header (hurt)",
+                "text": "Biggest factor: it was a header (lowered the model estimate versus baseline)",
                 "ev": [
                   "E01394"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "It began with a loss of possession by Lucas Lindqvist, 19 seconds earlier",
+                "text": "In the preceding sequence, Lucas Lindqvist lost possession 19 seconds earlier",
                 "ev": [
                   "E01388",
                   "E01395"
@@ -5114,7 +5123,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.24 xG (+0.16)",
+                "text": "Model estimate: Taken five metres closer, 0.24 xG (+0.16)",
                 "ev": [
                   "E01394"
                 ],
@@ -5167,7 +5176,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Lucas Lindqvist, 19 seconds earlier",
+                "text": "In the preceding sequence, Lucas Lindqvist lost possession 19 seconds earlier",
                 "ev": [
                   "E01388",
                   "E01395"
@@ -5179,7 +5188,7 @@
             "lang": "en",
             "persona": "access",
             "source": "phrasebank",
-            "speech": "GOAL! Sven Lindqvist scores for Kestrel Bay FC. Sven Lindqvist, inside the penalty area, 11 m from goal. A chance like that goes in about 8 percent of the time. It began with a loss of possession by Lucas Lindqvist, 19 seconds earlier."
+            "speech": "GOAL! Sven Lindqvist scores for Kestrel Bay FC. Sven Lindqvist, inside the penalty area, 11 m from goal. A chance like that goes in about 8 percent of the time. In the preceding sequence, Lucas Lindqvist lost possession 19 seconds earlier."
           }
         },
         "checks": {
@@ -5766,7 +5775,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Taken five metres closer, it would have gone in 43% of the time",
+                "text": "Model estimate: Taken five metres closer, a 43% chance",
                 "ev": [
                   "E00168"
                 ],
@@ -5789,14 +5798,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00168"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.43 xG (+0.28)",
+                "text": "Model estimate: Taken five metres closer, 0.43 xG (+0.28)",
                 "ev": [
                   "E00168"
                 ],
@@ -6469,7 +6478,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00736"
                 ],
@@ -6484,7 +6493,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.71 xG (+0.41)",
+                "text": "Model estimate: Taken five metres closer, 0.71 xG (+0.41)",
                 "ev": [
                   "E00736"
                 ],
@@ -7205,7 +7214,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Sven Achterberg, 23 seconds earlier",
+                "text": "In the preceding sequence, Sven Achterberg lost possession 23 seconds earlier",
                 "ev": [
                   "E00744",
                   "E00756"
@@ -7229,14 +7238,14 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "Biggest factor: distance to goal (helped)",
+                "text": "Biggest factor: distance to goal (raised the model estimate versus baseline)",
                 "ev": [
                   "E00755"
                 ],
                 "k": "r.top_factor"
               },
               {
-                "text": "It began with a loss of possession by Sven Achterberg, 23 seconds earlier",
+                "text": "In the preceding sequence, Sven Achterberg lost possession 23 seconds earlier",
                 "ev": [
                   "E00744",
                   "E00756"
@@ -7252,7 +7261,7 @@
                 "k": "s.comeback"
               },
               {
-                "text": "What if? Taken five metres closer, it would have been 0.72 xG (+0.42)",
+                "text": "Model estimate: Taken five metres closer, 0.72 xG (+0.42)",
                 "ev": [
                   "E00755"
                 ],
@@ -7305,7 +7314,7 @@
                 "k": "r.chance_quality"
               },
               {
-                "text": "It began with a loss of possession by Sven Achterberg, 23 seconds earlier",
+                "text": "In the preceding sequence, Sven Achterberg lost possession 23 seconds earlier",
                 "ev": [
                   "E00744",
                   "E00756"
@@ -7317,7 +7326,7 @@
             "lang": "en",
             "persona": "access",
             "source": "phrasebank",
-            "speech": "GOAL! Kofi Ortega scores for Kestrel Bay FC. Kofi Ortega, inside the penalty area, 10 m from goal. A chance like that goes in about 30 percent of the time. It began with a loss of possession by Sven Achterberg, 23 seconds earlier."
+            "speech": "GOAL! Kofi Ortega scores for Kestrel Bay FC. Kofi Ortega, inside the penalty area, 10 m from goal. A chance like that goes in about 30 percent of the time. In the preceding sequence, Sven Achterberg lost possession 23 seconds earlier."
           }
         },
         "checks": {
@@ -7558,7 +7567,7 @@
       }
     }
   ],
-  "dataset_sha256": "bb5b8bdac8f22c7c2ae6c0d1fd2859301382e1b26fc5e9cc794e115d982644f1",
+  "dataset_sha256": "7c602fd0bb12204d915840a18a69d9c78f58811b98ad832f7c9d95f0611046f5",
   "summary": {
     "cases": 12,
     "attempted": 0,

@@ -36,6 +36,7 @@ os.environ.setdefault("TOUCHLINE_LLM", "off")
 from touchline.agents.narrator import PERSONAS  # noqa: E402
 from touchline.i18n import BANKS  # noqa: E402
 from touchline.runtime import MatchSession, percentile  # noqa: E402
+from scripts.evidence_provenance import provenance  # noqa: E402
 
 GATES = {
     "verified_rate": 1.0, "goals_explained": 1.0, "template_leaks": 0, "citation_errors": 0,
@@ -123,6 +124,9 @@ def main() -> int:
     ap.add_argument("--foundry", action="store_true")
     ap.add_argument("--json-out", type=Path, help="Save measured metrics and gates as a machine-readable evidence artifact")
     args = ap.parse_args()
+    if not 1 <= args.matches <= 1000 or not 0 <= args.chaos <= 1:
+        ap.error('--matches must be 1..1000 and --chaos must be 0..1')
+    run_provenance = provenance()
     t0 = time.time()
     n_ins, verified, goals, goals_explained, leaks, cite_err = 0, 0, 0, 0, 0, 0
     kinds: Counter = Counter()
@@ -132,7 +136,10 @@ def main() -> int:
     for i in range(args.matches):
         seed = 5000 + i
         s = asyncio.run(run(seed, args.chaos if i % 2 else 0.0))
-        exactly.append(int(s.guard.stats["accepted"] == len(s.events)))
+        observed = list(s.state.events.values())
+        exactly.append(int(s.guard.stats["accepted"] == len(s.events)
+                           and [e.id for e in observed] == [e.id for e in s.events]
+                           and all(a.seq < b.seq for a, b in zip(observed, observed[1:]))))
         goals += sum(e.type == "goal" for e in s.events)
         goals_explained += sum(1 for x in s.insights if x["kind"] == "goal")
         per_match.append(len(s.insights))
@@ -181,7 +188,7 @@ def main() -> int:
                     digest.update(path.relative_to(ROOT).as_posix().encode())
                     digest.update(path.read_bytes().replace(b"\r\n", b"\n"))
         report = {"schema": "touchline.evaluation/1", "generated_at": datetime.now(timezone.utc).isoformat(),
-                  "source_sha256": digest.hexdigest(), "mode": "deterministic synthetic evaluation",
+                  "source_sha256": digest.hexdigest(), "provenance": run_provenance, "mode": "deterministic synthetic evaluation",
                   "seeds": list(range(5000, 5000 + args.matches)), "metrics": m, "gates": GATES,
                   "passed": not fails, "failures": fails,
                   "scope": "Local server pipeline; excludes cloud models, network delivery, speech and human usability."}
@@ -192,6 +199,10 @@ def main() -> int:
 
 `python scripts/evaluate.py --matches {args.matches} --gate` on {args.matches} unseen synthetic matches
 (seeds 5000+, half of them through a {int(args.chaos * 100)}% faulty feed), deterministic path. The CI workflow runs it on every push.
+
+Observed {run_provenance['generated_at']}. Git HEAD `{run_provenance['git_head']}`; dirty working tree: `{run_provenance['working_tree_dirty']}`.
+Simulator SHA-256: `{run_provenance['simulator_sha256']}`. Frozen model artifact SHA-256: `{run_provenance['model_artifact_sha256']}`.
+This reruns the pipeline with the frozen models; it does not refit or independently recalibrate them. A verified rate measures the implemented checks, not universal semantic correctness.
 
 | Metric | Result | Gate |
 |---|---|---|

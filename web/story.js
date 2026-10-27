@@ -11,6 +11,9 @@
       || lines.find(line => line.k?.startsWith("s."));
   };
   const orderedEvidence = receipt => [...(receipt.evidence || [])].sort((a, b) => a.t - b.t || a.event_id.localeCompare(b.event_id));
+  const provenance = render => render?.preview || render?.source?.startsWith("llm:")
+    ? {preview:true,label:"Model-generated preview",scope:render.verification_scope || "Source checks do not independently verify the meaning of generated wording."}
+    : {preview:false,label:"Source-rendered explanation",scope:""};
   const point = (x, y) => Number.isFinite(x) && Number.isFinite(y) && x >= 0 && x <= 105 && y >= 0 && y <= 68
     ? [Number(x.toFixed(2)), Number(y.toFixed(2))] : null;
   function geometry(event) {
@@ -26,9 +29,18 @@
       <rect width="105" height="68" fill="url(#storyGrid)"/>
       <g fill="none" stroke="#709584" stroke-width=".3"><rect width="105" height="68"/><path d="M52.5 0V68M0 13.84H16.5V54.16H0M105 13.84H88.5V54.16H105M0 24.84H5.5V43.16H0M105 24.84H99.5V43.16H105"/><circle cx="52.5" cy="34" r="9.15"/><circle cx="11" cy="34" r=".5"/><circle cx="94" cy="34" r=".5"/></g>
       ${movement ? `<path d="M${start.join(" ")}L${end.join(" ")}" fill="none" stroke="currentColor" stroke-width=".7" stroke-dasharray="1.5 1" marker-end="url(#storyArrow)"/>` : ""}
-      ${start ? `<circle cx="${start[0]}" cy="${start[1]}" r="3" fill="none" stroke="currentColor" stroke-width=".4"/><circle cx="${start[0]}" cy="${start[1]}" r="1.1" fill="currentColor"/>` : ""}
-      ${movement ? `<circle cx="${end[0]}" cy="${end[1]}" r="1.2" fill="#eef0e8"/>` : ""}
+      ${start ? `<circle cx="${start[0]}" cy="${start[1]}" r="4.4" fill="none" stroke="currentColor" stroke-width=".35"/><circle cx="${start[0]}" cy="${start[1]}" r="2.4" fill="currentColor"/><text x="${start[0]}" y="${start[1] + .85}" text-anchor="middle" class="map-point-number">1</text>` : ""}
+      ${movement ? `<circle cx="${end[0]}" cy="${end[1]}" r="2.4" fill="#eef0e8"/><text x="${end[0]}" y="${end[1] + .85}" text-anchor="middle" class="map-point-number">2</text>` : ""}
       </svg>`;
+  }
+  function eventSummary(event) {
+    const f = event.facts || {}, facts = [];
+    if (Number.isFinite(f.xg)) facts.push([f.xg.toFixed(2), "xG · model estimate"]);
+    if (Number.isFinite(f.distance_m)) facts.push([`${f.distance_m.toFixed(1)} m`, "Recorded distance"]);
+    if (Number.isFinite(f.pass_completion_prob)) facts.push([`${f.pass_completion_prob}%`, "Completion · model estimate"]);
+    if (Number.isFinite(f.shot_speed_kmh)) facts.push([`${f.shot_speed_kmh.toFixed(1)} km/h`, "Recorded shot speed"]);
+    const {start,end} = geometry(event), movement = start && end && (start[0] !== end[0] || start[1] !== end[1]);
+    return `<div class="source-fact-strip"><div class="source-action"><span>${escape(f.type || "Event")}${f.outcome ? ` · ${escape(f.outcome)}` : ""}</span><strong>${escape(f.player || "Match event")}</strong>${f.target ? `<small>To ${escape(f.target)}</small>` : ""}</div>${facts.slice(0,2).map(([value,label])=>`<div><strong>${escape(value)}</strong><small>${escape(label)}</small></div>`).join("")}</div><div class="map-point-legend">${start ? '<span><b>1</b> Recorded start</span>' : '<span>Position unavailable</span>'}${movement ? '<span><b>2</b> Recorded endpoint</span>' : ""}</div>`;
   }
 
   function comparison(data, teams) {
@@ -41,6 +53,37 @@
 
   function create({ loadReceipt, openReceipt, openEvent, getPrefs, setPersona, loadWhatIf, getTeams, loadChallenge }) {
     const $ = selector => document.querySelector(selector);
+    // One chapter workspace: its recorded event sits beside its explanation.
+    // The animated match remains available, with a separate clock and scope.
+    const pitchWrap = $(".pitch-wrap");
+    const replay = document.createElement("details");
+    replay.id = "storyReplay"; replay.className = "story-replay";
+    const replaySummary = document.createElement("summary");
+    replaySummary.textContent = "Watch the moving match";
+    replay.append(replaySummary);
+    const replayNote = document.createElement("p");
+    replayNote.className = "story-scope";
+    replayNote.textContent = "This camera follows the replay clock. The evidence above stays on your selected chapter.";
+    replay.append(replayNote);
+    [$(".view-bar"), $("#pitchBox"), $(".under")].forEach(element => replay.append(element));
+    const evidenceSection = $("#storyEvidence"), alternate = $(".story-alternate");
+    const waiting = document.createElement("div"); waiting.id = "storyBoardEmpty"; waiting.className = "story-board-empty";
+    waiting.innerHTML = '<span class="section-label">The evidence board</span><h2>The first turning point is on its way.</h2><p>Recorded events appear here as this replay reaches each chapter. No future match data is shown.</p>';
+    pitchWrap.append(waiting, evidenceSection, replay);
+    const lab = document.createElement("section");
+    lab.className = "story-lab"; lab.setAttribute("aria-label", "Explore this match");
+    const tool = (id, title, hint, content) => {
+      const details = document.createElement("details"); details.id = id;
+      const summary = document.createElement("summary");
+      const label = document.createElement("strong"), note = document.createElement("span");
+      label.textContent = title; note.textContent = hint; summary.append(label, note);
+      details.append(summary, content); lab.append(details); return details;
+    };
+    tool("storyAlternateTool", "Explore another ending", "Compare with and without this goal", alternate);
+    tool("storyCheckerTool", "Challenge the evidence", "Try an incorrect estimate against the source", $("#checkerProof"));
+    tool("storyAskTool", "Ask the analyst", "A question about the match so far", $("#workspace"));
+    $("#playerSpotlight").after(lab);
+    replay.addEventListener("toggle", () => { if (replay.open) window.dispatchEvent(new Event("resize")); });
     let chapters = defaults, seen = new Map(), selected = -1, following = true;
     let receipt = null, currentEvent = null, ticket = 0, alternateTicket = 0, cache = new Map();
     let challengeTicket = 0, challengeResult = null;
@@ -63,6 +106,7 @@
       resetChallenge(); $("#checkerProof").hidden = true;
       rail.innerHTML = chapters.map((chapter, index) => `<button disabled data-chapter="${index}" aria-pressed="false"><span><strong>${escape(chapter.title)}</strong><small>Not yet played</small></span><span class="chapter-arrow" aria-hidden="true">↗</span></button>`).join("");
       $("#storyContent").hidden = true; $("#storyEmpty").hidden = false; $("#storyEvidence").hidden = true;
+      waiting.hidden = false;
       $("#storyChapter").textContent = "Match memory"; $("#storyMinute").textContent = "Ready";
       $("#storyTitle").textContent = "A goal is a moment. A comeback is a story.";
     }
@@ -88,7 +132,8 @@
         return `<button class="chip" data-memory-event="${escape(id)}" ${receipt ? "" : "disabled"} title="${escape(id)}">${escape(label)} ↗</button>`;
       }).join("");
       $("#storyProof").textContent = receipt ? `${receipt.verification.checks} checks across ${receipt.evidence.length} cited events.` : "";
-      $("#storyScope").textContent = `${ins.verification?.status === "verified" ? "Checked against synthetic data" : "Check not confirmed"}. Memory uses the Analyst's ${analyst?.lang || "en"} explanation. Chapter selection does not rewind the broadcast.`;
+      const origin = provenance(render);
+      $("#storyScope").textContent = `${origin.preview ? `${origin.label}. ${origin.scope} ` : ""}${ins.verification?.status === "verified" ? "Underlying source checks passed" : "Check not confirmed"} · synthetic data. Selected chapter: ${ins.minute}′. The moving match uses its own replay clock.`;
       $("#storyReceipt").disabled = false;
       railState();
     }
@@ -98,8 +143,9 @@
       currentEvent = event;
       const f = event.facts;
       $("#storyEventTitle").textContent = `${f.player || "Match"} · ${f.type}${f.outcome ? ` / ${f.outcome}` : ""}`;
-      $("#storyEventTime").textContent = `${f.minute}′ · ${event.event_id}`;
-      $("#storyMap").innerHTML = pitch(event);
+      $("#storyEventTime").textContent = `${f.minute}′ · Recorded event`;
+      $("#storyEventTime").title = event.event_id;
+      $("#storyMap").innerHTML = eventSummary(event) + pitch(event);
       const { start, end } = geometry(event);
       $("#storyMapNote").textContent = !start ? "No recorded position for this event. No location has been inferred."
         : end ? "Recorded start → endpoint, in pitch metres. The straight line connects those samples; it is not a tracked trajectory."
@@ -110,6 +156,7 @@
     function evidence() {
       if (!receipt) return;
       const events = orderedEvidence(receipt);
+      waiting.hidden = true;
       $("#storyEvidence").hidden = false;
       $("#storyEvidenceCount").textContent = `${events.length} sources · ${receipt.minute}′ goal`;
       $("#storyEvents").innerHTML = events.map(event => `<li><button data-story-event="${escape(event.event_id)}" aria-pressed="false"><span>${event.facts.minute}′</span><span><strong>${escape(event.facts.player || "Match")}</strong><small>${escape(event.facts.type)}${event.facts.target ? ` → ${escape(event.facts.target)}` : ""}</small></span><span class="source-id">${escape(event.event_id)}</span></button></li>`).join("");
@@ -225,7 +272,7 @@
       },
     };
   }
-  const api = { create, chapterFor, memoryLine, orderedEvidence, geometry, pitch, comparison };
+  const api = { create, chapterFor, memoryLine, orderedEvidence, geometry, pitch, comparison, eventSummary, provenance };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else global.TouchlineStory = api;
 })(globalThis);

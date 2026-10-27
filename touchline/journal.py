@@ -15,8 +15,10 @@ class InputJournal:
         self.document = {"schema": "touchline.journal/1", "source": source,
                          "meta": None, "events": [], "offset": None}
         self.dirty = 0
+        self.completed_match_id = None
 
     async def restore(self) -> dict:
+        self.completed_match_id = None
         saved = await self.store.read()
         if saved is not None:
             if saved.get("schema") != "touchline.journal/1" or saved.get("source") != self.source:
@@ -28,8 +30,15 @@ class InputJournal:
 
     async def append(self, payload: dict, offset: str):
         if "meta" in payload:
-            self.document["meta"] = payload["meta"]
-            self.document["events"] = []
+            prior = self.document["meta"]
+            if prior and self.completed_match_id != prior["match_id"]:
+                raise ValueError("Previous match processing is not acknowledged; refusing to discard replay history")
+            # Metadata replaces the only retained history. Commit the replacement
+            # atomically, and leave both in-memory and stored history intact on failure.
+            updated = {**self.document, "meta": copy.deepcopy(payload["meta"]), "events": [], "offset": offset}
+            await self.store.write(updated)
+            self.document, self.dirty, self.completed_match_id = updated, 0, None
+            return
         else:
             meta = self.document["meta"]
             if meta is None:
@@ -43,6 +52,16 @@ class InputJournal:
         self.dirty += 1
         if self.dirty >= self.batch_size or "meta" in payload or payload.get("type") == "full_time":
             await self.flush()
+
+    def acknowledge_match(self, match_id: str):
+        """Called only after processing and all durable output acceptance finish.
+
+        This signal is deliberately not restored: after a restart, replay and the
+        outbox ledger establish completion again before old history can be retired.
+        """
+        if not self.document["meta"] or self.document["meta"]["match_id"] != match_id:
+            raise ValueError("Cannot acknowledge a different input match")
+        self.completed_match_id = match_id
 
     async def flush(self):
         if self.dirty:

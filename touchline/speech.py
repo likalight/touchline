@@ -42,6 +42,8 @@ class Speech:
         self.cache: OrderedDict[tuple[str, str], bytes] = OrderedDict()
         self.calls = 0
         self.errors = 0
+        from touchline.limits import WorkBudget
+        self.budget = WorkBudget(int(os.getenv("TOUCHLINE_SPEECH_REQUESTS_PER_10M", "120")), 600, 3)
 
     @property
     def available(self) -> bool:
@@ -49,7 +51,7 @@ class Speech:
 
     def status(self) -> dict:
         return {"available": self.available, "mode": "key" if self.key else "entra" if self.resource_id else "browser",
-                "calls": self.calls, "errors": self.errors}
+                "calls": self.calls, "errors": self.errors, "request_budget": self.budget.status()}
 
     def _auth(self) -> dict:
         if self.key:
@@ -71,6 +73,19 @@ class Speech:
                 f'<voice name="{voice}"><prosody rate="{rate}">{escape(text)}</prosody></voice></speak>')
 
     async def synthesize(self, text: str, lang: str = "en", who: str = "lead") -> Optional[bytes]:
+        if not self.available or not text.strip() or len(text) > 1000:
+            return None
+        cached = self.cache.get((lang, who, text))
+        if cached is not None:
+            return cached
+        if not self.budget.acquire():
+            return None
+        try:
+            return await self._synthesize(text, lang, who)
+        finally:
+            self.budget.release()
+
+    async def _synthesize(self, text: str, lang: str = "en", who: str = "lead") -> Optional[bytes]:
         if not self.available or not text.strip():
             return None
         key = (lang, who, text)

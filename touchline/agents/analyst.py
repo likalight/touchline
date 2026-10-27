@@ -100,7 +100,12 @@ class TacticalAnalyst:
         contrib = self.m.xg.explain(en.xg_features, self.m.shot_baseline)
         if contrib:
             c = contrib[0]
-            frames.append(F("r.top_factor", [ev.id], ["analyst", "studio"], factor=f"@v.factor.{c['feature']}",
+            feature = c["feature"]
+            # A negative model coefficient does not mean the feature was present.
+            # Describe absent binary inputs explicitly before naming their effect.
+            if feature in {"under_pressure", "header", "assisted"} and en.xg_features.get(feature) == 0:
+                feature = f"no_{feature}"
+            frames.append(F("r.top_factor", [ev.id], ["analyst", "studio"], factor=f"@v.factor.{feature}",
                             effect="@v.effect.up" if c["logodds"] > 0 else "@v.effect.down"))
         cf = self.m.counterfactual_shot(en.xg_features)
         if cf:

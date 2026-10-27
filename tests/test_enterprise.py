@@ -18,6 +18,8 @@ def client(monkeypatch, mode):
 
 
 def test_entra_mode_requires_producer_role(monkeypatch):
+    # This unit test simulates a trusted gateway, not a deployed identity provider.
+    monkeypatch.setenv("TOUCHLINE_TRUST_AUTH_PROXY", "on")
     with client(monkeypatch, "entra") as c:
         assert c.post("/api/matches/demo/control", json={"action": "pause"}).status_code == 401
         assert c.post("/api/matches/demo/control", json={"action": "pause"}, headers=hdr("Fan", [])).status_code == 403

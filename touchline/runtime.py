@@ -137,6 +137,8 @@ class MatchSession:
         snap["players"] = {pid: {"rating": self.state.player_rating(pid), "top_speed_kmh": round(self.state.pl[pid]["top_speed_kmh"], 1),
                                  "xg": round(self.state.pl[pid]["xg"], 2), "xt": round(self.state.pl[pid]["xt_added"], 3),
                                  "passes": int(self.state.pl[pid]["passes"]), "completed": int(self.state.pl[pid]["completed"]),
+                                 "goals": int(self.state.pl[pid]["goals"]), "shots": int(self.state.pl[pid]["shots"]),
+                                 "saves": int(self.state.pl[pid]["saves"]), "assists": int(self.state.pl[pid]["assists"]),
                                  "distance_km": round(self.state.pl[pid]["distance_m"] / 1000, 2)}
                            for pid in self.state.players}
         snap["ops"] = self.ops()
@@ -196,7 +198,7 @@ class MatchSession:
             await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
             self.done = True
             if self.state.status == "full_time":
-                self._emit_full_time()
+                await self._emit_full_time()
             self.publish({"type": "done"})
             return
         for payload in self.injector.apply(self.events):
@@ -206,14 +208,14 @@ class MatchSession:
             await self._play(ev)
         await asyncio.gather(*list(self.pending_tasks), return_exceptions=True)
         self.done = True
-        self._emit_full_time()
+        await self._emit_full_time()
         self.publish({"type": "state", **self.snapshot()})
         self.publish({"type": "done"})
 
-    def _emit_full_time(self) -> None:
-        if not self.broadcast_outputs:
+    async def _emit_full_time(self) -> None:
+        if not (self.broadcast_outputs or (self.feed is not None and outbound.durable)):
             return
-        outbound.emit({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
+        await outbound.publish({"type": "full_time", "session": self.id, "match_id": self.meta.match_id,
                        "score": dict(self.state.score), "insights": len(self.insights),
                        "package": self.package()})
 
@@ -320,12 +322,26 @@ class MatchSession:
         self.latencies.append(ins["latency_ms"])
         # Retain the actual handoffs with the insight, even after the rolling trace expires.
         ins["agent_spans"] = [dict(span) for span in self.trace.spans if span["ref"] == ins["id"]]
+        # Participant IDs come only from the bounded cited record, never future events.
+        participants = {}
+        for eid in ins.get("event_ids", []):
+            ev = self.state.events.get(eid)
+            if ev is None or ev.t > ins["t"]:
+                continue
+            for pid, role in ((ev.player_id, "scorer" if ev.type == "goal" else
+                               "goalkeeper" if ev.type == "save" else
+                               "possession loss" if ev.type == "pass" and ev.outcome != "complete" else "involved"),
+                              (ev.target_id, "recipient")):
+                if pid in self.state.players:
+                    entry = participants.setdefault((pid, role), {"player_id": pid, "role": role, "event_ids": []})
+                    entry["event_ids"].append(eid)
+        ins["participants"] = list(participants.values())
         self.insights.append(ins)
         if ins["kind"] in ("half_time", "full_time"):
             self.recaps.clear()
         self.publish({"type": "insight", "insight": ins, "replayed": jumping})
-        if self.broadcast_outputs and ins.get("verification", {}).get("status") == "verified":
-            outbound.emit(insight_message(self.id, self.meta.match_id, ins))
+        if (self.broadcast_outputs or (self.feed is not None and outbound.durable)) and ins.get("verification", {}).get("status") == "verified":
+            await outbound.publish(insight_message(self.id, self.meta.match_id, ins))
         if self.drills:
             self._drill_tick(ins)
 
@@ -439,9 +455,17 @@ class MatchSession:
         return cue
 
     def get_recap(self, persona: str, lang: str) -> dict:
-        key = f"{self.state.minute}:{persona}:{lang}"
+        key = f"{len(self.state.events)}:{persona}:{lang}"
         if key not in self.recaps:
-            self.recaps[key] = self.recap.render(persona, lang)
+            from touchline.recap_validation import verify_recap
+            frames = self.recap.frames()
+            verdict = verify_recap(self.state, frames, self.storyline)
+            if verdict["status"] != "verified":
+                return {"title": "Match recap unavailable", "lines": [], "lang": "en", "persona": persona,
+                        "verification": verdict, "source": "withheld", "data": {"score": dict(self.state.score)}}
+            if len(self.recaps) >= 128:
+                self.recaps.clear()
+            self.recaps[key] = {**self.recap.render(persona, lang, frames), "verification": verdict}
         return self.recaps[key]
 
     def audit(self) -> dict:

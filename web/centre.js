@@ -25,7 +25,8 @@ window.TouchlineCentre = {
       $("#centreReceipt").dataset.receipt = insight.id;
       $("#centreLatest").hidden = following;
       const perspective = {casual:"Fan",analyst:"Analyst",studio:"Studio",access:"Audio description"}[prefs.persona] || prefs.persona;
-      $("#centreSource").textContent = `${perspective} · ${render?.lang || prefs.lang}. ${insight.verification?.status === "verified" ? "Checked against synthetic match data." : "Verification not confirmed."}${memory ? ` Memory uses Analyst ${analyst?.lang || "en"}.` : ""} Selecting a goal does not rewind the pitch.`;
+      const origin = window.TouchlineStory.provenance(render);
+      $("#centreSource").textContent = `${perspective} · ${render?.lang || prefs.lang}. ${origin.preview ? `${origin.label}. ${origin.scope} ` : ""}${insight.verification?.status === "verified" ? "Underlying source checks passed." : "Verification not confirmed."}${memory ? ` Memory uses Analyst ${analyst?.lang || "en"}.` : ""} Selecting a goal does not rewind the pitch.`;
       for (const button of rail.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.insight === insight.id));
     }
     function reset() {

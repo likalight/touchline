@@ -1,14 +1,30 @@
-# Deployment evidence runbook
+# Deployment proof and runbook
 
-Status: **functional cloud chain verified on 28 October 2026 (Singapore time)**.
+## Observed cloud run — 28 October 2026 Singapore time
 
-- [Live Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge): public readiness passed.
-- [Request-level evidence](evidence/cloud-chain.json): hosted Foundry analyst, `gpt-4.1-mini`, completed without fallback and used a scoreboard tool. The numeric/citation checker does not establish semantic entailment.
-- Corrected agent versions: analyst **2**, narrator **2**, pinned in the deployment.
-- Functions indexed after changing the Event Hubs batch annotation to `typing.List[EventHubEvent]` for the deployed Python 3.11 worker.
-- Event Hubs received seed 87 (1,917 events). Functions produced score 3–2, recaps and social-card paths in Blob Storage. The demo and live feed can produce separate packages for the same synthetic match ID.
-- The completed live session restored score 3–2 after an application configuration restart. This observation alone does not prove mid-match crash recovery or an exactly-once outbound outbox.
-- Original deployed container: CI commit `7914b673e8ddb56b005e2989a75a5762e3b967f9`, digest `sha256:ebd23a1d90a89452eb101395261c8ff4756d0566b14726fea87ef184a3aa4454`.
+**New implementation awaiting its own cloud proof:** the optional Blob outbox now persists
+pending/acknowledged output IDs. The observed run below predates it. Enable a separate Blob URL
+via `TOUCHLINE_OUTBOX_URL`, then verify pending restoration, successful send/ack and duplicate-safe
+consumer behaviour. See [single-writer limits](READINESS.md#durable-delivery-scope).
+
+These observations belong to source `952d7018043ab04ff7d31fbfc007366dc8c92a22`, merged as
+`103713674de92570c613e9a07460d34d3c101c4a`, and container digest
+`sha256:9dd97e41963e2fae7ba5da308774fffdd38f13829c96b388da65d3e3ea6b86fc`.
+They are prior-build evidence, not automatic proof for later changes.
+
+- [Mid-match recovery JSON](evidence/midmatch-recovery-20261028.json): restarted at minute 75
+  while seed 91 continued; restored the prefix, received later events and finished with exactly
+  the 1,870 input events in the seeded reference, score 3–1. No input duplicates or skipped gaps.
+- [Hosted request JSON](evidence/hosted-request-20261028.json): version-2 analyst with
+  `gpt-4.1-mini`, hosted execution, tool evidence, no fallback, about 5.8 seconds model duration.
+- [Downstream observation](evidence/downstream-20261028.json): Functions produced synthetic
+  packages and social-card paths. Earlier seed-87 [chain proof](evidence/cloud-chain.json) remains
+  separately dated.
+- [Public Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge).
+
+Scope: one real application restart, one writer, one active input match. This does not prove
+exactly-once outbound delivery, multi-match scale, an SLA, universal answer correctness or
+user benefit. The hosted answer's old grounding scope was numeric/citation checks only.
 
 ### Deployment lessons
 
@@ -95,7 +111,10 @@ re-emission but cannot guarantee delivery of a previous process's unconfirmed ou
 - Repeat a full-time input; the canonical package count must not increase for identical data.
 - A mismatched or incomplete legacy package must fail instead of storing the next match's data.
 
-Container Apps must be the trusted authentication boundary. Do not expose the raw app port and
+An independently configured supported identity gateway must be the trusted authentication boundary.
+Current code requires `TOUCHLINE_TRUST_AUTH_PROXY=on` before reading principal headers, in addition
+to `TOUCHLINE_AUTH=entra`. Do not set that flag without a gateway that removes spoofed headers
+and prevents direct access. Do not expose the raw app port and
 trust client-supplied principal headers on the public internet.
 
 ## 6. Preserve the submission evidence

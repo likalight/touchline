@@ -54,10 +54,12 @@ def build(sessions: Callable[[], dict]) -> FastMCP:
         s = get(session)
         out = []
         for i in [x for x in s.insights if not kind or x["kind"] == kind][-max(1, min(limit, 30)):]:
-            r = ((i.get("renders") or {}).get("analyst") or {})
-            r = r.get(lang) or r.get("en") or {}
+            from touchline.i18n import BANKS
+            actual_lang = lang if lang in BANKS else "en"
+            r = s.narrator.render(i, "analyst", actual_lang)
             out.append({"minute": i["minute"], "kind": i["kind"], "title": r.get("title"),
                         "why": [l["text"] for l in r.get("lines", [])], "evidence": i["event_ids"],
+                        "language": actual_lang, "source": "checked_phrase_bank",
                         "verified": (i.get("verification") or {}).get("status") == "verified"})
         return json.dumps(out, ensure_ascii=False)
 

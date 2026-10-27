@@ -1,0 +1,114 @@
+{
+  "schema": "touchline.frozen-model-evaluation/1",
+  "provenance": {
+    "generated_at": "2026-10-27T17:08:40.270905+00:00",
+    "git_head": "103713674de92570c613e9a07460d34d3c101c4a",
+    "working_tree_dirty": true,
+    "python_source_sha256": "7a6e2cdc376b10bc5512ebe385727213f486a80c933abcc91f03e8ea6d5ba296",
+    "simulator_sha256": "b7570cd0c19b2b462d85e23a113bcbb31b96d976da8e76ae4d16448967d27695",
+    "model_artifact_sha256": "e2f64797a51e6362240ea1846a907b97eb16bc0a2d9e82b0bf31077af5eed142",
+    "scope": "Hashes bind the files actually read, including uncommitted changes. A Git HEAD alone does not identify a dirty working tree."
+  },
+  "seeds": [
+    7000,
+    7001,
+    7002,
+    7003,
+    7004,
+    7005,
+    7006,
+    7007,
+    7008,
+    7009,
+    7010,
+    7011,
+    7012,
+    7013,
+    7014,
+    7015,
+    7016,
+    7017,
+    7018,
+    7019,
+    7020,
+    7021,
+    7022,
+    7023,
+    7024,
+    7025,
+    7026,
+    7027,
+    7028,
+    7029
+  ],
+  "models": {
+    "xg": {
+      "n": 684,
+      "auc": 0.7251759772352853,
+      "brier": 0.09219140739265519,
+      "base_rate": 0.11257309941520467,
+      "calibration_quintiles": [
+        {
+          "n": 136,
+          "predicted": 0.026430634162180344,
+          "observed": 0.022058823529411766
+        },
+        {
+          "n": 137,
+          "predicted": 0.06650639649705158,
+          "observed": 0.08029197080291971
+        },
+        {
+          "n": 137,
+          "predicted": 0.10241367413400836,
+          "observed": 0.072992700729927
+        },
+        {
+          "n": 137,
+          "predicted": 0.15970868844568212,
+          "observed": 0.12408759124087591
+        },
+        {
+          "n": 137,
+          "predicted": 0.2848771867592038,
+          "observed": 0.26277372262773724
+        }
+      ]
+    },
+    "pass": {
+      "n": 33862,
+      "auc": 0.7371293802753159,
+      "brier": 0.12718083181123918,
+      "base_rate": 0.8216880278778572,
+      "calibration_quintiles": [
+        {
+          "n": 6772,
+          "predicted": 0.5947316948171607,
+          "observed": 0.5825457767277024
+        },
+        {
+          "n": 6772,
+          "predicted": 0.7968049504568754,
+          "observed": 0.8064087418783225
+        },
+        {
+          "n": 6773,
+          "predicted": 0.8638999878834468,
+          "observed": 0.868891185589842
+        },
+        {
+          "n": 6772,
+          "predicted": 0.9079944016342297,
+          "observed": 0.9121382161842883
+        },
+        {
+          "n": 6773,
+          "predicted": 0.9435274209766089,
+          "observed": 0.938432009449284
+        }
+      ]
+    }
+  },
+  "parameters_changed": false,
+  "scope": "Frozen logistic models on corrected synthetic generator; no retraining. Fresh seeds are not the historical holdout, so metric differences do not isolate simulator drift. xT, win probability and real-feed accuracy are not evaluated here."
+}

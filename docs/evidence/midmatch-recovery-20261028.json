@@ -1,0 +1,42 @@
+{
+  "schema": "touchline.final-deployment-proof/1",
+  "observed_at": "2026-10-27T16:22:23.950140+00:00",
+  "passed": true,
+  "checks": {
+    "final_event_stream_equals_seeded_reference": true,
+    "before_prefix_restored": true,
+    "restarted_while_match_in_progress": true,
+    "continued_after_restart": true,
+    "journal_contains_same_match": true,
+    "ready": true,
+    "ingest_no_duplicates": true,
+    "ingest_no_skipped_gaps": true
+  },
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "source_commit": "952d7018043ab04ff7d31fbfc007366dc8c92a22",
+  "merged_commit": "103713674de92570c613e9a07460d34d3c101c4a",
+  "container_image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:9dd97e41963e2fae7ba5da308774fffdd38f13829c96b388da65d3e3ea6b86fc",
+  "restart": {
+    "match_id": "SYN-00091",
+    "before_minute": 75,
+    "after_minute": 91,
+    "before_count": 1424,
+    "after_count": 1782,
+    "journal_offset": "4295371144",
+    "journal_event_count": 1440,
+    "final_event_count": 1870,
+    "reference_event_count": 1870,
+    "final_score": {
+      "home": 3,
+      "away": 1
+    },
+    "ingest": {
+      "accepted": 1870,
+      "duplicates": 0,
+      "quarantined": 0,
+      "reordered": 0,
+      "gaps_skipped": 0
+    }
+  },
+  "scope": "One real Azure mid-match application update; complete synthetic input event stream equals its seeded reference. Single writer only; no claim of exactly-once outbound delivery or an availability SLA."
+}

@@ -62,7 +62,8 @@ def test_prompt_agent_definition_carries_tools_and_safety_policy():
     a = Agent(c, definitions()["touchline-analyst"]["instructions"], name="touchline-analyst", tools=tool_stubs())
     policy = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/ai/raiPolicies/Microsoft.DefaultV2"
     j = strict_tool_schemas(to_prompt_agent(a, rai_config=RaiConfig(rai_policy_name=policy))).as_dict()
-    assert j["model"] == "gpt-4.1-mini" and len(j["tools"]) == 6 and j["rai_config"]["rai_policy_name"] == policy
+    assert j["model"] == "gpt-4.1-mini" and len(j["tools"]) == 7 and j["rai_config"]["rai_policy_name"] == policy
+    assert "get_source_scope" in {t["name"] for t in j["tools"]}
     for tool in j["tools"]:
         params = tool["parameters"]
         assert tool["strict"] and params["additionalProperties"] is False

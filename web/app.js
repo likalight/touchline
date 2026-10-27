@@ -59,6 +59,7 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
 async function boot() {
   S.playerSpotlight = TouchlinePlayer.create({getState: () => S, getRender: rendersFor, openReceipt,
     onFollow: pid => {
+      if (S.judge && $("#storyReplay")) $("#storyReplay").open = true;
       S.prefs.focus = pid; S.prefs.view = "player"; savePrefs(); applyPrefs(); applyView();
       $("#pitchBox").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center"});
     }
@@ -174,7 +175,7 @@ function onHello(h) {
     $("#judgePanel").removeAttribute("role");
     $(".skip-link").href = "#mainStage";
     S.story.reset(h.judge?.moments);
-    loadPitch3D();
+    if ($("#storyReplay")?.open) loadPitch3D();
   }
   S.meta = h.match; S.llm = h.llm || S.llm;
   S.players = {};
@@ -357,15 +358,16 @@ function renderCard(ins) {
   if (!r) { el.innerHTML = `<div class="meta">${ins.minute}' ${esc(KIND_LABEL[ins.kind] || ins.kind)}</div>`; return el; }
   const flag = clubFlag(ins);
   const v = ins.verification || {};
-  const src = r.source && r.source.startsWith("llm") ? "AI-written, checked" : "";
+  const origin = TouchlineStory.provenance(r), src = origin.preview ? origin.label : "";
   el.innerHTML = `
     <div class="meta"><span class="min">${ins.minute}'</span><span>${esc(KIND_LABEL[ins.kind] || ins.kind)}</span>
       ${flag ? `<span style="color:var(--sodium)">${esc(flag)}</span>` : ""}
-      ${v.status === "verified" ? `<span class="verified" title="${v.checks} checks against the match data"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>Checked</span>` : ""}
+      ${v.status === "verified" ? `<span class="verified" title="${v.checks} checks against the underlying source frames"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="2" fill="none"/></svg>Source checked</span>` : ""}
       ${ins.storyline && ins.storyline.length ? `<span style="color:var(--chalk)">Storyline</span>` : ""}
       <span class="src">${src}</span></div>
     <h3>${esc(r.title)}</h3>
     ${r.lines.length ? `<ul>${r.lines.map((l) => `<li>${esc(l.text)}</li>`).join("")}</ul>` : ""}
+    ${origin.preview ? `<p class="generated-preview">${esc(origin.scope)}</p>` : ""}
     <div class="card-footer"><button class="chip receipt-link" data-receipt="${esc(ins.id)}">Evidence receipt</button><details class="card-details"><summary>Sources and feedback</summary><div class="chips">
       ${(ins.event_ids || []).slice(-4).map((id) => `<button class="chip" data-ev="${id}" title="Show the evidence">${id}</button>`).join("")}
       ${S.prefs.persona === "access" ? `<button class="chip speak" data-say="${ins.id}">Read aloud</button>` : ""}
@@ -890,26 +892,32 @@ async function openReceipt(id) {
     const response = await fetch(`/api/matches/${S.sid}/insights/${encodeURIComponent(id)}/receipt?${query}`);
     if (!response.ok) throw new Error("Receipt unavailable. The replay may have expired; restart to try again.");
     const raw = await response.text(), d = JSON.parse(raw), r = d.render, v = d.verification, ed = d.editorial;
-    const chips = (ids) => ids.map(eid => `<button class="chip" data-ev="${esc(eid)}">${esc(eid)}</button>`).join(" ");
+    const chips = (ids) => ids.map(eid => {
+      const event = d.evidence.find(item => item.event_id === eid), fact = event?.facts;
+      const label = fact ? `${fact.minute}′ · ${fact.player || "Match"} · ${fact.type}${fact.outcome ? ` / ${fact.outcome}` : ""}` : eid;
+      return `<button class="chip receipt-source" data-ev="${esc(eid)}" title="${esc(eid)}">${esc(label)}</button>`;
+    }).join(" ");
     $("#drawerBody").innerHTML = `<span class="eyebrow">Evidence receipt · Synthetic match</span>
       <h3>${esc(r?.title || id)}</h3>
-      <p class="muted">${esc(id)} · ${d.minute}' · ${esc(r?.persona || S.prefs.persona)} / ${esc(r?.lang || S.prefs.lang)} · ${esc(r?.source || "no render")}</p>
-      ${(r?.lines || []).map(line => `<p>${esc(line.text)}<br>${chips(line.ev || [])}</p>`).join("")}
+      <p class="muted">${d.minute}′ · ${({casual:"Fan",analyst:"Analyst",studio:"Studio",access:"Audio description"})[r?.persona || S.prefs.persona] || "Selected audience"} · ${esc(r?.lang || S.prefs.lang)}</p>
+      ${TouchlineStory.provenance(r).preview ? `<p class="generated-preview"><strong>Model-generated preview.</strong> ${esc(TouchlineStory.provenance(r).scope)}</p>` : ""}
+      <div class="receipt-verdict"><strong>${v.status === "verified" ? "Source checks passed" : esc(v.status)}</strong><p>${v.checks} checks against ${d.evidence.length} cited events. Inspect the source behind each claim below.</p></div>
+      ${v.issues.length ? `<ul>${v.issues.map(issue => `<li>${esc(issue)}</li>`).join("")}</ul>` : ""}
+      <p class="muted">${esc(d.scope)}</p>
+      <h4>What was said → where it came from</h4>
+      ${(r?.lines || []).map(line => `<div class="receipt-claim"><p>${esc(line.text)}</p>${chips(line.ev || [])}</div>`).join("")}
       <details class="receipt-comparison"><summary>Compare Fan and Analyst</summary>
         <p class="muted">The same moment and evidence, written for two audiences.</p>
         ${Object.entries(d.audiences || {}).filter(([, copy]) => copy).map(([persona, copy]) => `<article>
           <span class="eyebrow">${persona === "casual" ? "Fan" : "Analyst"} · ${esc(copy.lang)}</span>
           <h4>${esc(copy.title)}</h4>${(copy.lines || []).map(line => `<p>${esc(line.text)}</p>`).join("")}</article>`).join("")}
       </details>
-      <h4>Checks performed</h4><p><strong>${v.status === "verified" ? "Source checks passed" : esc(v.status)}</strong> · ${v.checks} frame checks at this moment.</p>
-      ${v.issues.length ? `<ul>${v.issues.map(issue => `<li>${esc(issue)}</li>`).join("")}</ul>` : ""}
-      <p class="muted">${esc(d.scope)}</p>
       <h4>Editorial decision</h4><p>${esc(ed?.decision?.reason || "No cue emitted: the insight did not pass verification.")}</p>
+      <details class="receipt-meta"><summary>Technical receipt and model inputs</summary>
+      <p class="muted">Insight ${esc(id)} · ${esc(r?.source || "no render")}</p>
       ${ed ? `<p class="muted">${esc(ed.approval)} · Cue ${esc(ed.cue_id)} · ${ed.in_at_t}–${ed.out_at_t} seconds on the match clock.</p>` : ""}
-      <h4>Source events and model estimates</h4>
-      <p>${chips(d.evidence.map(e => e.event_id))}</p>
       <details><summary>Inspect facts and model factors for ${d.evidence.length} events</summary>
-      ${d.evidence.map(e => `<details><summary>${esc(e.event_id)} · ${esc(e.facts.type)} · ${esc(e.facts.minute)}'</summary>
+      ${d.evidence.map(e => `<details><summary>${esc(e.facts.minute)}′ · ${esc(e.facts.player || "Match")} · ${esc(e.facts.type)} · ${esc(e.event_id)}</summary>
         <p>${chips([e.event_id])} Open the event for its facts and model factors.</p>
         <pre>${esc(JSON.stringify(e.facts, null, 2))}</pre>
         ${e.model_drivers.length ? `<p class="muted">Model contributions (log-odds relative to the synthetic league baseline)</p><pre>${esc(JSON.stringify(e.model_drivers, null, 2))}</pre>` : ""}</details>`).join("")}</details>
@@ -918,7 +926,7 @@ async function openReceipt(id) {
       <details><summary>${d.agents.length} recorded agent handoffs</summary>
       <ol class="receipt-agents">${d.agents.map(a => `<li><strong>${esc(a.agent)}</strong> · ${esc(a.status)} · ${a.ms} ms<br><span class="muted">${esc(a.note)}${a.handoff_to ? ` → ${esc(a.handoff_to)}` : ""}</span></li>`).join("")}</ol>
       </details>
-      <p><strong>${d.pipeline_ms} ms</strong> · ${esc(d.timing_scope)}</p>
+      <p><strong>${d.pipeline_ms} ms</strong> · ${esc(d.timing_scope)}</p></details>
       <button class="btn primary" id="downloadReceipt">Download evidence receipt</button>
       <p class="muted">JSON containing this moment's facts, checks, audience versions and agent handoffs.</p>`;
     $("#downloadReceipt").addEventListener("click", () => {
@@ -977,7 +985,7 @@ async function ask(q) {
     const r = await fetch(`/api/matches/${S.sid}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q, lang: S.prefs.lang }) }).then((x) => x.json());
     box.innerHTML = `<div class="q">${esc(q)}</div><div class="a">${esc(r.answer)}</div>
       <div class="chips">${(r.citations || []).slice(0, 6).map((id) => `<button class="chip" data-ev="${id}">${id}</button>`).join("")}</div>
-      <div class="by">${r.source === "router" ? "Answered from the live match data" : "Written by the analyst agent, numbers checked against its tools"} in ${r.ms} ms</div>
+      <div class="by">${r.source === "router" ? "Answered from the live match data" : r.composition === "source_rendered_selection" ? "Composed from source facts selected by the analyst agent" : "Analyst response · inspect its validation scope below"} in ${r.ms} ms${r.language ? ` · ${esc(r.language)}` : ""}</div>
       ${r.execution ? `<details class="qa-proof"><summary>How this answer ran</summary><p>${r.execution.path === "foundry_hosted" ? "Microsoft Foundry hosted agent" : "Local Agent Framework agent"}${r.execution.fallback ? " · fallback used" : ""}</p>
         <p>${esc(r.execution.model || "")} · ${r.grounding?.tool_results || 0} tool results checked</p>
         <p class="muted">${esc(r.grounding?.scope || "")} Request ${esc(r.execution.request_id || "")}</p></details>` : ""}`;
@@ -1033,6 +1041,7 @@ function renderProducer() {
     const c = { ...last.cue }; delete c.data;
     $("#cueJson").textContent = JSON.stringify(c, null, 2);
   }
+  applyCapabilities();
 }
 
 function renderOps() {
@@ -1069,7 +1078,7 @@ async function renderServices() {
       row(true, "Microsoft Agent Framework", "workflow with fan-out and fan-in, supervisor, A2A endpoint"),
       row(cs.mode === "azure", "Azure AI Content Safety", cs.mode === "azure" ? `${cs.checked} checks, ${cs.blocked} blocked, ${cs.shield_attacks} prompt attacks refused` : `local screen: ${cs.shield_attacks || 0} prompt attacks refused`),
       row(sp.available, "Azure AI Speech", sp.available ? `${sp.mode} auth, ${sp.calls} syntheses` : "browser voices in use"),
-      row(h.auth === "entra", "Microsoft Entra ID", h.auth === "entra" ? "producer tools need the Producer role" : "open demo: producer tools unlocked, actions audited"),
+      row(h.auth === "entra", "Microsoft Entra ID", h.auth === "entra" ? "producer tools need the Producer role" : "public demo; shared controls follow deployment permissions"),
       row(fb.votes > 0, "Viewer feedback", fb.votes ? `${Math.round(fb.useful_rate * 100)}% of ${fb.votes} votes say the graphic was useful` : "no votes yet: press Useful or Not for me on any card"),
       row(d.outbound && d.outbound.enabled, "Azure Event Hubs", d.outbound && d.outbound.enabled ? `${d.outbound.sent} insights streamed to ${d.outbound.hub}` : "not configured here"),
     ].join("");
@@ -1117,7 +1126,7 @@ const TOUR = [
   { sel: "label:has(#booth)", title: "Two-voice commentary", text: "Tick Commentary: a lead commentator calls the moment and an analyst explains it, with captions. Every number spoken has been checked." },
   { sel: '[data-tab="whatif"]', title: "What if?", text: "Change one thing, like a red card that never happened, and replay the rest of the match 1,000 times.",
     go: async () => { $('[data-tab="whatif"]').click(); await loadWhatIf(); const b = $('[data-wi^="nored"]') || $("[data-wi]"); if (b) runWhatIf(b.dataset.wi); } },
-  { sel: '[data-tab="producer"]', title: "An editor, not a pipe", text: "A producer agent decides what goes on air: it airs, cuts in, queues or drops each graphic, and says why. A human can approve every one.",
+  { sel: '[data-tab="producer"]', title: "Editorial decisions", text: "A producer agent airs, cuts in, queues or drops each graphic, and says why. Review mode supports human approval; goals, red cards and full-time remain automatic.",
     go: () => $('[data-tab="producer"]').click() },
   { sel: '[data-tab="ops"]', title: "Break it on purpose", text: "We just slipped a made-up number into the copy. Watch the fact-checker block it, while the match keeps playing.",
     go: () => { $('[data-tab="ops"]').click(); runDrill("hallucination"); } },
@@ -1273,7 +1282,7 @@ function applyView() {
   $$("#viewSeg button").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.view === sel)));
   $("#pitchBox").classList.toggle("tv", S.view === "tv");
   if ($("#playerIdentity")) $("#playerIdentity").hidden = true;
-  if (!S.judge && S.view === "tv") loadPitch3D();
+  if (S.view === "tv" && (!S.judge || $("#storyReplay")?.open)) loadPitch3D();
   resizeCanvas();
 }
 
@@ -1306,17 +1315,25 @@ async function control(action, value) {
   return r.json();
 }
 function needProducer(status) {
-  toast(status === 401 ? "Producer tools need a Microsoft sign-in." : "Your account doesn't have the producer role.");
-  $("#who").innerHTML = status === 401 ? `<a class="btn small" href="/.auth/login/aad?post_login_redirect_uri=/">Sign in with Microsoft</a>` : $("#who").innerHTML;
+  toast(status === 401 ? "Producer access is required for this action." : "This match is read-only with your current permissions.");
+  if (status === 401 && S.me?.login && S.me.identity_provider_configured) $("#who").innerHTML = `<a class="btn small" href="${esc(S.me.login)}?post_login_redirect_uri=/">Sign in with Microsoft</a>`;
+}
+function applyCapabilities() {
+  const shared = ["demo", "live"].includes(S.sid), allowed = shared ? S.me?.can_control_shared === true : S.me?.can_produce === true;
+  const privateJudge = S.judge && !!S.judgeToken;
+  $$("#modeSeg button, [data-drill], [data-approve], [data-reject]").forEach(button => { button.disabled = !allowed; button.title = allowed ? "" : "Read-only match: producer access is unavailable here."; });
+  if (shared && !privateJudge) $$("#pauseBtn, #speed, #jump").forEach(control => { control.disabled = !allowed; control.title = allowed ? "" : "Shared live match. Start the 90-second demo for your own playback controls."; });
+  else $$("#pauseBtn, #speed, #jump").forEach(control => { control.title = privateJudge ? "Controls your own replay" : ""; });
 }
 async function loadMe() {
   try {
     const me = await fetch("/api/me").then((r) => r.json());
     S.me = me;
     $("#who").innerHTML = me.signed_in
-      ? `Signed in as <b>${esc(me.name || "you")}</b>${me.roles.length ? ` (${me.roles.map((r) => esc(r.replace("Touchline.", ""))).join(", ")})` : ""}. <a href="${me.logout}">Sign out</a>`
-      : me.auth_mode === "entra" ? `<a class="btn small" href="${me.login}?post_login_redirect_uri=/">Sign in with Microsoft</a> to approve graphics and run drills.`
-      : "Open demo: anyone can try the producer tools. In production they sit behind Microsoft sign-in with a Producer role, and every action is audited.";
+      ? `Signed in as <b>${esc(me.name || "you")}</b>${me.roles.length ? ` (${me.roles.map((r) => esc(r.replace("Touchline.", ""))).join(", ")})` : ""}.${me.logout ? ` <a href="${esc(me.logout)}">Sign out</a>` : ""}`
+      : me.identity_provider_configured && me.login ? `<a class="btn small" href="${esc(me.login)}?post_login_redirect_uri=/">Sign in with Microsoft</a> for producer access.`
+      : me.can_control_shared ? "Local demo controls are enabled. Producer identity is not configured." : "You are viewing the shared broadcast. Editorial decisions are visible; controls are read-only. Start the 90-second demo for your own replay.";
+    applyCapabilities();
   } catch (e) { /* offline */ }
 }
 
@@ -1347,6 +1364,7 @@ function bindJudgeMode() {
     getPrefs: () => S.prefs,
     setPersona: persona => { S.prefs.persona = persona; savePrefs(); applyPrefs(); },
   });
+  $("#storyReplay").addEventListener("toggle", () => { if ($("#storyReplay").open) applyView(); });
   $("#judgePanel").hidden = false;
   $("#pauseBtn").disabled = true;
   $("#matchLabel").textContent = "Your own replay, ready when you are";
@@ -1400,7 +1418,7 @@ async function startJudge() {
   finally { button.disabled = false; }
 }
 
-function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; }
+function setPaused(p) { S.paused = p; $("#pauseBtn").textContent = p ? "Resume" : "Pause"; applyCapabilities(); }
 
 function bindControls() {
   $("#viewSeg").addEventListener("click", (e) => {

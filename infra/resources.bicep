@@ -438,6 +438,7 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'TOUCHLINE_EVENTHUB_NAMESPACE', value: hubNamespaceFqdn }
             { name: 'TOUCHLINE_EVENTHUB_PARTITION', value: '0' }
             { name: 'TOUCHLINE_INPUT_JOURNAL_URL', value: enableEventHubs ? '${storage!.properties.primaryEndpoints.blob}input-journal/partition-0.json' : '' }
+            { name: 'TOUCHLINE_OUTBOX_URL', value: enableEventHubs ? '${storage!.properties.primaryEndpoints.blob}input-journal/outbound.json' : '' }
             { name: 'AZURE_SPEECH_REGION', value: location }
             { name: 'AZURE_SPEECH_RESOURCE_ID', value: foundry.id }
             { name: 'AZURE_CONTENT_SAFETY_ENDPOINT', value: 'https://${foundry.properties.customSubDomainName}.cognitiveservices.azure.com' }

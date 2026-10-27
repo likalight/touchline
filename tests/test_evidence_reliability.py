@@ -68,6 +68,7 @@ def test_journal_commits_history_with_offset_and_fails_closed():
         await journal.append({'id': 'E2'}, '2')
         saved = await InputJournal(store, {'partition': '0'}).restore()
         assert saved['offset'] == '2' and len(saved['events']) == 2
+        journal.acknowledge_match('one')
         store.fail = True
         with pytest.raises(RuntimeError):
             await journal.append({'meta': {'match_id': 'two'}}, '3')
@@ -210,6 +211,23 @@ def test_execution_proof_is_scoped_to_the_actual_concurrent_call(monkeypatch):
     assert fallback['request_id'] != hosted['request_id']
 
 
+def test_comparison_accepts_all_supplied_facts_but_rejects_inventions():
+    from scripts.compare_agents import score_copy
+    insight = {'minute': 16, 'score': {'home': 0, 'away': 1}, 'event_ids': ['E00309'],
+               'headline': {'k': 'h.goal', 'p': {'player': 'Ravi Varga'}, 'ev': ['E00309']},
+               'reasons': [{'k': 'r.distance', 'p': {'distance_m': 7}, 'ev': ['E00309']}]}
+    supplied = {'frames': [insight['headline'], *insight['reasons']],
+                'facts': [{'event_id': 'E00309', 'distance_m': 7.5, 'bypassed': 5, 'player': 'Theo Keeper'}]}
+    copies = {p: {'title': 'Varga scores', 'lines': [{'text': 'Ravi Varga scores from 7.5m.', 'ev': ['E00309']}]}
+              for p in ('casual', 'analyst', 'studio', 'access')}
+    assert not score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'])['passed']
+    assert score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+    copies['analyst']['lines'][0]['text'] = 'Theo Keeper: 5 opponents bypassed.'
+    assert score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+    copies['analyst']['lines'][0]['text'] = 'Ravi Varga scores from 99m.'
+    assert not score_copy(insight, copies, ['Ravi Varga', 'Theo Keeper'], supplied)['passed']
+
+
 @pytest.mark.parametrize('failure', ['receive', 'journal', None])
 def test_feed_replays_snapshot_and_surfaces_receiver_or_journal_failure(monkeypatch, failure):
     from touchline import feeds, journal as journal_module
@@ -240,7 +258,11 @@ def test_feed_replays_snapshot_and_surfaces_receiver_or_journal_failure(monkeypa
     monkeypatch.setenv('TOUCHLINE_EVENTHUB_NAMESPACE', 'example.servicebus.windows.net')
     async def run():
         payloads = []
-        async for payload in feeds.eventhub_payloads():
+        completed = asyncio.Event()
+        async for payload in feeds.eventhub_payloads(completed=completed):
+            if '_match_boundary' in payload:
+                completed.set()
+                continue
             payloads.append(payload)
         return payloads
     if failure:

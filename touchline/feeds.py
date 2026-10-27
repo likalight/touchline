@@ -33,11 +33,14 @@ def eventhub_enabled() -> bool:
     return bool(os.getenv("TOUCHLINE_EVENTHUB_CONNECTION") or os.getenv("TOUCHLINE_EVENTHUB_NAMESPACE"))
 
 
-async def eventhub_payloads(stop: Optional[asyncio.Event] = None) -> AsyncIterator[dict]:
+async def eventhub_payloads(stop: Optional[asyncio.Event] = None,
+                            completed: Optional[asyncio.Event] = None) -> AsyncIterator[dict]:
     """Resume one journaled partition; otherwise receive new events from all partitions.
 
     The journal commits the offset with the complete current match history. On restart,
-    that history rebuilds state with outbound publication suppressed before live reception.
+    that history rebuilds state before live reception. Before the next match replaces
+    the journal, an internal boundary ends even an interrupted match and the receiver
+    waits for the processor's completion signal (including durable output commits).
     """
     from azure.identity.aio import DefaultAzureCredential
     from touchline.journal import BlobJournalStore, InputJournal
@@ -64,6 +67,17 @@ async def eventhub_payloads(stop: Optional[asyncio.Event] = None) -> AsyncIterat
             payload = {"_invalid": str(exc)}
         if journal:
             try:
+                if "meta" in payload:
+                    if journal.document["meta"]:
+                        previous = journal.document["meta"]["match_id"]
+                        # Do not put new metadata in the journal/queue yet. The
+                        # boundary lets a partial match flush and finish, avoiding
+                        # a deadlock when its source never sent full_time.
+                        if not completed.is_set():
+                            await q.put({"_match_boundary": previous})
+                        await completed.wait()
+                        journal.acknowledge_match(previous)
+                    completed.clear()
                 await journal.append(payload, str(event.offset))
             except Exception as exc:
                 failure = exc  # SDK callbacks can swallow exceptions; stop reception explicitly.
@@ -74,6 +88,8 @@ async def eventhub_payloads(stop: Optional[asyncio.Event] = None) -> AsyncIterat
     try:
         url = os.getenv("TOUCHLINE_INPUT_JOURNAL_URL")
         if url:
+            if completed is None:
+                raise ValueError("Journaled ingestion requires a processor completion signal")
             partition = os.getenv("TOUCHLINE_EVENTHUB_PARTITION", "0")
             store = BlobJournalStore(url, credential)
             journal = InputJournal(store, {"namespace": os.getenv("TOUCHLINE_EVENTHUB_NAMESPACE", "connection-string"),
@@ -81,6 +97,7 @@ async def eventhub_payloads(stop: Optional[asyncio.Event] = None) -> AsyncIterat
                                           "group": os.getenv("TOUCHLINE_EVENTHUB_CONSUMER_GROUP", "$Default")})
             saved = await journal.restore()
             if saved["meta"]:
+                completed.clear()
                 yield {"meta": saved["meta"], "_replay": True}
                 for payload in saved["events"]:
                     yield {**payload, "_replay": True}

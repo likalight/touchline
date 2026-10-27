@@ -75,6 +75,8 @@ class LLM:
         self._agents: dict[str, Any] = {}
         self.hosted: dict[str, bool] = {}
         self.fallbacks = 0
+        from touchline.limits import WorkBudget
+        self.budget = WorkBudget(int(os.getenv("TOUCHLINE_MODEL_REQUESTS_PER_10M", "120")), 600, 4)
         self._execution = ContextVar("touchline_execution", default=None)
         if os.getenv("TOUCHLINE_LLM", "").lower() in ("off", "offline", "0"):
             return
@@ -137,6 +139,17 @@ class LLM:
 
     async def run(self, name: str, instructions: str, prompt: str, timeout: float = 6.0,
                   tools: Optional[list[Callable]] = None) -> Optional[str]:
+        if not self.budget.acquire():
+            self._execution.set({"agent": name, "backend": self.backend, "model": self.model,
+                                 "path": "capacity_limit", "completed": False, "fallback": True})
+            return None
+        try:
+            return await self._run(name, instructions, prompt, timeout, tools)
+        finally:
+            self.budget.release()
+
+    async def _run(self, name: str, instructions: str, prompt: str, timeout: float = 6.0,
+                   tools: Optional[list[Callable]] = None) -> Optional[str]:
         evidence = {"request_id": uuid.uuid4().hex, "agent": name, "backend": self.backend,
                     "model": self.model, "path": "unavailable", "completed": False, "fallback": False}
         self._execution.set(evidence)
@@ -193,6 +206,7 @@ class LLM:
 
     def status(self) -> dict:
         return {"backend": self.backend, "model": self.model, "breaker_open": self.breaker.open,
+                "request_budget": self.budget.status(),
                 "calls": self.calls, "errors": self.errors, "hosted_agents": [k for k, v in self.hosted.items() if v], "hosted_fallbacks": self.fallbacks,
                 "avg_ms": round(self.total_ms / self.calls, 1) if self.calls else None}
 

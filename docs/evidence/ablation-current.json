@@ -1,0 +1,41 @@
+{
+  "provenance": {
+    "generated_at": "2026-10-27T17:20:47.169123+00:00",
+    "git_head": "103713674de92570c613e9a07460d34d3c101c4a",
+    "working_tree_dirty": true,
+    "python_source_sha256": "efd6bd591f47613b0e8f1a364410be49267c173ab9e900dd60ef577985357394",
+    "simulator_sha256": "b7570cd0c19b2b462d85e23a113bcbb31b96d976da8e76ae4d16448967d27695",
+    "model_artifact_sha256": "e2f64797a51e6362240ea1846a907b97eb16bc0a2d9e82b0bf31077af5eed142",
+    "scope": "Hashes bind the files actually read, including uncommitted changes. A Git HEAD alone does not identify a dirty working tree."
+  },
+  "seeds": [
+    5000,
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    5007,
+    5008,
+    5009,
+    5010,
+    5011
+  ],
+  "tried": {
+    "changed number": 1151,
+    "wrong player": 531,
+    "invented statistic": 1801,
+    "invented superlative": 1801
+  },
+  "caught": {
+    "changed number": 1151,
+    "wrong player": 531,
+    "invented statistic": 1801,
+    "invented superlative": 1801
+  },
+  "clean_lines": 1801,
+  "false_alarms": 0,
+  "uncaught": [],
+  "scope": "Synthetic component ablation and deliberate text mutations; not observed model error frequency or an end-to-end single-agent comparison."
+}

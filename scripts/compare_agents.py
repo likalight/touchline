@@ -2,6 +2,7 @@
 
 --prepare exports inputs and pipeline references without a model call.
 --run uses the configured Foundry model and records raw baseline outputs and failures.
+--rescore rechecks stored raw outputs without model calls; original execution stays unchanged.
 This compares narration strategies; it does NOT prove whole-system superiority of
 multi-agent orchestration. Both sides receive the same interpreted claim frames.
 """
@@ -20,6 +21,7 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from scripts.evidence_provenance import provenance
 
 PERSONAS = ('casual', 'analyst', 'studio', 'access')
 
@@ -48,9 +50,24 @@ Every line must cite supporting event IDs in its ev array. Return only a JSON ob
  "analyst":{...}, "studio":{...}, "access":{...}}.'''
 
 
-def score_copy(insight, renders, players):
+def score_copy(insight, renders, players, supplied=None):
     from touchline.agents.verifier import FactChecker
     checker = FactChecker(SimpleNamespace(players={p: SimpleNamespace(name=p) for p in players}))
+    # The baseline receives frames AND richer raw facts. Score against every supplied
+    # scalar, not only the rounded/narrated subset chosen by the phrase-bank pipeline.
+    source = copy.deepcopy(insight)
+    def scalars(value):
+        if isinstance(value, dict):
+            for item in value.values():
+                yield from scalars(item)
+        elif isinstance(value, list):
+            for item in value:
+                yield from scalars(item)
+        elif isinstance(value, (str, int, float)) and not isinstance(value, bool):
+            yield value
+    if supplied:
+        source['reasons'] = [*source['reasons'], {'k': 'evaluation.supplied_facts',
+            'p': {str(i): value for i, value in enumerate(scalars(supplied))}, 'ev': []}]
     errors = []
     for persona, limit in zip(PERSONAS, (2, 6, 1, 3)):
         render = renders.get(persona) if isinstance(renders, dict) else None
@@ -73,9 +90,61 @@ def score_copy(insight, renders, players):
             ids = line.get('ev')
             if not isinstance(ids, list) or not ids or any(not isinstance(e, str) or e not in insight['event_ids'] for e in ids):
                 errors.append(f'{persona}: unsupported or missing citation')
-        errors.extend(f'{persona}: {e}' for e in checker.check_text(insight, texts))
+        errors.extend(f'{persona}: {e}' for e in checker.check_text(source, texts))
     return {'passed': not errors, 'issues': errors,
-            'scope': 'Format, allowed numbers/names/superlatives and event IDs; not semantic or preference scoring.'}
+            'scope': 'Format, number/name membership in ALL supplied frames and facts, superlatives and event IDs; not semantic association or preference scoring.'}
+
+
+def rescore(input_path, output_path):
+    """Retain every original output/execution; only replace the faulty scorer results."""
+    from touchline.llm import _json_from
+    rows = read_dataset(input_path)
+    report = json.loads(input_path.read_text(encoding='utf-8'))
+    original_summary = copy.deepcopy(report['summary'])
+    for row in rows:
+        context, scoring = row['input'], row['scoring']
+        row['pipeline']['checks'] = score_copy(scoring['insight'], row['pipeline']['renders'], scoring['players'], context)
+        baseline = row['single_agent']
+        if baseline.get('status') == 'not_run':
+            continue
+        try:
+            rendered = _json_from(baseline.get('raw') or '')
+        except (ValueError, TypeError):
+            rendered = {}
+        checks = score_copy(scoring['insight'], rendered, scoring['players'], context)
+        if not baseline.get('context_tool_calls'):
+            checks['passed'] = False
+            checks['issues'].append('The agent did not retrieve the supplied context.')
+        baseline['checks'] = checks
+    report['rescoring'] = {
+        'reason': 'Post-inspection correction: baseline was allowed all supplied facts, but old scorer used only selected frame values. Both alternatives now use the same complete evidence corpus.',
+        'original_report_sha256': hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        'original_dataset_sha256': report['dataset_sha256'],
+        'original_summary': original_summary, 'provenance': provenance(),
+        'scorer_sha256': hashlib.sha256(Path(__file__).read_bytes().replace(b'\r\n', b'\n')).hexdigest(),
+        'additional_model_calls': 0, 'original_execution_preserved': True,
+    }
+    report['cases'] = rows
+    report['dataset_sha256'] = dataset_hash(rows)
+    report['summary'].update(
+        pipeline_format_numeric_citation_passes=sum(r['pipeline']['checks']['passed'] for r in rows),
+        single_agent_format_numeric_citation_passes=sum(r['single_agent'].get('checks', {}).get('passed', False) for r in rows))
+    report['summary'].update(breakdown(rows))
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(json.dumps(report['summary']))
+    return 0
+
+
+def breakdown(rows):
+    """Show contract failures separately; all-gates pass rate is not factual accuracy."""
+    out = {}
+    for side in ('pipeline', 'single_agent'):
+        observed = [r[side]['checks']['issues'] for r in rows if r[side].get('checks')]
+        out[f'{side}_format_passes'] = sum(not any(any(x in e for x in ('malformed', 'missing or malformed', 'line count', 'too long')) for e in issues) for issues in observed)
+        out[f'{side}_citation_passes'] = sum(not any('citation' in e for e in issues) for issues in observed)
+        out[f'{side}_evidence_membership_passes'] = sum(not any(any(x in e for x in ('unsupported number', 'unsupported player', 'unsupported superlative')) for e in issues) for issues in observed)
+    return out
 
 
 async def prepare(limit):
@@ -114,18 +183,21 @@ async def main():
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument('--prepare', action='store_true')
     mode.add_argument('--run', action='store_true')
+    mode.add_argument('--rescore', action='store_true')
     parser.add_argument('--limit', type=int, default=12)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--input', type=Path, help='Frozen --prepare dataset; required with --run')
     args = parser.parse_args()
     if not 1 <= args.limit <= 24:
         parser.error('--limit must be 1..24; model runs are deliberately bounded')
-    if args.run and not args.input:
-        parser.error('--run requires --input from --prepare so the cases cannot silently change')
+    if (args.run or args.rescore) and not args.input:
+        parser.error('--run/--rescore requires --input so the cases cannot silently change')
     if args.prepare and args.input:
         parser.error('--input is only used with --run')
     if args.input and args.input.resolve() == args.output.resolve():
         parser.error('Keep the frozen input separate from the observed output')
+    if args.rescore:
+        return rescore(args.input, args.output)
     from touchline.llm import get_llm, _json_from
     if args.run and (not get_llm().available or get_llm().backend != 'foundry'):
         print('A configured Foundry model is required. Use --prepare for an offline dataset.', file=sys.stderr)
@@ -137,7 +209,7 @@ async def main():
         insight = item['insight']
         reference = {p: insight['renders'][p]['en'] for p in PERSONAS}
         row = {'seed': item['seed'], 'insight_id': insight['id'], 'input': item['context'],
-               'pipeline': {'renders': reference, 'checks': score_copy(insight, reference, item['players'])},
+               'pipeline': {'renders': reference, 'checks': score_copy(insight, reference, item['players'], item['context'])},
                'scoring': {'insight': {**{k: insight[k] for k in ('headline', 'reasons', 'minute', 'event_ids')},
                                        'score': insight.get('score', {})},
                            'players': item['players']},
@@ -159,7 +231,7 @@ async def main():
                 rendered = _json_from(raw or '')
             except (ValueError, TypeError):
                 rendered = {}
-            checks = score_copy(row['scoring']['insight'], rendered, row['scoring']['players'])
+            checks = score_copy(row['scoring']['insight'], rendered, row['scoring']['players'], row['input'])
             if not calls:
                 checks['passed'] = False
                 checks['issues'].append('The agent did not retrieve the supplied context.')
@@ -167,6 +239,7 @@ async def main():
                                    'checks': checks, 'context_tool_calls': len(calls),
                                    'execution': llm.execution()}
     report = {'schema': 'touchline.narration-comparison/2', 'observed_at': datetime.now(timezone.utc).isoformat(),
+              'provenance': provenance(),
               'status': 'measured' if llm else 'prepared_not_run', 'cases': rows,
               'dataset_sha256': dataset_hash(rows),
               'summary': {'cases': len(rows), 'attempted': len(rows) if llm else 0,
@@ -175,6 +248,7 @@ async def main():
                           'single_agent_format_numeric_citation_passes': sum(r['single_agent'].get('checks', {}).get('passed', False) for r in rows)},
               'scope': 'Single-agent narration versus specialist phrase-bank narration on identical interpreted inputs. '
                        'Not an end-to-end single-agent baseline, a semantic accuracy score, or evidence that more agents always win.'}
+    report['summary'].update(breakdown(rows))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     print(f'{report["status"]}: {len(rows)} cases written to {args.output}')
