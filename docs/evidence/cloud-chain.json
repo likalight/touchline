@@ -1,0 +1,67 @@
+{
+  "passed": true,
+  "observed_at": "2026-10-27T16:04:35.430941+00:00",
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "model": "gpt-4.1-mini",
+  "answer": {
+    "answer": "The current score is 3-2 in favor of the home team. The home team has more shots (15 vs 6) and higher possession (55% vs 45%), which explains their lead [scoreboard].",
+    "citations": [],
+    "source": "llm:foundry",
+    "execution": {
+      "request_id": "0b7146cce61746f5b171b329903136b6",
+      "agent": "AskTheAnalyst",
+      "backend": "foundry",
+      "model": "gpt-4.1-mini",
+      "path": "foundry_hosted",
+      "completed": true,
+      "fallback": false,
+      "duration_ms": 4452.53
+    },
+    "grounding": {
+      "tool_results": 1,
+      "numbers_supported": true,
+      "citations_supported": true,
+      "scope": "Token-level numbers and event IDs in returned tools; not semantic entailment."
+    },
+    "ms": 4716.1
+  },
+  "downstream": {
+    "outbound": {
+      "enabled": true,
+      "hub": "touchline-insights",
+      "sent": 134,
+      "dropped": 0,
+      "errors": 0,
+      "retries": 0,
+      "pending": 0,
+      "durability": "process memory; retries while running, no durable outbound outbox"
+    },
+    "packages": {
+      "latest": {
+        "match_id": "SYN-00087",
+        "score": {
+          "home": 3,
+          "away": 2
+        },
+        "home": "Kestrel Bay FC",
+        "away": "Ironmoor Athletic",
+        "built_at": "2026-10-27T16:03:41.518041+00:00",
+        "blob": "SYN-00087/latest.json"
+      },
+      "packages_built": 2,
+      "recent_packages": [
+        "SYN-00087/package-2c4e9147b3b46d624692.json",
+        "SYN-00087/package-11bfa1c5f9a9c3d4c115.json"
+      ],
+      "recent_social_cards": [
+        "SYN-00087/social/090-SYN-00087-I0062.json",
+        "SYN-00087/social/090-SYN-00087-I0061.json",
+        "SYN-00087/social/062-SYN-00087-I0046.json",
+        "SYN-00087/social/044-SYN-00087-I0032.json",
+        "SYN-00087/social/028-SYN-00087-I0020.json",
+        "SYN-00087/social/018-SYN-00087-I0011.json"
+      ]
+    }
+  },
+  "scope": "One live hosted analyst request; not a load, durability or availability test."
+}

@@ -1,5 +1,7 @@
 # The case for Touchline, category by category
 
+**28 October implementation update:** the active-roster bug is fixed; the Azure demo, hosted Foundry request and Event Hubs → Functions → Blob package path are verified ([evidence](evidence/cloud-chain.json)). The [final Brag film](FINAL_VIDEO.md) is rendered. The dated finishing plan below predates those results. Public video upload, actual submission confirmation, human testing and the full model comparison/evaluation remain separate tasks.
+
 Research checked 26 October 2026 against the [official rules](https://github.com/microsoft/insidethegamehackathon/blob/main/OFFICIAL%20RULES.md), [Microsoft's agent orchestration guidance](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns), [Foundry agent evaluators](https://learn.microsoft.com/en-us/azure/foundry/concepts/evaluation-evaluators/agent-evaluators), and [Event Hubs checkpoint guidance](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-python-get-started-send).
 
 The rules give equal weight to implementation, agentic innovation, impact, UX/presentation and category fit. An entrant can receive one Grand Prize and one Category Prize. This is our strategy and evidence register, not a prediction of the judges' decision or an assessment of undisclosed competitors.

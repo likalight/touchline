@@ -179,4 +179,3 @@ const output = process.env.STORY_SCREENSHOTS || 'work/story';
     console.log('PASS: stale receipt/simulation isolation, paired alternate endings, retry, mobile 320/390/768, keyboard focus, receipt download, pause/refresh, independent restart and full-app regression.');
   } finally { await browser.close(); }
 })().catch(error=>{console.error(error);process.exitCode=1;});
-

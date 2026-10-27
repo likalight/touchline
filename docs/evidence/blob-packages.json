@@ -1,0 +1,39 @@
+{
+  "observed_at": "2026-10-27T16:10:10.9747246Z",
+  "schema": "touchline.blob-proof/1",
+  "packages": [
+    {
+      "score": {
+        "home": 3,
+        "away": 2
+      },
+      "complete": true,
+      "session": "demo",
+      "verification": {
+        "insights": 66,
+        "verified": 66
+      },
+      "built_by": "touchline-packages (Azure Functions)",
+      "sha256": "1a90770b6faa019ab2a96afd30b4926dcc6341851a14b3d44aae9e06adf3dfe1",
+      "match_id": "SYN-00087",
+      "blob": "SYN-00087/package-2c4e9147b3b46d624692.json"
+    },
+    {
+      "score": {
+        "home": 3,
+        "away": 2
+      },
+      "complete": true,
+      "session": "live",
+      "verification": {
+        "insights": 66,
+        "verified": 66
+      },
+      "built_by": "touchline-packages (Azure Functions)",
+      "sha256": "e3c371fbbc9a4dce1a03613b884ca9f39d28e6a1c7ebb7397195dd32f7b27603",
+      "match_id": "SYN-00087",
+      "blob": "SYN-00087/package-11bfa1c5f9a9c3d4c115.json"
+    }
+  ],
+  "scope": "Downloaded actual Azure Blob packages using Entra authentication; demo and live are separate sessions of the same synthetic seed."
+}

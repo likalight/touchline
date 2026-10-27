@@ -170,4 +170,3 @@ const output=process.env.CENTRE_SCREENSHOTS || 'work/centre';
  console.log('PASS: both themes, 320/390/768px, mobile tools, shared appearance, route isolation, phone session and reel.');
  } finally {await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1});
-
