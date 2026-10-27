@@ -7,7 +7,7 @@
 **Football, with memory. Watch the story. Follow the evidence.**
 
 A Microsoft Agent Framework system that turns synthetic football events into match-long stories,
-personalized graphics and broadcaster-ready outputs. Built for the Microsoft × Premier League
+personalized graphics and broadcaster-oriented cue contracts. Built for the Microsoft × Premier League
 *Inside the Game* hackathon.
 
 [![CI](https://github.com/likalight/touchline/actions/workflows/ci.yml/badge.svg)](https://github.com/likalight/touchline/actions/workflows/ci.yml)
@@ -18,6 +18,23 @@ personalized graphics and broadcaster-ready outputs. Built for the Microsoft × 
 [Open the live demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) · [Run locally](#try-the-90-second-demo) · [Evidence](#what-we-have-measured) · [Architecture](#how-it-works) · [Deploy](#deploy-to-azure) · [Category case](docs/WINNING_CASE.md)
 
 </div>
+
+## Evidence at a glance
+
+| Status | What a judge can verify | Boundary |
+|---|---|---|
+| Implemented | Isolated three-chapter replay, player context, source inspection, audience comparison and JSON receipts | Synthetic data and model estimates; not real broadcast footage |
+| Observed on the prior deployed build | Hosted Foundry request, Event Hubs → Functions → Blob, restart during minute 75 with all 1,870 reference events recovered | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); later changes need their own smoke |
+| Reproducible locally / CI | Python, JS contracts, real browser journeys, deterministic pipeline gate, source/model fingerprints | Tests cover specific cases; they do not establish universal truth |
+| Needs measured results | Foundry quality evaluation, equivalent-budget agent comparison, real operator/user benefit and accessibility evaluation | See [Foundry status](docs/FOUNDRY_EVAL.md), [comparison](docs/AGENT_COMPARISON.md) and [impact](docs/IMPACT.md) |
+| Submission gate | Local 115-second Brag film exists | Public video URL and submission receipt are not yet confirmed here |
+
+**Our strongest current category evidence is Azure Cloud Native Integration.** Agent Framework
+orchestrates specialised components; many are deterministic by design. GitHub Actions tests
+and builds the project and is distinct from GitHub Copilot Agent Mode. [Category evidence](docs/WINNING_CASE.md).
+
+[Read the disposition of all 31 audit findings](docs/READINESS.md): implemented changes,
+measured checks and the remaining human, submission and production evidence.
 
 ## Start with one story
 
@@ -110,6 +127,7 @@ recaps, counterfactuals, a phone view and personalized highlights.
 |---|---|---|
 | [12-match evaluation](docs/EVAL.md) and [machine-readable results](docs/evidence.json) | Verification, goal coverage, citations, rendering and server pipeline timing on held-out synthetic matches | Real-match accuracy, browser latency, model quality or human usefulness |
 | [Specialist ablation](docs/ABLATION.md) | Effects of removing the ingest guard, scout, storyline, checker and editorial scheduler | A head-to-head comparison against a capable single-agent system |
+| [Frozen-model check](docs/FROZEN_MODEL_EVAL.md) | Unchanged logistic models evaluated on fresh corrected synthetic matches, with calibration bins and fingerprints | Real-match generalisation, xT validation or a new training run |
 | [Single-agent comparison protocol](docs/AGENT_COMPARISON.md) | Reproducible, bounded comparison of narration strategies on identical inputs | Live-model results until the run is actually performed |
 | [Load experiment](docs/LOADTEST.md) | A historical 30-second, co-located streaming experiment | Full-match capacity, multi-replica operation or an Azure SLA |
 | [Cloud execution](docs/evidence/cloud-chain.json) and [downloaded Blob proof](docs/evidence/blob-packages.json) | A hosted Foundry answer without fallback and actual demo/live Functions packages | Semantic truth, production SLA or human validation |
@@ -196,8 +214,8 @@ recovery drill and result requirements are in [DEPLOYMENT_PROOF.md](docs/DEPLOYM
 ### Reliability boundaries
 
 - **One warm replica.** Browser sessions remain in memory; scaling out requires shared session state. Judge replays expire after 15 minutes and do not publish broadcast outputs.
-- **One active input match on partition 0.** A Blob journal stores current match history and the Event Hubs resume offset atomically. Restart reconstructs the history without republishing those insights. ETag conflicts stop competing writers. This does not provide distributed ownership or a durable outbound outbox.
-- **Outbound retries.** Transient sends retain their event for retry; queue depth, retries and drops are observable. The bounded queue is still process memory and can lose unconfirmed output on abrupt termination.
+- **One active input match on partition 0.** A Blob journal stores current match history and the Event Hubs resume offset atomically. ETag conflicts stop competing writers. With a durable outbox, replay reconciles missing outputs against acknowledged IDs; without it, historical outputs are suppressed. The journal alone does not provide distributed ownership or atomic input-to-output delivery.
+- **Optional durable outbound.** With `TOUCHLINE_OUTBOX_URL`, pending messages and acknowledgements use a single-writer Blob ledger. Delivery is at least once with stable IDs; consumers must deduplicate. Without that setting, the development queue is process memory. New-code durability requires its own live validation; [scope and capacity](docs/READINESS.md#durable-delivery-scope).
 - **Stable full-time packages.** Events carry the completed package snapshot, so Functions does not depend on a mutable `live` or `demo` session. Duplicate delivery writes the same package key. Teams notifications remain best-effort and may repeat.
 - **Isolated failure drills.** A model-outage drill affects its own match, without disabling other viewers' model access. Failed input ingestion reports degraded health and fails the readiness probe.
 - **Protected shared playback.** Anonymous viewers can run their own Judge Mode. Shared production controls require the configured producer role; without Entra, deployed shared controls stay read-only.

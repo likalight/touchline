@@ -1,6 +1,6 @@
 """Ablation study: what breaks when each specialist agent is switched off?
 
-Answers the question a judge should ask of any multi-agent system: would one agent do as well?
+Measures component contribution. Removing a capability is not a capable single-agent baseline.
 Each specialist is removed in turn on the same unseen matches, and we measure what a viewer or a
 broadcaster would actually suffer.
 
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 import os
 import random
 import re
@@ -28,6 +29,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from scripts.evidence_provenance import provenance
 os.environ.setdefault("TOUCHLINE_LLM", "off")
 
 from touchline.agents.ingest import FaultInjector, IngestGuard  # noqa: E402
@@ -109,6 +111,8 @@ def corruptions(text: str, players: list[str], rng: random.Random) -> list[tuple
         n = rng.choice(nums)
         v = float(n)
         new = str(int(v) + rng.choice([1, 2, 3])) if "." not in n else f"{v * rng.choice([0.6, 1.5]):.2f}"
+        if float(new) == v:
+            new = f"{v + 0.5:.2f}"
         out.append(("changed number", text.replace(n, new, 1)))
     named = [p for p in players if p in text]
     if named:
@@ -122,6 +126,7 @@ def corruptions(text: str, players: list[str], rng: random.Random) -> list[tuple
 def checker_ablation(s: MatchSession, rng: random.Random) -> dict:
     players = [p.name for p in s.state.players.values()]
     caught, tried, clean_flags, clean = Counter(), Counter(), 0, 0
+    misses = []
     for ins in s.insights:
         r = (ins.get("renders") or {}).get("casual", {}).get("en")
         if not r or ins["verification"]["status"] != "verified":
@@ -132,8 +137,11 @@ def checker_ablation(s: MatchSession, rng: random.Random) -> dict:
             for kind, bad in corruptions(text, players, rng):
                 tried[kind] += 1
                 # the production path for model copy: fact check, then bind to the verified line it rewrites
-                caught[kind] += bool(s.checker.check_text(ins, [bad]) or s.checker.check_rewrite([text], [bad]))
-    return {"tried": tried, "caught": caught, "clean_lines": clean, "false_alarms": clean_flags}
+                blocked = bool(s.checker.check_text(ins, [bad]) or s.checker.check_rewrite([text], [bad]))
+                caught[kind] += blocked
+                if not blocked:
+                    misses.append({"insight_id": ins["id"], "kind": kind, "original": text, "altered": bad})
+    return {"tried": tried, "caught": caught, "clean_lines": clean, "false_alarms": clean_flags, "misses": misses}
 
 
 # ---------------------------------------------------------------- Producer
@@ -201,9 +209,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--matches", type=int, default=12)
     a = ap.parse_args()
+    if not 4 <= a.matches <= 200:
+        ap.error('--matches must be 4..200 for the four-match editorial comparison')
     rng = random.Random(7)
     guard, guarded, scout, story, check, prod, streams = [], [], [], [], defaultdict(Counter), [], []
     clean_total = false_alarms = 0
+    misses = []
     for i in range(a.matches):
         seed = 5000 + i
         s = asyncio.run(full_run(seed))
@@ -219,6 +230,7 @@ def main() -> int:
         check["caught"].update(c["caught"])
         clean_total += c["clean_lines"]
         false_alarms += c["false_alarms"]
+        misses.extend({"seed": seed, **item} for item in c["misses"])
         streams.append(stream_of(s, str(seed)))
         print(f"match {seed} done", flush=True)
 
@@ -236,11 +248,15 @@ def main() -> int:
     ff_skew = mean([p["fifo"] for p in prod], "team_skew")
     s_ed = {k: tot([p["editor"] for p in single], k) for k in ("news_aired", "news_total", "repeats")}
     s_ff = {k: tot([p["fifo"] for p in single], k) for k in ("news_aired", "news_total", "repeats")}
-    rows_check = "\n".join(f"| {k} | {check['tried'][k]} | {check['caught'][k] / check['tried'][k] * 100:.0f}% | 100% |"
+    rows_check = "\n".join(f"| {k} | {check['tried'][k]} | {check['caught'][k]} / {check['tried'][k]} ({check['caught'][k] / check['tried'][k] * 100:.1f}%) | 100% |"
                            for k in ("changed number", "wrong player", "invented statistic", "invented superlative"))
     numeric = sum(check["caught"][k] for k in ("changed number", "wrong player", "invented statistic"))
     numeric_tried = sum(check["tried"][k] for k in ("changed number", "wrong player", "invented statistic"))
-    md = f"""# Ablation: what each agent is worth
+    run_provenance = provenance()
+    md = f"""# Ablation: component contribution
+
+Observed {run_provenance['generated_at']}. Git HEAD `{run_provenance['git_head']}`; dirty working tree: `{run_provenance['working_tree_dirty']}`.
+Simulator SHA-256: `{run_provenance['simulator_sha256']}`. Model SHA-256: `{run_provenance['model_artifact_sha256']}`.
 
 `python scripts/ablation.py --matches {a.matches}` switches off one specialist at a time on {a.matches} unseen
 synthetic matches (seeds 5000+) and measures what a viewer or broadcaster would suffer. Everything below is
@@ -264,9 +280,14 @@ language model makes, because the deterministic narrators do not make mistakes t
 |---|---|---|---|
 {rows_check}
 
-Model copy goes through three checks: every number and name must come from the verified facts, every
-rewritten line may only use the numbers of the line it rewrites, and claims like "best ever" or "a club
-record" pass only when a verified frame makes them.
+Model copy must preserve each verified line's numeric sequence (including multiplicity) and ordered
+player/team identities. Claims like "best ever" or "a club record" also require supporting frames.
+These conservative checks can reject legitimate language reordering; they are not a universal semantic judge.
+
+Uncaught cases: {len(misses)}. [Raw attempted/caught counts and every uncaught alteration](evidence/ablation-current.json).
+The corpus contains actual value changes; formatting-only changes such as 0.0 to 0.00 are not counted as corruptions.
+The [pre-fix run](evidence/ablation-before-rewrite-binding.json) preserves 13 accepted alterations,
+including score 2-1 to 2-2 and swaps to another player in the same insight. Do not erase failed evidence.
 
 ## What the ablation found
 
@@ -280,14 +301,19 @@ Building this study exposed four real weaknesses, all fixed and covered by tests
 And it showed where the editor earns its place: on a contested screen, not a quiet one. It now also drops
 routine repeats of the same graphic for the same team within 90 seconds.
 
-## Why this needs several agents
+## What this establishes
 
-One agent asked to do all of this has to hold the whole match, police its own numbers, pick what airs and
-write for four audiences in the same breath. Splitting the work gives each job a specialist that can be
-measured, tested and replaced on its own, and it is what lets the system check itself: the agent that writes
-is never the agent that verifies.
+Separate components can be tested and replaced independently. This experiment measures removing capabilities,
+not the causal effect of agent count. It does not show that a capable single agent with the same tools and budget
+would do worse. See AGENT_COMPARISON.md for the bounded narration comparison and remaining end-to-end experiment.
 """
-    (ROOT / "docs" / "ABLATION.md").write_text(md)
+    (ROOT / "docs" / "ABLATION.md").write_text(md.rstrip()+"\n", encoding="utf-8")
+    (ROOT / "docs/evidence/ablation-current.json").write_text(json.dumps({
+        "provenance": run_provenance, "seeds": list(range(5000,5000+a.matches)),
+        "tried": dict(check['tried']), "caught": dict(check['caught']), "clean_lines": clean_total,
+        "false_alarms": false_alarms, "uncaught": misses,
+        "scope": "Synthetic component ablation and deliberate text mutations; not observed model error frequency or an end-to-end single-agent comparison."
+    }, indent=2), encoding="utf-8")
     print(md)
     return 0
 

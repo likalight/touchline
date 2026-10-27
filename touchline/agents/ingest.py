@@ -63,7 +63,8 @@ class IngestGuard:
         self.buffer: list[tuple[int, float, Event]] = []
         self.next_seq = 1
         self.max_wait_s = max_wait_s
-        self.stats = {"accepted": 0, "duplicates": 0, "quarantined": 0, "reordered": 0, "gaps_skipped": 0}
+        self.stats = {"accepted": 0, "duplicates": 0, "quarantined": 0, "reordered": 0, "gaps_skipped": 0,
+                      "late_events": 0}
         self.quarantine: list[dict] = []
 
     def push(self, payload: dict) -> list[Event]:
@@ -78,6 +79,14 @@ class IngestGuard:
             self.stats["duplicates"] += 1
             return self.release()
         self.seen.add(ev.id)
+        if ev.seq < self.next_seq:
+            self._late(ev)
+            return self.release()
+        if any(seq == ev.seq for seq, _, _ in self.buffer):
+            self.stats["quarantined"] += 1
+            self.quarantine.append({"id": ev.id, "seq": ev.seq, "error": "conflicting_sequence"})
+            self.quarantine = self.quarantine[-50:]
+            return self.release()
         if ev.seq != self.next_seq:
             self.stats["reordered"] += 1 if ev.seq > self.next_seq else 0
         heapq.heappush(self.buffer, (ev.seq, time.monotonic(), ev))
@@ -87,7 +96,11 @@ class IngestGuard:
         out = []
         while self.buffer:
             seq, arrived, ev = self.buffer[0]
-            if seq <= self.next_seq or force or time.monotonic() - arrived > self.max_wait_s:
+            if seq < self.next_seq:
+                heapq.heappop(self.buffer)
+                self._late(ev)
+                continue
+            if seq == self.next_seq or force or time.monotonic() - arrived > self.max_wait_s:
                 heapq.heappop(self.buffer)
                 if seq > self.next_seq:
                     self.stats["gaps_skipped"] += 1
@@ -97,6 +110,18 @@ class IngestGuard:
             else:
                 break
         return out
+
+    def _late(self, ev: Event) -> None:
+        """Do not retroactively apply data behind the released sequence watermark.
+
+        An operator can replay a corrected source from scratch; the live state never
+        silently travels backwards. This is explicit data loss, not exactly-once recovery.
+        """
+        self.stats["late_events"] += 1
+        self.stats["quarantined"] += 1
+        self.quarantine.append({"id": ev.id, "seq": ev.seq, "next_seq": self.next_seq,
+                                "error": "late_after_watermark", "policy": "quarantine_and_replay"})
+        self.quarantine = self.quarantine[-50:]
 
     def flush(self) -> list[Event]:
         return self.release(force=True)

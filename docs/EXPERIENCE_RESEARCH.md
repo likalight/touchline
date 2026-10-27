@@ -1,6 +1,6 @@
 # A match you can investigate across time
 
-Research and implementation review: 26 October 2026.
+Research basis: 26 October 2026. Evidence status corrected 28 October 2026.
 
 The strongest product direction is an inspectable match story. A viewer sees a goal,
 understands its connection to an earlier event, checks the original source, switches
@@ -49,9 +49,9 @@ The revised `/judge` experience has:
 
 | Priority | Gap | Concrete next evidence | Why it matters |
 |---|---|---|---|
-| 1 | No verified public Azure deployment | Subscription/region/budget, then deploy and save live Foundry execution and downstream package results | Baseline viability, Foundry and cloud-native category credibility |
+| 1 | Prior deployment passed; new builds need their own verification | Preserve the [mid-match, hosted and downstream proof](DEPLOYMENT_PROOF.md), then smoke-test the final submitted revision | Evidence must identify the deployed build |
 | 2 | No observed first-time user outcomes | Run the existing protocol with 3–5 consenting participants; record completion, explanation accuracy and time to locate a source | Impact and intuitive UX need human evidence |
-| 3 | No final demonstration video | Record the deployed journey in under two minutes, including actual cloud proof | Judges need the central value quickly |
+| 3 | Local final film exists; public upload is unconfirmed | Publish an accepted-host video, retain submission confirmation and include readable cloud proof | Judges need the central value quickly |
 | 4 | Model usefulness and semantic quality are not established | Run the hosted narration comparison, retain failures, review translations with fluent speakers | Numeric checks are narrower than explanation quality |
 | 5 | Enterprise recovery is not fully durable | Transactional outbound outbox, durable editorial audit, authenticated operator and process-kill drills | Needed before production claims or broadcaster adoption |
 | 6 | Multi-match scale and match-length capacity are unproven | Partition ownership, session routing and an external full-match soak with delivery measurements | One warm replica and a short local load experiment are not scale proof |
@@ -59,7 +59,7 @@ The revised `/judge` experience has:
 
 The rules permit at most one Grand Prize and one Category Prize for a project. We should
 make every applicable category case credible, while choosing the strongest evidence for the
-submission. No presentation change can substitute for the missing hosted and human results.
+submission. No presentation change can substitute for the missing quality evaluation and human results.
 
 ## Reproducing the experience checks
 

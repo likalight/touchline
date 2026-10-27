@@ -1,0 +1,43 @@
+{
+  "outbound": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 23,
+    "dropped": 0,
+    "errors": 0,
+    "retries": 0,
+    "pending": 0,
+    "durability": "process memory; retries while running, no durable outbound outbox"
+  },
+  "packages": {
+    "latest": {
+      "match_id": "SYN-00091",
+      "score": {
+        "home": 3,
+        "away": 1
+      },
+      "home": "Kestrel Bay FC",
+      "away": "Ironmoor Athletic",
+      "built_at": "2026-10-28T00:21:57.61411+08:00",
+      "blob": "SYN-00091/latest.json"
+    },
+    "packages_built": 3,
+    "recent_packages": [
+      "SYN-00091/package-f439e717ce46f6427c0a.json",
+      "SYN-00087/package-2c4e9147b3b46d624692.json",
+      "SYN-00087/package-11bfa1c5f9a9c3d4c115.json"
+    ],
+    "recent_social_cards": [
+      "SYN-00091/social/074-SYN-00091-I0049.json",
+      "SYN-00091/social/056-SYN-00091-I0036.json",
+      "SYN-00091/social/056-SYN-00091-I0035.json",
+      "SYN-00091/social/025-SYN-00091-I0014.json",
+      "SYN-00091/social/019-SYN-00091-I0011.json",
+      "SYN-00087/social/090-SYN-00087-I0062.json",
+      "SYN-00087/social/090-SYN-00087-I0061.json",
+      "SYN-00087/social/062-SYN-00087-I0046.json",
+      "SYN-00087/social/044-SYN-00087-I0032.json",
+      "SYN-00087/social/028-SYN-00087-I0020.json"
+    ]
+  }
+}

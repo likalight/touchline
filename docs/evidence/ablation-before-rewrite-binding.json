@@ -1,0 +1,133 @@
+{
+  "provenance": {
+    "generated_at": "2026-10-27T17:15:13.797882+00:00",
+    "git_head": "103713674de92570c613e9a07460d34d3c101c4a",
+    "working_tree_dirty": true,
+    "python_source_sha256": "89d3cdd2afa292146d42c9cbe2adc06d7a6c3c68a8860cfd7c8467969ccfa14f",
+    "simulator_sha256": "b7570cd0c19b2b462d85e23a113bcbb31b96d976da8e76ae4d16448967d27695",
+    "model_artifact_sha256": "e2f64797a51e6362240ea1846a907b97eb16bc0a2d9e82b0bf31077af5eed142",
+    "scope": "Hashes bind the files actually read, including uncommitted changes. A Git HEAD alone does not identify a dirty working tree."
+  },
+  "seeds": [
+    5000,
+    5001,
+    5002,
+    5003,
+    5004,
+    5005,
+    5006,
+    5007,
+    5008,
+    5009,
+    5010,
+    5011
+  ],
+  "tried": {
+    "changed number": 1151,
+    "wrong player": 531,
+    "invented statistic": 1801,
+    "invented superlative": 1801
+  },
+  "caught": {
+    "changed number": 1140,
+    "wrong player": 529,
+    "invented statistic": 1801,
+    "invented superlative": 1801
+  },
+  "clean_lines": 1801,
+  "false_alarms": 0,
+  "uncaught": [
+    {
+      "seed": 5001,
+      "insight_id": "SYN-05001-I0037",
+      "kind": "changed number",
+      "original": "7 pressures and 3 high turnovers in 5 minutes",
+      "altered": "7 pressures and 3 high turnovers in 7 minutes"
+    },
+    {
+      "seed": 5001,
+      "insight_id": "SYN-05001-I0060",
+      "kind": "changed number",
+      "original": "Full-time: Kestrel Bay FC 2-1 Ironmoor Athletic",
+      "altered": "Full-time: Kestrel Bay FC 2-2 Ironmoor Athletic"
+    },
+    {
+      "seed": 5002,
+      "insight_id": "SYN-05002-I0025",
+      "kind": "changed number",
+      "original": "Half-time: Kestrel Bay FC 2-1 Ironmoor Athletic",
+      "altered": "Half-time: Kestrel Bay FC 2-2 Ironmoor Athletic"
+    },
+    {
+      "seed": 5004,
+      "insight_id": "SYN-05004-I0011",
+      "kind": "wrong player",
+      "original": "GOAL! Felix Adeyemi scores for Kestrel Bay FC!",
+      "altered": "GOAL! Yusuf Quinn scores for Kestrel Bay FC!"
+    },
+    {
+      "seed": 5004,
+      "insight_id": "SYN-05004-I0023",
+      "kind": "changed number",
+      "original": "6 pressures and 3 high turnovers in 5 minutes",
+      "altered": "6 pressures and 6 high turnovers in 5 minutes"
+    },
+    {
+      "seed": 5004,
+      "insight_id": "SYN-05004-I0024",
+      "kind": "wrong player",
+      "original": "GOAL! Felix Adeyemi scores for Kestrel Bay FC!",
+      "altered": "GOAL! Kofi Yilmaz scores for Kestrel Bay FC!"
+    },
+    {
+      "seed": 5004,
+      "insight_id": "SYN-05004-I0032",
+      "kind": "changed number",
+      "original": "6 pressures and 3 high turnovers in 5 minutes",
+      "altered": "6 pressures and 5 high turnovers in 5 minutes"
+    },
+    {
+      "seed": 5004,
+      "insight_id": "SYN-05004-I0044",
+      "kind": "changed number",
+      "original": "6 pressures and 4 high turnovers in 5 minutes",
+      "altered": "6 pressures and 4 high turnovers in 6 minutes"
+    },
+    {
+      "seed": 5006,
+      "insight_id": "SYN-05006-I0031",
+      "kind": "changed number",
+      "original": "Half-time: Kestrel Bay FC 0-2 Ironmoor Athletic",
+      "altered": "Half-time: Kestrel Bay FC 2-2 Ironmoor Athletic"
+    },
+    {
+      "seed": 5006,
+      "insight_id": "SYN-05006-I0049",
+      "kind": "changed number",
+      "original": "8 pressures and 3 high turnovers in 5 minutes",
+      "altered": "8 pressures and 5 high turnovers in 5 minutes"
+    },
+    {
+      "seed": 5006,
+      "insight_id": "SYN-05006-I0053",
+      "kind": "changed number",
+      "original": "6 pressures and 3 high turnovers in 5 minutes",
+      "altered": "6 pressures and 6 high turnovers in 5 minutes"
+    },
+    {
+      "seed": 5009,
+      "insight_id": "SYN-05009-I0019",
+      "kind": "changed number",
+      "original": "Half-time: Kestrel Bay FC 0-1 Ironmoor Athletic",
+      "altered": "Half-time: Kestrel Bay FC 1-1 Ironmoor Athletic"
+    },
+    {
+      "seed": 5009,
+      "insight_id": "SYN-05009-I0055",
+      "kind": "changed number",
+      "original": "Full-time: Kestrel Bay FC 2-1 Ironmoor Athletic",
+      "altered": "Full-time: Kestrel Bay FC 2-2 Ironmoor Athletic"
+    }
+  ],
+  "scope": "Synthetic component ablation and deliberate text mutations; not observed model error frequency or an end-to-end single-agent comparison."
+}

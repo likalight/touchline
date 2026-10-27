@@ -22,6 +22,8 @@ exact dataset, verifies its fingerprint and writes to a separate file. It does n
 regenerate or silently replace cases. Retrieving the context tool is required for a
 baseline check to pass. Every attempted case, including timeout and malformed output,
 stays in the denominator. CI also prepares a fresh dataset as a downloadable artifact.
+The 28 October preparation additionally records the simulator, model artifact and Python
+source fingerprints. A prepared dataset is still not a measured live-model comparison.
 
 - The existing specialist narrators render four audience versions from phrase banks.
 - One Agent Framework agent on the configured Foundry model uses a context tool and writes

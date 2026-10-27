@@ -7,8 +7,9 @@
   phrase-bank copy.
 
 Auth is Microsoft Entra ID (the app's managed identity, role "Cognitive Services User").
-Without an endpoint, a small local screen (injection patterns, links, length) stands in, and the
-Foundry agents keep their own Responsible-AI content policy.
+Without an endpoint, only the explicit local input screen (injection patterns, links,
+length) is available; it is not a harmful-content moderation verdict. A configured
+Azure service that becomes unavailable fails closed and is never cached as safe.
 """
 from __future__ import annotations
 
@@ -32,7 +33,7 @@ class ContentSafety:
         self.threshold = int(os.getenv("TOUCHLINE_SAFETY_THRESHOLD", "4"))  # 0, 2, 4, 6: block at or above
         self._token: Optional[tuple[str, float]] = None
         self.cache: OrderedDict[str, dict] = OrderedDict()
-        self.stats = {"checked": 0, "blocked": 0, "shield_attacks": 0, "errors": 0}
+        self.stats = {"checked": 0, "blocked": 0, "shield_attacks": 0, "errors": 0, "unavailable": 0}
 
     @property
     def mode(self) -> str:
@@ -67,17 +68,29 @@ class ContentSafety:
     async def moderate(self, text: str) -> dict:
         """{'ok': bool, 'categories': {...}, 'source': 'azure'|'local'}"""
         self.stats["checked"] += 1
-        if text in self.cache:
-            return self.cache[text]
-        out = {"ok": True, "categories": {}, "source": "local"}
+        cache_key = f"{self.mode}:{self.threshold}:{text}"
+        if cache_key in self.cache:
+            return self.cache[cache_key]
+        out = {"ok": True, "categories": {}, "source": "local", "status": "not_configured",
+               "scope": "Local input screen only; no harmful-content moderation verdict."}
         if self.mode == "azure":
             res = await self._post("text:analyze", {"text": text[:10000], "outputType": "FourSeverityLevels"})
-            if res is not None:
-                cats = {c["category"]: c.get("severity", 0) for c in res.get("categoriesAnalysis", [])}
-                out = {"ok": all(v < self.threshold for v in cats.values()), "categories": cats, "source": "azure"}
+            entries = res.get("categoriesAnalysis") if isinstance(res, dict) else None
+            valid = (isinstance(entries, list) and len(entries) == 4
+                     and all(isinstance(c, dict) and type(c.get("severity")) is int
+                             and c["severity"] in (0, 2, 4, 6) for c in entries)
+                     and {c.get("category") for c in entries} == {"Hate", "SelfHarm", "Sexual", "Violence"})
+            if not valid:
+                self.stats["unavailable"] += 1
+                self.stats["blocked"] += 1
+                return {"ok": False, "categories": {}, "source": "azure", "status": "unavailable"}
+            else:
+                cats = {c["category"]: c["severity"] for c in entries}
+                out = {"ok": all(v < self.threshold for v in cats.values()), "categories": cats, "source": "azure",
+                       "status": "checked"}
         if not out["ok"]:
             self.stats["blocked"] += 1
-        self.cache[text] = out
+        self.cache[cache_key] = out
         if len(self.cache) > 2000:
             self.cache.popitem(last=False)
         return out
@@ -88,7 +101,11 @@ class ContentSafety:
         out = {"attack": local, "source": "local"}
         if self.mode == "azure":
             res = await self._post("text:shieldPrompt", {"userPrompt": user_prompt[:10000], "documents": []})
-            if res is not None:
+            analysis = res.get("userPromptAnalysis") if isinstance(res, dict) else None
+            if not isinstance(analysis, dict) or type(analysis.get("attackDetected")) is not bool:
+                self.stats["unavailable"] += 1
+                return {"attack": local, "source": "azure", "status": "unavailable"}
+            else:
                 out = {"attack": bool(res.get("userPromptAnalysis", {}).get("attackDetected")) or local, "source": "azure"}
         if out["attack"]:
             self.stats["shield_attacks"] += 1
@@ -96,9 +113,15 @@ class ContentSafety:
 
     async def screen_question(self, q: str) -> Optional[str]:
         """None if the question can go to the analyst, else the reason it was refused."""
-        if (await self.shield(q))["attack"]:
+        shield = await self.shield(q)
+        if shield["attack"]:
             return "prompt_attack"
-        if not (await self.moderate(q))["ok"]:
+        if shield.get("status") == "unavailable":
+            return "safety_unavailable"
+        moderation = await self.moderate(q)
+        if moderation.get("status") == "unavailable":
+            return "safety_unavailable"
+        if not moderation["ok"]:
             return "harmful_content"
         return None
 

@@ -1,4 +1,4 @@
-"""Who is calling: Microsoft Entra ID through Azure Container Apps built-in authentication.
+"""Roles forwarded by a separately configured, trusted authentication proxy.
 
 Container Apps signs people in with Microsoft Entra ID (no auth code in the app) and forwards
 the signed-in user as the `X-MS-CLIENT-PRINCIPAL` header. Fans stay anonymous; producer actions
@@ -7,8 +7,11 @@ need an app role:
 * Touchline.Producer  approve or drop graphics, switch review mode, control the shared broadcast, run drills
 * Touchline.Admin     everything a producer can do
 
-TOUCHLINE_AUTH=entra enforces the roles (production). The default, `open`, lets anyone try the
-producer tools, which is what a public judging demo needs; every action is still audited.
+TOUCHLINE_AUTH=entra enforces roles only when TOUCHLINE_TRUST_AUTH_PROXY=on.
+That flag is safe only behind a verified identity gateway that removes client-supplied
+principal headers and prevents direct access. The current public Express deployment
+has no such gateway: it uses open viewing plus protected shared mutations.
+Producer actions are currently retained in session memory, not a durable audit store.
 """
 from __future__ import annotations
 
@@ -28,11 +31,16 @@ def mode() -> str:
 
 
 def principal(request: Request) -> dict:
-    raw: Optional[str] = request.headers.get("x-ms-client-principal")
+    trusted = mode() == "entra" and os.getenv("TOUCHLINE_TRUST_AUTH_PROXY", "").lower() == "on"
+    raw: Optional[str] = request.headers.get("x-ms-client-principal") if trusted else None
     if not raw:
         return {"signed_in": False, "name": None, "roles": [], "auth_mode": mode()}
     try:
-        data = json.loads(base64.b64decode(raw))
+        data = json.loads(base64.b64decode(raw, validate=True))
+        if not isinstance(data, dict) or not isinstance(data.get("claims", []), list):
+            raise ValueError("invalid principal")
+        if any(not isinstance(c, dict) or not isinstance(c.get("val"), str) for c in data.get("claims", [])):
+            raise ValueError("invalid claims")
     except Exception:
         return {"signed_in": False, "name": None, "roles": [], "auth_mode": mode()}
     claims = data.get("claims", [])

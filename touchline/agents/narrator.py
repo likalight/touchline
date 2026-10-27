@@ -103,6 +103,9 @@ class Narrator:
                           "k": base["lines"][i]["k"] if i < len(base["lines"]) else "llm"}
                          for i, t in enumerate(data.get("lines", [])[:MAX_LINES[persona]])]
                 out = {**base, "title": data["title"], "lines": lines, "lang": lang, "source": f"llm:{self.llm.backend}",
+                       "preview": True,
+                       "verification_scope": "Numeric, named-player and line-number checks only; generated wording is not independently semantically verified.",
+                       "display_label": "Model-generated preview",
                        "lower_third": (data["title"] + (f" · {lines[0]['text']}" if lines else ""))[:120]}
                 if persona == "access":
                     out["speech"] = ". ".join([out["title"]] + [l["text"] for l in lines]) + "."

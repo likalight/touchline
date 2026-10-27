@@ -137,7 +137,7 @@ def test_eventhub_consumer_does_not_steal_events(monkeypatch, interrupted):
             await super()._run()
             completed.append(self)
 
-    async def payloads():
+    async def payloads(**_kwargs):
         for meta, events in ((first_meta, first_events), (second_meta, second_events)):
             yield {"meta": meta.model_dump()}
             for event in events:

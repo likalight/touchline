@@ -68,6 +68,7 @@ def test_journal_commits_history_with_offset_and_fails_closed():
         await journal.append({'id': 'E2'}, '2')
         saved = await InputJournal(store, {'partition': '0'}).restore()
         assert saved['offset'] == '2' and len(saved['events']) == 2
+        journal.acknowledge_match('one')
         store.fail = True
         with pytest.raises(RuntimeError):
             await journal.append({'meta': {'match_id': 'two'}}, '3')
@@ -240,7 +241,11 @@ def test_feed_replays_snapshot_and_surfaces_receiver_or_journal_failure(monkeypa
     monkeypatch.setenv('TOUCHLINE_EVENTHUB_NAMESPACE', 'example.servicebus.windows.net')
     async def run():
         payloads = []
-        async for payload in feeds.eventhub_payloads():
+        completed = asyncio.Event()
+        async for payload in feeds.eventhub_payloads(completed=completed):
+            if '_match_boundary' in payload:
+                completed.set()
+                continue
             payloads.append(payload)
         return payloads
     if failure:

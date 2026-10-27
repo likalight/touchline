@@ -1,6 +1,38 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const {chapterFor, memoryLine, orderedEvidence, geometry, pitch, comparison} = require('../web/story.js');
+const {chapterFor, memoryLine, orderedEvidence, geometry, pitch, comparison, eventSummary, provenance} = require('../web/story.js');
+const player = require('../web/player-spotlight.js');
+
+test('a player participates through a cited loss without becoming the scorer', () => {
+  const varga = {id:'H9',name:'Kofi Varga'};
+  const goal = {player_id:'A9',participants:[{player_id:'H9',role:'involved'},{player_id:'H9',role:'possession loss'}]};
+  assert.equal(player.involvement(goal,varga),'possession loss');
+  assert.equal(player.involvement(goal,{id:'H8',name:'Other'}),null);
+  assert.equal(player.involvement({...goal,player_id:'H9'},varga),'Primary player');
+  assert.equal(player.involvement({reasons:[{k:'s.error',p:{culprit:'Kofi Varga'}}]},varga),'Earlier possession loss');
+  assert.equal(player.involvement({reasons:[{k:'unknown',p:{culprit:'Kofi Varga'}}]},varga),null);
+});
+
+test('player statistics lead with goals or saves without inventing missing totals', () => {
+  const stats={goals:3,shots:7,saves:4,passes:25,completed:21,xg:1.32,top_speed_kmh:28.7};
+  assert.deepEqual(player.statistics(stats,'ST')[0],['3','Goals','7 shots · match total']);
+  assert.equal(player.statistics(stats,'GK')[0][1],'Saves');
+  assert.equal(player.statistics({...stats,goals:undefined},'ST')[0][0],'—');
+});
+
+test('event board distinguishes recorded measurements from model estimates and missing data', () => {
+  const html=eventSummary({facts:{player:'Theo <script>',type:'shot',outcome:'goal',xg:.11,shot_speed_kmh:92},position:{x:90,y:34,end_x:105,end_y:34}});
+  assert(html.includes('0.11') && html.includes('xG · model estimate'));
+  assert(html.includes('Recorded shot speed') && html.includes('Recorded endpoint'));
+  assert(!html.includes('<script>'));
+  assert(!eventSummary({facts:{type:'shot'},position:{}}).includes('Recorded start'));
+});
+
+test('generated narrator wording never inherits source-rendered provenance', () => {
+  assert.equal(provenance({source:'phrasebank'}).preview,false);
+  assert.equal(provenance({source:'llm:foundry'}).preview,true);
+  assert.equal(provenance({preview:true,verification_scope:'Numeric checks only'}).scope,'Numeric checks only');
+});
 
 test('chapters match the goal itself, never a cited earlier goal or a milestone', () => {
   const chapters = [{event_id:'G1'}, {event_id:'G2'}];

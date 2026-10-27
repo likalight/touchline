@@ -1,106 +1,48 @@
-# The case for Touchline, category by category
+# Touchline: the case supported by evidence
 
-**28 October implementation update:** the active-roster bug is fixed; the Azure demo, hosted Foundry request and Event Hubs → Functions → Blob package path are verified ([evidence](evidence/cloud-chain.json)). The [final Brag film](FINAL_VIDEO.md) is rendered. The dated finishing plan below predates those results. Public video upload, actual submission confirmation, human testing and the full model comparison/evaluation remain separate tasks.
+Updated 28 October 2026. This is an evidence register, not a prediction of an award.
+The [official rules](https://github.com/microsoft/insidethegamehackathon/blob/main/OFFICIAL%20RULES.md)
+weight implementation, agentic innovation, impact, UX/presentation and category fit equally.
+At most one Grand Prize and one Category Prize may be awarded to an entrant.
 
-Research checked 26 October 2026 against the [official rules](https://github.com/microsoft/insidethegamehackathon/blob/main/OFFICIAL%20RULES.md), [Microsoft's agent orchestration guidance](https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns), [Foundry agent evaluators](https://learn.microsoft.com/en-us/azure/foundry/concepts/evaluation-evaluators/agent-evaluators), and [Event Hubs checkpoint guidance](https://learn.microsoft.com/en-us/azure/event-hubs/event-hubs-python-get-started-send).
+## Product argument
 
-The rules give equal weight to implementation, agentic innovation, impact, UX/presentation and category fit. An entrant can receive one Grand Prize and one Category Prize. This is our strategy and evidence register, not a prediction of the judges' decision or an assessment of undisclosed competitors.
+Follow a fictional player's whole story, inspect the source behind an explanation, see a
+rejected error, and export a usable graphics cue. Match memory and inspectable evidence are
+the centre of the product. A larger agent count is not evidence of a better result.
 
-**Current focus: Grand Prize + Best Multi-Agent System.** The latest pass adds an interactive
-numeric-check challenge, recorded four-fault recovery evidence, a fingerprinted narration
-comparison dataset, a local captioned video rehearsal workflow and an anonymous observation
-form. The recovery and checker demonstrations are measured locally. The comparison has not
-made model calls, and the user-test form has no participant results. Azure authentication,
-subscription selection and a spending cap are still needed before provisioning.
+## Category evidence
 
-Evidence: [recovery run](evidence/recovery.json), [frozen comparison inputs](evidence/comparison-inputs.json),
-[comparison scope](AGENT_COMPARISON.md), [observation form](user-test-kit.html), [recording workflow](SUBMISSION.md#local-video-rehearsal).
-
-## Every prize has a distinct argument
-
-| Prize | Our argument | Evidence available in this repository | Evidence still needed |
-|---|---|---|---|
-| Grand Prize, first place | A complete, memorable story from synthetic event to a personalized explanation with inspectable proof | Isolated 90-second Judge Mode; audience comparison; receipts; complete ingest-to-render workflow; evaluation and CI | Public Azure URL, a rehearsed 1:55 video, observed first-time user success |
-| Grand Prize, second place | The same overall case; second place is not a separate product strategy | Same evidence | Same gaps |
-| Best Multi-Agent System | Specialists have separate responsibilities and their contributions can be measured | Agent Framework handoffs; match-long memory; independent checks; producer decisions; ablation and failure drills | Live demonstration of a recovery; complete the bounded narration baseline and, if time permits, a capable end-to-end single-agent baseline |
-| Best Use of Microsoft Foundry | Managed hosted agents add language and tool-grounded Q&A, with observable lifecycle and evaluation | Publication hook; request-specific execution proof; version configuration; corrected tool-only grounding checks; Foundry evaluator runner | Hosted call and trace; saved evaluation result; a fluent-speaker review of an additional language; observed version change/rollback |
-| Best Enterprise Solution | A broadcaster can inspect a claim, review what airs, and adopt the system in preview first | Evidence export; producer roles; managed identity infrastructure; isolated demos; snapshot-based packages; documented limitations | Authenticated producer exercise; operator acceptance/editing measurements; real user/accessibility sessions; durable editorial audit and outbound outbox before production |
-| Best Azure Cloud Native Integration | The event-driven chain serves a useful broadcast workflow, with explicit recovery semantics | Input Blob journal and resume offset; replay reconstruction; send retry/backpressure; immutable full-time input; stable package keys; Bicep and container CI | Deploy and observe Event Hubs → app → Event Hubs → Functions → Blob; restart during a feed; record delivery latency; external load/soak test |
-
-## What a "10× better" project would mean
-
-It is a target for usefulness and clarity, not a numerical claim about this version. The best gains come from evidence and a smaller path through the product.
-
-| Improvement | Acceptance evidence | State |
+| Category | Implemented / observed | Remaining evidence |
 |---|---|---|
-| Judges find the core story immediately | Start → mistake → redemption → winner, no manual seeking required | Implemented; browser-tested |
-| Memory is visible, rather than buried in a feed | Three visited chapters; redemption links directly to earlier source coordinates; latest/selected state stays distinct | Implemented in Match memory; full replay and delayed-response browser checks |
-| A viewer can investigate importance | Selected goal opens paired 1,000-run alternate endings, with model limits beside the result | Existing simulation engine surfaced in the judge journey |
-| A claim can be inspected and shared | Receipt shows original facts, checks, decisions and audience versions; JSON downloads | Implemented; regression and browser checks |
-| Hosted execution cannot be confused with fallback | A concurrent request carries its own execution path, request ID and tool-evidence count | Implemented; concurrency tests; live cloud run pending |
-| A question or answer cannot verify itself | Evaluator trusts tool outputs only and rejects fabricated event citations | Implemented; adversarial regression tests |
-| Input restart rebuilds the actual match | Journal history and resume offset are committed together; restored events do not republish old insights | Implemented for one partition and one writer; Azure restart drill pending |
-| Delayed packaging cannot read the next match | Full-time event carries the completed snapshot; duplicate input has a stable output key | Implemented; snapshot and duplicate-delivery tests |
-| Temporary send failure does not silently discard an event | Same event is retried and pending/retry/drop counters are visible | Implemented; transient failure test; abrupt-process-loss durability remains open |
-| Quality claims are reproducible | CI artifact includes metrics, gates, timestamp, synthetic seeds and source fingerprint | Implemented; see the latest CI run |
-| Human benefit is demonstrated | Observe 3–5 participants, record task completion and time, keep consented notes | Protocol ready; no participant results claimed |
-| Deployment claims match reality | Save cloud smoke, Foundry evaluation, downstream and restart evidence | Runbook ready; requires Azure subscription, quota, permissions and budget |
+| Grand Prize | A 90-second isolated story, audience switching, sources, receipts, player context and complete synthetic ingest-to-render path | Observed first-time user success; public video and submission confirmation |
+| Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions package generation; one real mid-match restart with 1,870 final input events matching seed 91 | External sustained capacity test; final submitted build smoke; durable output delivery before production claims |
+| Multi-Agent System | Agent Framework orchestration, deterministic specialists, separate verification and editorial scheduling, local fault drills and component ablations | Measured bounded narration comparison; equivalent-budget end-to-end single-agent baseline; blinded usefulness ratings |
+| Microsoft Foundry | Published agent versions and one request-level hosted invocation without fallback; model and safety integration | Completed quality evaluation with raw failures and portal run identity; translation review; observed rollback |
+| Enterprise Solution | Machine-readable cues, evidence export, isolated demos, managed service identity and optional Blob outbox code | Supported authenticated producer deployment, durable editorial audit, live outbox recovery validation, operator pilot and measured cost |
 
-## Highest-value order
+## Evidence a judge can inspect
 
-This is a finishing plan, not a new feature backlog. The submission deadline is **28 October
-2026, 14:59 Singapore time** (27 October, 23:59 Pacific). Judges may assess the entry from
-the video, images and text without running the app, so presentation must carry the evidence.
+- [Cloud proof index](DEPLOYMENT_PROOF.md): dated hosted request, downstream package and mid-match recovery.
+- [Current pipeline evaluation](EVAL.md): generated metrics, seeds and source/model fingerprints; deterministic synthetic scope.
+- [Component ablation](ABLATION.md): removing a component is not a capable single-agent baseline.
+- [Narration comparison](AGENT_COMPARISON.md): fixed inputs and explicit run status.
+- [Foundry evaluation](FOUNDRY_EVAL.md): distinguishes runner availability from measured hosted results.
+- [Governance boundaries](GOVERNANCE.md), [impact hypotheses](IMPACT.md) and [user test](USER_TEST.md).
 
-1. **Confirm entry access now.** Registration closed on 20 October; verify the existing registration before further spending.
-   - [ ] The registered entrant can open the submission form; required fields, public repository and final submission confirmation are recorded before the deadline.
-2. **Make one sourced player story unmistakable, then record it.** Show the mistake, redemption and winner; compare audiences; inspect a receipt and a blocked altered claim. Player Spotlight, camera identity and the compact opening now pass local browser checks; record the final functioning build before adding more screens.
-   - [ ] A public video on an accepted host is under two minutes, shows the functioning final build, explains the user benefit, includes actual recovery evidence, and matches the submitted screenshots and testing instructions. The existing local rehearsal is not this final deliverable.
-3. **Deploy and capture actual execution.** This is the largest implementation proof gap; Azure sign-in, subscription and spending cap remain prerequisites.
-   - [ ] Save the accessible judge URL or functioning test build, an actual hosted Foundry request/trace with its execution path, and the observed Event Hubs → app → Event Hubs → Functions → Blob result. Record a restart, delivery latency, journal offset and package identity; retain the single-writer and outbound-durability limits. Keep judge access available through the judging period.
-4. **Complete the frozen narration comparison and Foundry evaluation.** This is the most direct remaining evidence for purposeful specialist work.
-   - [ ] Use the fingerprinted frozen inputs, record model/configuration and every result including failures, publish the denominator and evaluation outputs, and describe this as a bounded narration comparison. A capable end-to-end single-agent baseline remains a separate experiment.
-5. **Collect human observations when participants are available.** The prepared blank kit is ready; participants remain unavailable. Do not delay submission or invent results.
-   - [ ] Observe 3–5 consented participants attempting the story, audience and evidence tasks; publish completion counts, timing and observed confusion. Until then, label impact and usability claims unvalidated.
+## Submission and availability
 
-Best Multi-Agent System remains the strongest category argument. Foundry and Cloud Native
-depend on live execution evidence; Enterprise has the furthest remaining gap because durable
-editorial audit, delivery guarantees and operator adoption are not established. Improve those
-claims through observed behavior, not additional service names or a broader rewrite.
+The local Brag film exists; see [delivery notes](FINAL_VIDEO.md). A local file is not a public
+submission URL. Public video upload and final submission confirmation remain unverified in
+this repository. Keep the judge demo available through the official judging period.
 
-## Gaps we will not hide
+GitHub Actions builds and tests the application. GitHub Copilot Agent Mode is a different
+development capability. Our runtime integration is Agent Framework and Foundry; CI is not
+presented as proof of autonomous agent behaviour.
 
-- Synthetic-only model results do not validate real Premier League performance.
-- Numeric/name checks and supported citations do not prove semantic entailment, translation equivalence or factual truth outside the synthetic source.
-- The journal is a single-writer recovery mechanism, not distributed session storage. Concurrent matches need partition-aware routing and ownership before scale-out.
-- Browser sessions, feedback and producer action logs remain in memory. They are not a durable compliance archive.
-- Outbound retry is not a transactional outbox. A process killed before delivery can lose output. Teams delivery is best-effort and can repeat.
-- A 30-second co-located load generator does not establish match-length cloud capacity. CPU alone cannot diagnose the cause of delivery lag.
-- Human testing, enterprise adoption, live cloud reliability, operating costs and measured productivity gains are not yet validated.
+## How we close the remaining gap
 
-## Why these choices follow the research
-
-Microsoft's orchestration guidance recommends the least complexity that meets the need. Our case therefore rests on measured specialist contributions and failure isolation, not agent count. Foundry's evaluation guidance distinguishes task outcomes from the tool-use process; the evaluation must inspect returned tool evidence. Event Hubs checkpoints record consumption position, while our stateful application also needs match history. The journal deliberately couples those two before resuming.
-
-The sources guide the design. The repository tests and saved run artifacts are the evidence for what this implementation actually does.
-
-## Differentiation from existing products
-
-The [Premier League Companion](https://www.premierleague.com/en/news/4345260/what-is-the-premier-league-companion)
-already offers personalized, AI-assisted discovery of football statistics and content.
-[WSC Sports Arena](https://wsc-sports.com/platform/) describes AI event analysis and automated,
-personalized sports content; its [Experiences documentation](https://dev.wsc-sports.com/docs/getting-started)
-also covers personalized stories and videos inside other apps. Those primary sources establish that a chat box,
-personalization or automatic highlights alone is not a credible novelty claim.
-
-Our proposed distinction is: **follow the player's story, inspect the source events behind
-the explanation, and see what the system withheld before an editor publishes it.** The earlier
-mistake, later callback, checks, editorial decision and audience versions form an inspectable
-decision chain in a downloadable receipt. Checks and editorial review are guardrails, not a
-guarantee of semantic correctness. This is a positioning choice supported by our implementation,
-not a claim that competitors lack comparable capabilities. The stronger evidence would be
-observed producer trust, lower correction/editing effort and a clearer fan understanding.
-The project has not been benchmarked against those commercial products.
-
-See [experience research and remaining gaps](EXPERIENCE_RESEARCH.md) for the source-backed
-design rationale, the changes shipped, and the remaining evidence priorities.
+Prioritise typed claim validation, late-event policy and explicit moderation degradation;
+then one coherent chapter workspace, meaningful player context and human-readable receipts.
+Publish raw failures and accurate boundaries. Human usefulness, real-feed generalisation,
+enterprise readiness and superiority over competitors cannot be declared from synthetic tests.

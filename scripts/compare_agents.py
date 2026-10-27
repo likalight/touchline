@@ -20,6 +20,7 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+from scripts.evidence_provenance import provenance
 
 PERSONAS = ('casual', 'analyst', 'studio', 'access')
 
@@ -167,6 +168,7 @@ async def main():
                                    'checks': checks, 'context_tool_calls': len(calls),
                                    'execution': llm.execution()}
     report = {'schema': 'touchline.narration-comparison/2', 'observed_at': datetime.now(timezone.utc).isoformat(),
+              'provenance': provenance(),
               'status': 'measured' if llm else 'prepared_not_run', 'cases': rows,
               'dataset_sha256': dataset_hash(rows),
               'summary': {'cases': len(rows), 'attempted': len(rows) if llm else 0,

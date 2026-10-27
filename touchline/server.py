@@ -19,7 +19,7 @@ from touchline.auth import mode as auth_mode
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.gzip import GZipMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from touchline.a2a import mount_a2a
 from touchline.i18n import BANKS, LANGS
@@ -31,6 +31,7 @@ log = logging.getLogger("touchline")
 WEB = Path(__file__).resolve().parents[1] / "web"
 MAX_SESSIONS = int(os.getenv("TOUCHLINE_MAX_SESSIONS", "12"))
 SESSION_TTL = 15 * 60
+SUPPORTED_LANGUAGES = set(LANGS) | {"de", "ja", "hi", "ar", "zh", "ta", "sw"}
 from touchline.demo import DEMO_SEED as DEFAULT_DEMO_SEED
 DEMO_SEED = int(os.getenv("TOUCHLINE_DEMO_SEED", str(DEFAULT_DEMO_SEED)))
 DEMO_SPEED = float(os.getenv("TOUCHLINE_DEMO_SPEED", "10"))
@@ -52,7 +53,9 @@ async def hub_consumer():
     from touchline.feeds import eventhub_payloads
     from touchline.schema import MatchMeta
 
-    feed = eventhub_payloads()
+    completed = asyncio.Event()
+    completed.set()
+    feed = eventhub_payloads(completed=completed)
     queue: asyncio.Queue = asyncio.Queue(maxsize=10000)
     pending_meta = None
     exhausted = False
@@ -80,6 +83,8 @@ async def hub_consumer():
             if payload is None:
                 exhausted = True
                 return
+            if "_match_boundary" in payload:
+                return  # drain pending work before the input journal can be replaced
             if "meta" in payload:  # a new match started on the hub: hand over to a new session
                 pending_meta = payload  # do not move metadata behind its events in the queue
                 return
@@ -103,9 +108,11 @@ async def hub_consumer():
             log.info("live Event Hubs session started for %s", s.meta.match_id)
             # Only session_feed reads events until this match ends. Competing readers lose events.
             await s.task
+            completed.set()  # runtime has accepted every output durably, or raised
     finally:
         pump_task.cancel()
         await asyncio.gather(pump_task, return_exceptions=True)
+        await feed.aclose()  # also close when cancellation happened between yielded payloads
 
 
 async def demo_keeper():
@@ -148,8 +155,10 @@ MCP_APP = _MCPApp()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from touchline.feeds import eventhub_enabled
+    from touchline.outbound import outbound
 
     setup_telemetry()
+    await outbound.start()
     sessions.clear()
     feed_health.clear()
     feed_health.update(status="disabled")
@@ -174,6 +183,8 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Touchline - explainable match intelligence", version="1.0.0", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
+from touchline.limits import PublicWorkLimits
+app.add_middleware(PublicWorkLimits)
 app.mount("/static", StaticFiles(directory=WEB), name="static")
 mount_a2a(app, lambda: sessions.get(DEMO), os.getenv("TOUCHLINE_PUBLIC_URL", "http://localhost:8000"))
 
@@ -204,7 +215,14 @@ class NewMatch(BaseModel):
     speed: float = Field(10, ge=0.5, le=240)
     chaos: float = Field(0.0, ge=0, le=0.3)
     mode: str = "auto"
-    langs: list[str] = []
+    langs: list[str] = Field(default_factory=list, max_length=3)
+
+    @field_validator("langs")
+    @classmethod
+    def supported_languages(cls, value):
+        if any(code not in SUPPORTED_LANGUAGES for code in value):
+            raise ValueError("Choose supported language codes")
+        return value
 
 
 class Control(BaseModel):
@@ -214,7 +232,7 @@ class Control(BaseModel):
 
 class Ask(BaseModel):
     question: str = Field(..., max_length=500)
-    lang: str = "en"
+    lang: str = Field("en", pattern=r"^[a-z]{2}$")
 
 
 class Decision(BaseModel):
@@ -258,10 +276,12 @@ async def overlay():
 async def health():
     from touchline.safety import safety
     from touchline.speech import speech
+    from touchline.outbound import outbound
 
-    return {"status": "degraded" if feed_health["status"] in {"failed", "stopped"} else "ok",
+    output = outbound.status()
+    return {"status": "degraded" if feed_health["status"] in {"failed", "stopped"} or output["degraded"] else "ok",
             "feed": dict(feed_health), "sessions": len(sessions), "llm": get_llm().status(), "speech": speech.status(),
-            "content_safety": safety.status(), "auth": auth_mode()}
+            "content_safety": safety.status(), "auth": auth_mode(), "outbound": output}
 
 
 @app.get("/api/i18n")
@@ -355,13 +375,22 @@ SHARED_ACTIONS = {"pause", "resume", "speed", "jump", "langs"}
 async def me(request: Request):
     """Who is signed in (Microsoft Entra ID via Container Apps authentication) and what they may do."""
     p = principal(request)
-    return {**p, "can_produce": can_produce(p), "login": "/.auth/login/aad", "logout": "/.auth/logout"}
+    protected = os.getenv("TOUCHLINE_PROTECT_SHARED", "").lower() == "on" and auth_mode() != "entra"
+    identity = auth_mode() == "entra" and os.getenv("TOUCHLINE_TRUST_AUTH_PROXY", "").lower() == "on"
+    return {**p, "can_produce": can_produce(p), "shared_read_only": protected,
+            "can_control_shared": can_produce(p) and not protected,
+            "identity_provider_configured": identity,
+            "login": "/.auth/login/aad" if identity else None,
+            "logout": "/.auth/logout" if identity else None}
 
 
 @app.post("/api/matches/{sid}/control")
 async def control(sid: str, body: Control, request: Request):
     s = get(sid)
     judge_owner(s, request)
+    if body.action == "langs" and (not isinstance(body.value, list) or len(body.value) > 3
+                                  or any(not isinstance(code, str) or code not in SUPPORTED_LANGUAGES for code in body.value)):
+        raise HTTPException(422, "Choose at most three supported languages.")
     if getattr(s, "control_token", None) and body.action not in {"pause", "resume", "langs"}:
         raise HTTPException(400, "Judge Mode supports pause, resume and language selection. Use Restart to replay.")
     shared = sid in (DEMO, "live")
@@ -436,6 +465,8 @@ async def recap(sid: str, persona: str = "casual", lang: str = "en"):
     s = get(sid)
     if lang not in BANKS:
         r = s.get_recap(persona, "en")
+        if r.get("verification", {}).get("status") != "verified":
+            return r
         if get_llm().available:
             rc = s.recap.frames()
             alt = await s.narrator.render_llm(rc, persona, lang)
@@ -459,7 +490,7 @@ async def ask(sid: str, body: Ask):
                 "refused": refused, "ms": ms}
     res = await s.ask_agent.ask(body.question, body.lang)
     res["ms"] = round((time.perf_counter() - t0) * 1000, 1)
-    s.trace.record("AskTheAnalyst", "qa", res["ms"], note=f"{res['source']}: {body.question[:60]}")
+    s.trace.record("AskTheAnalyst", "qa", res["ms"], note=f"{res['source']}: question answered; input text not retained")
     return res
 
 
