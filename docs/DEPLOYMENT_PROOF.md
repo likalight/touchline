@@ -1,11 +1,38 @@
 # Deployment proof and runbook
 
-## Observed cloud run — 28 October 2026 Singapore time
+## Current deployed build — 28 October 2026 Singapore time
 
-**New implementation awaiting its own cloud proof:** the optional Blob outbox now persists
-pending/acknowledged output IDs. The observed run below predates it. Enable a separate Blob URL
-via `TOUCHLINE_OUTBOX_URL`, then verify pending restoration, successful send/ack and duplicate-safe
-consumer behaviour. See [single-writer limits](READINESS.md#durable-delivery-scope).
+The reviewed source `b13985bb2b7267a8d8b8685059b38620540e072c`, merged as `587a150`,
+is deployed as container digest
+`sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd`.
+The observation at 01:54 Singapore time (27 October 17:54 UTC) records:
+
+- [Deployment manifest](evidence/readiness-deployment.json), [health](evidence/readiness-health.json)
+  and [readiness](evidence/readiness-ready.json): healthy/ready application with configured Blob outbox;
+  66 acknowledged outputs, zero pending, zero errors at this observation.
+- [Hosted analyst answer](evidence/readiness-hosted-answer.json): published version 4,
+  `gpt-4.1-mini`, completed without fallback in 4,726 ms model execution. It selects exact
+  source-rendered statements, with bound claims and four goal citations for the 3–1 result.
+- [Downstream observation](evidence/readiness-downstream.json) and [downloaded package](evidence/readiness-stored-package.json):
+  Functions built a fresh `SYN-00091` package at 17:53:54 UTC from replay of the saved input
+  journal. This is a new output observation on the current image, **not a freshly ingested match**.
+- [External MCP client exchanges](evidence/external-mcp-current.json): six gates passed,
+  covering protocol negotiation, discovery, score shape, source-event resolution, recap source
+  checks and readiness. This is interoperability evidence for this client and these calls.
+- [Final PR9 CI](https://github.com/likalight/touchline/actions/runs/40553039454): 152 Python
+  tests passed; test, browser, Bicep and Docker jobs all passed on the reviewed source.
+- [Bounded external cloud streaming](CLOUD_SOAK.md): all 12 attempted clients received all
+  1,923 source events in order and the correct 1–1 finish for one isolated seed-221 match at
+  30× playback, over 206.68 seconds. All clients ran on one external observer machine.
+  This separately created match exercised streaming, not downstream delivery or crash recovery.
+
+This proves configured output persistence and observed send/ack completion. It does not test
+a live crash between send and acknowledgement, establish exactly-once effects or prove
+multi-replica ownership. See [single-writer limits](READINESS.md#durable-delivery-scope).
+The health snapshot precedes the separate hosted request; its zero model-call counter is not
+the request's execution evidence. Each published JSON includes source/image context and scope.
+
+## Prior input-recovery experiment — 28 October 2026 Singapore time
 
 These observations belong to source `952d7018043ab04ff7d31fbfc007366dc8c92a22`, merged as
 `103713674de92570c613e9a07460d34d3c101c4a`, and container digest
@@ -61,9 +88,11 @@ python scripts/foundry_eval.py
 
 The smoke check requires a successful hosted answer with actual tool evidence. Its execution
 record belongs to that request, so another viewer's aggregate counters cannot create a false
-pass. The evaluation checks numbers against tool outputs only; question and answer text are
-excluded. Citations must exist in the returned evidence. Save the evaluation report and portal
-link. A nonzero exit or a fallback is a failed cloud proof, even if the app remains usable.
+pass. The default evaluator checks numbers against tool outputs and citation membership. The
+separate `python scripts/foundry_eval.py --bounded` application test checks six fixed adversarial
+cases; its [observed results](FOUNDRY_EVAL.md) are not a completed portal evaluation. Save the
+actual report and any portal link separately. A nonzero exit or fallback fails hosted-execution
+proof, even if the deterministic app remains usable.
 
 Capture one Foundry trace, the deployed agent version, model deployment and the corresponding
 request ID. Demonstrate a language outside EN/ES/FR/PT and ask a fluent speaker to review its
@@ -99,8 +128,11 @@ enough for the uncommitted tail to remain available. A storage or receiver failu
 `/api/health` to `degraded` and `/api/ready` returns 503; inspect logs before restarting.
 
 **Limits:** one writer/replica and one active input match; no distributed ownership, durable
-browser sessions, durable producer audit or transactional outbound outbox. Replay avoids
-re-emission but cannot guarantee delivery of a previous process's unconfirmed outbound queue.
+browser sessions or durable producer audit. With `TOUCHLINE_OUTBOX_URL`, replay reconciles
+outputs against the durable ledger; without it, historical outputs are suppressed and the
+process-memory queue may lose unconfirmed messages. Input and output are separate storage
+commits, so the journal/outbox pair is not an atomic cross-service transaction. The new live
+observation above covers send/ack completion, not a crash during that boundary.
 
 ## 5. Validate enterprise controls and recovery
 

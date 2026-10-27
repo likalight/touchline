@@ -6,7 +6,7 @@ core synthetic broadcast independent of model latency.
 
 | Capability | Implemented | Evidence boundary |
 |---|---|---|
-| Versioned hosted agents | Publication and pinned runtime versions | Earlier version-2 invocation observed; new versions require a new smoke and quality run |
+| Versioned hosted agents | Publication and pinned runtime versions | Version 4 observed on the current Azure image, selecting exact source statements without fallback |
 | Q&A tools | Scoreboard, player, event and team context | Source binding and fallback require application tests, not just portal publication |
 | Additional languages | Optional generated rewrites | No fluent-speaker quality score is claimed |
 | Quality evaluation | Version-4 bounded application run: six of six hosted cases passed | [Raw results and limits](FOUNDRY_EVAL.md); full portal and broader semantic/language evaluation remain |
@@ -14,7 +14,7 @@ core synthetic broadcast independent of model latency.
 | Service authentication | Managed identity | Separate from human producer identity |
 | Observability | Tracing integration and request-level execution metadata | Do not infer that every trace has been inspected in the portal |
 
-[Hosted request proof](evidence/hosted-request-20261028.json) records an actual invocation,
+[Current hosted request proof](evidence/readiness-hosted-answer.json) records an actual invocation,
 model, duration and fallback status. [Deployment proof](DEPLOYMENT_PROOF.md) records its revision
 and the wider cloud chain. GitHub Actions provides CI; it is not GitHub Copilot Agent Mode.
 

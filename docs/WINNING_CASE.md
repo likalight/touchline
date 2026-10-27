@@ -16,10 +16,10 @@ the centre of the product. A larger agent count is not evidence of a better resu
 | Category | Implemented / observed | Remaining evidence |
 |---|---|---|
 | Grand Prize | A 90-second isolated story, audience switching, sources, receipts, player context and complete synthetic ingest-to-render path | Observed first-time user success; public video and submission confirmation |
-| Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions package generation; one real mid-match restart with 1,870 final input events matching seed 91 | External sustained capacity test; final submitted build smoke; durable output delivery before production claims |
+| Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions; current-image smoke with 66 outbox acknowledgements and regenerated package; all 12 external clients received an accelerated match's 1,923 events; prior mid-match restart recovered all 1,870 reference events | Real-time match-length soak and capacity ceiling; live crash-between-send-and-ack test; measured business impact |
 | Multi-Agent System | Agent Framework orchestration, deterministic specialists, separate verification and editorial scheduling, local fault drills, component ablations and a disclosed 12-case narration contract comparison | Equivalent-budget end-to-end single-agent baseline; semantic and blinded usefulness ratings |
 | Microsoft Foundry | Published version 4 passed six fixed hosted application checks with raw outputs; model and safety integration; earlier weak oracle retained and corrected transparently | Full portal evaluation; broader relevance and translation review; observed rollback |
-| Enterprise Solution | Machine-readable cues, evidence export, isolated demos, managed service identity and optional Blob outbox code | Supported authenticated producer deployment, durable editorial audit, live outbox recovery validation, operator pilot and measured cost |
+| Enterprise Solution | Machine-readable cues, evidence export, isolated demos, managed service identity and configured Blob outbox with observed acknowledgements | Supported authenticated producer deployment, durable editorial audit, live failure-recovery validation, operator pilot and measured cost |
 
 ## Evidence a judge can inspect
 
@@ -42,7 +42,15 @@ presented as proof of autonomous agent behaviour.
 
 ## How we close the remaining gap
 
-Prioritise typed claim validation, late-event policy and explicit moderation degradation;
-then one coherent chapter workspace, meaningful player context and human-readable receipts.
-Publish raw failures and accurate boundaries. Human usefulness, real-feed generalisation,
-enterprise readiness and superiority over competitors cannot be declared from synthetic tests.
+Typed claim binding, late-event quarantine, explicit moderation failure, a coherent chapter
+workspace, role-specific player context and human-readable receipts are now implemented and
+tested. The next improvements need observations: put current Microsoft execution proof in the
+final film; complete the public submission; measure first-time user success; expand hosted
+relevance/language evaluation; exercise authenticated producer and live output-recovery paths;
+and establish a complete operating-cost budget.
+
+Synthetic football-realistic data is required by the brief. Real-feed generalisation is a later
+product-validation question, not a reason to disguise this prototype as real match coverage.
+Human usefulness, enterprise readiness and superiority over competitors cannot be declared
+from synthetic tests. Improve every judging dimension, while targeting the permitted maximum
+of one Grand Prize and one Category Prize.

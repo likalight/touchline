@@ -6,11 +6,10 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 
 ## Verification checkpoints
 
-- Local combined checkpoint: 149 Python tests passed before the later record-scope/scorer corrections;
-  additional focused tests passed afterwards. This is not a final combined count for every later edit.
-  Use the final CI run for the submitted revision.
-- All four CI jobs passed at `fa5c7d3`; the subsequent `468452e` run was still in progress when
-  this checkpoint was recorded. Four required checks (`test`, `browser`, `bicep`, `docker`) now
+- [Final PR9 CI](https://github.com/likalight/touchline/actions/runs/40553039454) passed 152 Python
+  tests at `b13985b`, merged as `587a150`. All four jobs passed, including both full browser journeys.
+  This is the reviewed code deployed in the current image; later evidence-only edits have their own CI.
+- Four required checks (`test`, `browser`, `bicep`, `docker`) now
   gate merges, including administrators. Repository auto-merge is enabled; it is not permission
   to bypass required checks.
 - The 12-match pipeline gate verified 730 supported insights and explained all 28 goals,
@@ -22,6 +21,9 @@ the observed source/image separately. A 10/10 score or a winning probability is 
   and responsive layouts at 320, 390 and 768 pixels during this implementation pass.
   This is automated layout/interaction evidence, not a screen-reader or human usability certification.
 - [Frozen-model evaluation](FROZEN_MODEL_EVAL.md) uses 30 fresh corrected synthetic matches.
+- [External cloud streaming](CLOUD_SOAK.md) delivered all 1,923 ordered source events and the
+  correct final score to all 12 attempted clients in one 206.68-second accelerated match.
+  This is a bounded external observation, not real-time full-match availability or a capacity ceiling.
 - [Ablation](ABLATION.md) preserves actual failures and strict rewrite-binding results.
 - [Published analyst version 4](FOUNDRY_EVAL.md) passed all six fixed hosted application cases
   under the strengthened record-scope oracle. Raw results remain available; no portal-quality pass is claimed.
@@ -47,10 +49,10 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 | 15 | Historical chapter vs current pitch | **Implemented:** explicit selected/live timestamps and source view; chapter selection does not pretend to rewind current state. |
 | 16 | Producer UI overstates permissions | **Implemented:** capability-aware controls and honest shared-read-only status. |
 | 17 | Enterprise producer identity unproven | **Partly addressed:** untrusted headers ignored; explicit verified-proxy opt-in required. Supported gateway setup and authenticated operator exercise remain. |
-| 18 | Outbound queue not durable | **Implemented and locally tested, live validation pending:** optional Blob outbox; acknowledgement-only retries after send; protected sequential match handoff and atomic metadata replacement. At-least-once; consumers deduplicate stable delivery IDs. |
+| 18 | Outbound queue not durable | **Implemented, locally tested and configured live:** 66 acknowledgements, zero pending/errors after saved-input replay. Acknowledgement-only retries, protected sequential handoff and atomic journal replacement have regressions. Live crash-between-send-and-ack remains untested; consumers deduplicate stable delivery IDs. |
 | 19 | Audit/privacy claims too broad | **Partly addressed:** question text removed from application trace notes. Durable editorial retention, deletion and tenant policy remain. |
 | 20 | Anonymous work/spend unbounded | **Implemented:** process-local HTTP and model admission/concurrency budgets. Currency cap, per-tenant fairness and distributed limits remain. |
-| 21 | Scale/availability unsupported | **Remaining:** one writer/replica and one external match. No external match-length cloud soak or multi-replica ownership result. |
+| 21 | Scale/availability unsupported | **Bounded external observation passed:** 12/12 clients received all 1,923 events and correct final score in one 206.68-second accelerated cloud match. One observer machine and deployment; real-time match-length soak, reconnect, capacity ceiling and multi-replica ownership remain. |
 | 22 | Model/evaluation provenance stale | **Measured:** fresh frozen logistic-model calibration/discrimination with hashes; updated pipeline/ablation. Real feed, xT and win-probability validation remain. |
 | 23 | Recaps lack independent validation | **Implemented and tested:** typed recap claims, score, team aggregates, player summaries and turning points; blocked recaps withheld. |
 | 24 | Causal/counterfactual wording | **Updated:** model estimate, baseline-relative effects, explicit absence labels and temporal possession language. Fluent/editor review remains useful. |
@@ -58,8 +60,8 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 | 26 | No human benefit evidence | **Remaining:** test kit prepared, participants unavailable. No measured savings, comprehension or adoption claim. |
 | 27 | Mobile/accessibility unvalidated | **Partly measured:** automated narrow-view and keyboard journeys passed. Screen reader, low-vision and real-device participant evaluation remain. |
 | 28 | CV broadcast accuracy limited | **Scope corrected:** experimental synthetic-camera result, not real broadcast-video accuracy. No inflated CV claim. |
-| 29 | Browser journey absent from CI | **Implemented and enforced:** both real journeys with retained screenshots/logs; four required checks including browser gate merges/admins. Earlier four-job run passed; verify the submitted revision's final run. |
-| 30 | Strongest cloud proof outside repo | **Published:** dated mid-match recovery, hosted request and downstream JSON, tied to prior source/image. New deployment proof remains necessary. |
+| 29 | Browser journey absent from CI | **Implemented, passed and enforced:** both real journeys with retained screenshots/logs; all four jobs green at `b13985b`, including browser; required checks gate merges/admins. |
+| 30 | Strongest cloud proof outside repo | **Published:** current source/image, health/readiness, version-4 hosted source selection, acknowledged outbox outputs, regenerated Functions package and external MCP exchanges. Prior mid-match input recovery remains separately dated. |
 | 31 | Total operating cost unknown | **Remaining:** billing query returned incomplete service coverage, so no total or per-match estimate is published. Deployment-wide ledger and judging-period budget remain. |
 
 ## Durable delivery scope
@@ -76,7 +78,8 @@ pauses at the next metadata boundary until processing and durable output accepta
 previous match complete. An internal boundary also closes interrupted matches. Metadata/history
 replacement commits atomically; a failed replacement preserves prior replay history. Local
 handoff and journal tests cover these behaviours. This is sequential handoff, not parallel
-multi-match ownership or a live cloud recovery observation of the new code.
+multi-match ownership. The [current live observation](DEPLOYMENT_PROOF.md) records 66 durable
+acknowledgements after saved-input replay; it does not inject a live crash at the send/ack boundary.
 
 After a successful send, a failed storage acknowledgement is retried without repeatedly sending
 again in that process. A crash still permits redelivery. Pending-message age and sender state

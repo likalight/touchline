@@ -1,0 +1,473 @@
+{
+  "schema": "touchline.external-mcp/1",
+  "observed_at": "2026-10-27T17:54:28.954783+00:00",
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "session": "live",
+  "checks": {
+    "protocol_negotiated": true,
+    "tools_discovered": true,
+    "score_shape": true,
+    "source_event_resolved": true,
+    "recap_source_checks": true,
+    "application_ready": true
+  },
+  "passed": true,
+  "exchanges": [
+    {
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "touchline-external-audit",
+          "version": "1"
+        }
+      },
+      "result": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {
+          "experimental": {},
+          "prompts": {
+            "listChanged": false
+          },
+          "resources": {
+            "subscribe": false,
+            "listChanged": false
+          },
+          "tools": {
+            "listChanged": false
+          }
+        },
+        "serverInfo": {
+          "name": "touchline",
+          "version": "1.30.0"
+        },
+        "instructions": "Touchline explains a live (synthetic, fictional) football match. Use list_matches first, then the\nother tools with a session id ('demo' is always running). Quote numbers exactly as the tools return them and\ncite event IDs like E01837 when you explain why something happened."
+      }
+    },
+    {
+      "method": "tools/list",
+      "params": {},
+      "result": {
+        "tools": [
+          {
+            "name": "list_matches",
+            "description": "Live matches: session id, clubs, score and minute.",
+            "inputSchema": {
+              "properties": {},
+              "title": "list_matchesArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "list_matchesOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_scoreboard",
+            "description": "Score, minute, possession, xG, shots, win probability, momentum and whether the game is in control or chaos.",
+            "inputSchema": {
+              "properties": {
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                }
+              },
+              "title": "get_scoreboardArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_scoreboardOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_key_moments",
+            "description": "The latest verified moments with why they mattered, newest last. kind filters (goal, momentum, phase, press, story_duel...).",
+            "inputSchema": {
+              "properties": {
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                },
+                "kind": {
+                  "default": "",
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "lang": {
+                  "default": "en",
+                  "title": "Lang",
+                  "type": "string"
+                },
+                "limit": {
+                  "default": 8,
+                  "title": "Limit",
+                  "type": "integer"
+                }
+              },
+              "title": "get_key_momentsArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_key_momentsOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "explain_event",
+            "description": "Every derived fact for one event: xG, pass difficulty, threat added, win-probability change.",
+            "inputSchema": {
+              "properties": {
+                "event_id": {
+                  "title": "Event Id",
+                  "type": "string"
+                },
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "event_id"
+              ],
+              "title": "explain_eventArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "explain_eventOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_player",
+            "description": "One player's match: passes and accuracy, pass difficulty, xG, threat added, top speed, distance, rating.",
+            "inputSchema": {
+              "properties": {
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "title": "get_playerArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_playerOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_team_report",
+            "description": "Tactical picture for 'home' or 'away': pressing (PPDA), high turnovers, xG, shots, possession.",
+            "inputSchema": {
+              "properties": {
+                "side": {
+                  "default": "home",
+                  "title": "Side",
+                  "type": "string"
+                },
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                }
+              },
+              "title": "get_team_reportArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_team_reportOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "get_recap",
+            "description": "The match story so far (half-time or full-time recap) for a casual fan or an analyst, in a language.",
+            "inputSchema": {
+              "properties": {
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                },
+                "persona": {
+                  "default": "casual",
+                  "title": "Persona",
+                  "type": "string"
+                },
+                "lang": {
+                  "default": "en",
+                  "title": "Lang",
+                  "type": "string"
+                }
+              },
+              "title": "get_recapArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "get_recapOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "what_if",
+            "description": "Counterfactual: replay the rest of the match 1,000 times with one thing changed (a goal ruled out, a red card\n        not given, an extra goal). Call with no scenario to list the options for this match.",
+            "inputSchema": {
+              "properties": {
+                "scenario": {
+                  "default": "",
+                  "title": "Scenario",
+                  "type": "string"
+                },
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                }
+              },
+              "title": "what_ifArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "what_ifOutput",
+              "type": "object"
+            }
+          },
+          {
+            "name": "ask_analyst",
+            "description": "Ask Touchline's analyst agent anything about the match; the answer cites event IDs.",
+            "inputSchema": {
+              "properties": {
+                "question": {
+                  "title": "Question",
+                  "type": "string"
+                },
+                "session": {
+                  "default": "demo",
+                  "title": "Session",
+                  "type": "string"
+                },
+                "lang": {
+                  "default": "en",
+                  "title": "Lang",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "question"
+              ],
+              "title": "ask_analystArguments",
+              "type": "object"
+            },
+            "outputSchema": {
+              "properties": {
+                "result": {
+                  "title": "Result",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "result"
+              ],
+              "title": "ask_analystOutput",
+              "type": "object"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "list_matches",
+        "arguments": {}
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"session\": \"demo\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 0, \"away\": 0}, \"minute\": 6, \"finished\": false}, {\"session\": \"live\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 3, \"away\": 1}, \"minute\": 95, \"finished\": true}, {\"session\": \"m-f1d99cf3\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 0, \"away\": 0}, \"minute\": 1, \"finished\": false}]"
+          }
+        ],
+        "structuredContent": {
+          "result": "[{\"session\": \"demo\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 0, \"away\": 0}, \"minute\": 6, \"finished\": false}, {\"session\": \"live\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 3, \"away\": 1}, \"minute\": 95, \"finished\": true}, {\"session\": \"m-f1d99cf3\", \"home\": \"Kestrel Bay FC\", \"away\": \"Ironmoor Athletic\", \"score\": {\"home\": 0, \"away\": 0}, \"minute\": 1, \"finished\": false}]"
+        },
+        "isError": false
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "get_scoreboard",
+        "arguments": {
+          "session": "live"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"minute\": 95, \"score\": {\"home\": 3, \"away\": 1}, \"home\": {\"goals\": 3, \"xg\": 1.52, \"shots\": 15, \"on_target\": 9, \"big_chances\": 1, \"passes\": 698, \"pass_accuracy\": 88, \"progressive_passes\": 132, \"line_breaking_passes\": 74, \"xt\": 2.21, \"pressures\": 65, \"tackles_interceptions\": 97, \"high_turnovers\": 17, \"ppda\": 4.3, \"corners\": 4, \"fouls\": 3, \"cards\": 0, \"possession\": 61}, \"away\": {\"goals\": 1, \"xg\": 1.46, \"shots\": 12, \"on_target\": 4, \"big_chances\": 1, \"passes\": 382, \"pass_accuracy\": 77, \"progressive_passes\": 79, \"line_breaking_passes\": 44, \"xt\": 1.34, \"pressures\": 71, \"tackles_interceptions\": 108, \"high_turnovers\": 21, \"ppda\": 5.9, \"corners\": 3, \"fouls\": 3, \"cards\": 0, \"possession\": 39}, \"win_prob\": {\"home\": 1.0, \"draw\": 0.0, \"away\": 0.0}, \"momentum\": -0.249, \"phase\": {\"label\": \"home_control\", \"chaos\": 0.33, \"turnovers_per_min\": 1.6, \"avg_passes_per_possession\": 3.0, \"home_pass_share\": 0.81}, \"verified_answers\": [{\"id\": \"A0_0\", \"answer\": \"Minute 95.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_1\", \"answer\": \"Full time: Kestrel Bay FC 3-1 Ironmoor Athletic. Kestrel Bay FC beat Ironmoor Athletic 3-1.\", \"citations\": [\"E00361\", \"E00451\", \"E01081\", \"E01412\"], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_2\", \"answer\": \"xG: Kestrel Bay FC 1.52 - 1.46 Ironmoor Athletic from 15 and 12 shots.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_3\", \"answer\": \"Possession: Kestrel Bay FC 61% - 39% Ironmoor Athletic.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_4\", \"answer\": \"Win probability: Kestrel Bay FC 100%, draw 0%, Ironmoor Athletic 0%.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_5\", \"answer\": \"Pressing: Kestrel Bay FC 65 pressures (PPDA 4.3), Ironmoor Athletic 71 (PPDA 5.9).\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}]}"
+          }
+        ],
+        "structuredContent": {
+          "result": "{\"minute\": 95, \"score\": {\"home\": 3, \"away\": 1}, \"home\": {\"goals\": 3, \"xg\": 1.52, \"shots\": 15, \"on_target\": 9, \"big_chances\": 1, \"passes\": 698, \"pass_accuracy\": 88, \"progressive_passes\": 132, \"line_breaking_passes\": 74, \"xt\": 2.21, \"pressures\": 65, \"tackles_interceptions\": 97, \"high_turnovers\": 17, \"ppda\": 4.3, \"corners\": 4, \"fouls\": 3, \"cards\": 0, \"possession\": 61}, \"away\": {\"goals\": 1, \"xg\": 1.46, \"shots\": 12, \"on_target\": 4, \"big_chances\": 1, \"passes\": 382, \"pass_accuracy\": 77, \"progressive_passes\": 79, \"line_breaking_passes\": 44, \"xt\": 1.34, \"pressures\": 71, \"tackles_interceptions\": 108, \"high_turnovers\": 21, \"ppda\": 5.9, \"corners\": 3, \"fouls\": 3, \"cards\": 0, \"possession\": 39}, \"win_prob\": {\"home\": 1.0, \"draw\": 0.0, \"away\": 0.0}, \"momentum\": -0.249, \"phase\": {\"label\": \"home_control\", \"chaos\": 0.33, \"turnovers_per_min\": 1.6, \"avg_passes_per_possession\": 3.0, \"home_pass_share\": 0.81}, \"verified_answers\": [{\"id\": \"A0_0\", \"answer\": \"Minute 95.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_1\", \"answer\": \"Full time: Kestrel Bay FC 3-1 Ironmoor Athletic. Kestrel Bay FC beat Ironmoor Athletic 3-1.\", \"citations\": [\"E00361\", \"E00451\", \"E01081\", \"E01412\"], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_2\", \"answer\": \"xG: Kestrel Bay FC 1.52 - 1.46 Ironmoor Athletic from 15 and 12 shots.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_3\", \"answer\": \"Possession: Kestrel Bay FC 61% - 39% Ironmoor Athletic.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_4\", \"answer\": \"Win probability: Kestrel Bay FC 100%, draw 0%, Ironmoor Athletic 0%.\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}, {\"id\": \"A0_5\", \"answer\": \"Pressing: Kestrel Bay FC 65 pressures (PPDA 4.3), Ironmoor Athletic 71 (PPDA 5.9).\", \"citations\": [], \"language\": \"en\", \"answer_type\": \"match_fact\"}]}"
+        },
+        "isError": false
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "get_key_moments",
+        "arguments": {
+          "session": "live",
+          "kind": "goal",
+          "limit": 1
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[{\"minute\": 74, \"kind\": \"goal\", \"title\": \"GOAL! Andre Varga scores for Ironmoor Athletic\", \"why\": [\"Chance quality: 0.32 xG\", \"Biggest factor: distance to goal (raised the model estimate versus baseline)\", \"In the preceding sequence, Malik Calloway lost possession 13 seconds earlier\", \"Model estimate: Taken five metres closer, 0.69 xG (+0.37)\", \"Created by Sven Adeyemi: a 60/100-difficulty pass\", \"Ironmoor Athletic win probability from 0% to 0%\"], \"evidence\": [\"E01407\", \"E01410\", \"E01411\", \"E01412\"], \"language\": \"en\", \"source\": \"checked_phrase_bank\", \"verified\": true}]"
+          }
+        ],
+        "structuredContent": {
+          "result": "[{\"minute\": 74, \"kind\": \"goal\", \"title\": \"GOAL! Andre Varga scores for Ironmoor Athletic\", \"why\": [\"Chance quality: 0.32 xG\", \"Biggest factor: distance to goal (raised the model estimate versus baseline)\", \"In the preceding sequence, Malik Calloway lost possession 13 seconds earlier\", \"Model estimate: Taken five metres closer, 0.69 xG (+0.37)\", \"Created by Sven Adeyemi: a 60/100-difficulty pass\", \"Ironmoor Athletic win probability from 0% to 0%\"], \"evidence\": [\"E01407\", \"E01410\", \"E01411\", \"E01412\"], \"language\": \"en\", \"source\": \"checked_phrase_bank\", \"verified\": true}]"
+        },
+        "isError": false
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "explain_event",
+        "arguments": {
+          "session": "live",
+          "event_id": "E01407"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"event_id\": \"E01407\", \"minute\": 74, \"type\": \"dribble\", \"team\": \"home\", \"player\": \"Malik Calloway\", \"outcome\": \"lost\", \"distance_m\": 3.1, \"speed_kmh\": 18.8, \"win_prob_before\": {\"home\": 100, \"draw\": 0, \"away\": 0}, \"win_prob_after\": {\"home\": 100, \"draw\": 0, \"away\": 0}, \"verified_answers\": [{\"id\": \"A0_0\", \"answer\": \"74': Malik Calloway \\u2014 dribble (lost).\", \"citations\": [\"E01407\"], \"language\": \"en\", \"answer_type\": \"match_fact\"}]}"
+          }
+        ],
+        "structuredContent": {
+          "result": "{\"event_id\": \"E01407\", \"minute\": 74, \"type\": \"dribble\", \"team\": \"home\", \"player\": \"Malik Calloway\", \"outcome\": \"lost\", \"distance_m\": 3.1, \"speed_kmh\": 18.8, \"win_prob_before\": {\"home\": 100, \"draw\": 0, \"away\": 0}, \"win_prob_after\": {\"home\": 100, \"draw\": 0, \"away\": 0}, \"verified_answers\": [{\"id\": \"A0_0\", \"answer\": \"74': Malik Calloway \\u2014 dribble (lost).\", \"citations\": [\"E01407\"], \"language\": \"en\", \"answer_type\": \"match_fact\"}]}"
+        },
+        "isError": false
+      }
+    },
+    {
+      "method": "tools/call",
+      "params": {
+        "name": "get_recap",
+        "arguments": {
+          "session": "live",
+          "persona": "casual",
+          "lang": "en"
+        }
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"title\": \"Kestrel Bay FC beat Ironmoor Athletic 3-1\", \"lines\": [{\"text\": \"A hat-trick for Felix Thorne\", \"ev\": [\"E00361\", \"E00451\", \"E01081\"], \"k\": \"rc.hat_trick\"}, {\"text\": \"Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46\", \"ev\": [\"E01870\"], \"k\": \"rc.deserved\"}, {\"text\": \"Player of the match: Felix Thorne\", \"ev\": [\"E01870\"], \"k\": \"rc.standout\"}, {\"text\": \"In the preceding sequence, Malik Calloway lost possession 13 seconds earlier\", \"ev\": [\"E01407\", \"E01412\"], \"k\": \"s.error\"}], \"lower_third\": \"Kestrel Bay FC beat Ironmoor Athletic 3-1 · Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46\", \"lang\": \"en\", \"persona\": \"casual\", \"source\": \"phrasebank\", \"data\": {\"turning_points\": [{\"event_id\": \"E00361\", \"minute\": 19, \"player\": \"Felix Thorne\", \"team\": \"home\", \"type\": \"goal\", \"before\": 0.43332982160784034, \"after\": 0.6948195661411055}, {\"event_id\": \"E00451\", \"minute\": 25, \"player\": \"Felix Thorne\", \"team\": \"home\", \"type\": \"goal\", \"before\": 0.735762879298712, \"after\": 0.9034652165903843}], \"players\": [{\"id\": \"h9\", \"name\": \"Felix Thorne\", \"number\": 9, \"position\": \"ST\", \"team\": \"home\", \"touches\": 132, \"passes\": 81, \"pass_accuracy\": 81, \"avg_pass_difficulty\": 20, \"hard_passes_completed\": 1, \"progressive_passes\": 1, \"line_breaking_passes\": 0, \"key_passes\": 4, \"xa\": 0.2, \"shots\": 10, \"xg\": 1.31, \"goals\": 3, \"assists\": 0, \"xt_added\": 0.142, \"tackles\": 5, \"interceptions\": 6, \"pressures\": 6, \"saves\": 0, \"dribbles_won\": 6, \"top_speed_kmh\": 30.1, \"sprints\": 2, \"distance_km\": 8.01, \"passes_over_expected\": 1.5, \"rating\": 9.5}, {\"id\": \"h10\", \"name\": \"Sven Pryce\", \"number\": 10, \"position\": \"LCM\", \"team\": \"home\", \"touches\": 154, \"passes\": 107, \"pass_accuracy\": 85, \"avg_pass_difficulty\": 17, \"hard_passes_completed\": 3, \"progressive_passes\": 29, \"line_breaking_passes\": 15, \"key_passes\": 2, \"xa\": 0.61, \"shots\": 1, \"xg\": 0.12, \"goals\": 0, \"assists\": 1, \"xt_added\": 0.529, \"tackles\": 7, \"interceptions\": 11, \"pressures\": 13, \"saves\": 0, \"dribbles_won\": 4, \"top_speed_kmh\": 26.4, \"sprints\": 0, \"distance_km\": 8.76, \"passes_over_expected\": 2.5, \"rating\": 9.0}, {\"id\": \"a9\", \"name\": \"Andre Varga\", \"number\": 9, \"position\": \"ST\", \"team\": \"away\", \"touches\": 79, \"passes\": 43, \"pass_accuracy\": 70, \"avg_pass_difficulty\": 23, \"hard_passes_completed\": 0, \"progressive_passes\": 0, \"line_breaking_passes\": 0, \"key_passes\": 0, \"xa\": 0.0, \"shots\": 9, \"xg\": 1.16, \"goals\": 1, \"assists\": 0, \"xt_added\": 0.063, \"tackles\": 5, \"interceptions\": 6, \"pressures\": 7, \"saves\": 0, \"dribbles_won\": 3, \"top_speed_kmh\": 28.4, \"sprints\": 1, \"distance_km\": 8.03, \"passes_over_expected\": -3.3, \"rating\": 7.9}], \"home\": {\"goals\": 3, \"xg\": 1.52, \"shots\": 15, \"on_target\": 9, \"big_chances\": 1, \"passes\": 698, \"pass_accuracy\": 88, \"progressive_passes\": 132, \"line_breaking_passes\": 74, \"xt\": 2.21, \"pressures\": 65, \"tackles_interceptions\": 97, \"high_turnovers\": 17, \"ppda\": 4.3, \"corners\": 4, \"fouls\": 3, \"cards\": 0, \"possession\": 61}, \"away\": {\"goals\": 1, \"xg\": 1.46, \"shots\": 12, \"on_target\": 4, \"big_chances\": 1, \"passes\": 382, \"pass_accuracy\": 77, \"progressive_passes\": 79, \"line_breaking_passes\": 44, \"xt\": 1.34, \"pressures\": 71, \"tackles_interceptions\": 108, \"high_turnovers\": 21, \"ppda\": 5.9, \"corners\": 3, \"fouls\": 3, \"cards\": 0, \"possession\": 39}, \"score\": {\"home\": 3, \"away\": 1}}, \"verification\": {\"status\": \"verified\", \"checks\": 40, \"issues\": [], \"scope\": \"typed recap claims against current event record and derived model estimates\"}}"
+          }
+        ],
+        "structuredContent": {
+          "result": "{\"title\": \"Kestrel Bay FC beat Ironmoor Athletic 3-1\", \"lines\": [{\"text\": \"A hat-trick for Felix Thorne\", \"ev\": [\"E00361\", \"E00451\", \"E01081\"], \"k\": \"rc.hat_trick\"}, {\"text\": \"Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46\", \"ev\": [\"E01870\"], \"k\": \"rc.deserved\"}, {\"text\": \"Player of the match: Felix Thorne\", \"ev\": [\"E01870\"], \"k\": \"rc.standout\"}, {\"text\": \"In the preceding sequence, Malik Calloway lost possession 13 seconds earlier\", \"ev\": [\"E01407\", \"E01412\"], \"k\": \"s.error\"}], \"lower_third\": \"Kestrel Bay FC beat Ironmoor Athletic 3-1 · Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46\", \"lang\": \"en\", \"persona\": \"casual\", \"source\": \"phrasebank\", \"data\": {\"turning_points\": [{\"event_id\": \"E00361\", \"minute\": 19, \"player\": \"Felix Thorne\", \"team\": \"home\", \"type\": \"goal\", \"before\": 0.43332982160784034, \"after\": 0.6948195661411055}, {\"event_id\": \"E00451\", \"minute\": 25, \"player\": \"Felix Thorne\", \"team\": \"home\", \"type\": \"goal\", \"before\": 0.735762879298712, \"after\": 0.9034652165903843}], \"players\": [{\"id\": \"h9\", \"name\": \"Felix Thorne\", \"number\": 9, \"position\": \"ST\", \"team\": \"home\", \"touches\": 132, \"passes\": 81, \"pass_accuracy\": 81, \"avg_pass_difficulty\": 20, \"hard_passes_completed\": 1, \"progressive_passes\": 1, \"line_breaking_passes\": 0, \"key_passes\": 4, \"xa\": 0.2, \"shots\": 10, \"xg\": 1.31, \"goals\": 3, \"assists\": 0, \"xt_added\": 0.142, \"tackles\": 5, \"interceptions\": 6, \"pressures\": 6, \"saves\": 0, \"dribbles_won\": 6, \"top_speed_kmh\": 30.1, \"sprints\": 2, \"distance_km\": 8.01, \"passes_over_expected\": 1.5, \"rating\": 9.5}, {\"id\": \"h10\", \"name\": \"Sven Pryce\", \"number\": 10, \"position\": \"LCM\", \"team\": \"home\", \"touches\": 154, \"passes\": 107, \"pass_accuracy\": 85, \"avg_pass_difficulty\": 17, \"hard_passes_completed\": 3, \"progressive_passes\": 29, \"line_breaking_passes\": 15, \"key_passes\": 2, \"xa\": 0.61, \"shots\": 1, \"xg\": 0.12, \"goals\": 0, \"assists\": 1, \"xt_added\": 0.529, \"tackles\": 7, \"interceptions\": 11, \"pressures\": 13, \"saves\": 0, \"dribbles_won\": 4, \"top_speed_kmh\": 26.4, \"sprints\": 0, \"distance_km\": 8.76, \"passes_over_expected\": 2.5, \"rating\": 9.0}, {\"id\": \"a9\", \"name\": \"Andre Varga\", \"number\": 9, \"position\": \"ST\", \"team\": \"away\", \"touches\": 79, \"passes\": 43, \"pass_accuracy\": 70, \"avg_pass_difficulty\": 23, \"hard_passes_completed\": 0, \"progressive_passes\": 0, \"line_breaking_passes\": 0, \"key_passes\": 0, \"xa\": 0.0, \"shots\": 9, \"xg\": 1.16, \"goals\": 1, \"assists\": 0, \"xt_added\": 0.063, \"tackles\": 5, \"interceptions\": 6, \"pressures\": 7, \"saves\": 0, \"dribbles_won\": 3, \"top_speed_kmh\": 28.4, \"sprints\": 1, \"distance_km\": 8.03, \"passes_over_expected\": -3.3, \"rating\": 7.9}], \"home\": {\"goals\": 3, \"xg\": 1.52, \"shots\": 15, \"on_target\": 9, \"big_chances\": 1, \"passes\": 698, \"pass_accuracy\": 88, \"progressive_passes\": 132, \"line_breaking_passes\": 74, \"xt\": 2.21, \"pressures\": 65, \"tackles_interceptions\": 97, \"high_turnovers\": 17, \"ppda\": 4.3, \"corners\": 4, \"fouls\": 3, \"cards\": 0, \"possession\": 61}, \"away\": {\"goals\": 1, \"xg\": 1.46, \"shots\": 12, \"on_target\": 4, \"big_chances\": 1, \"passes\": 382, \"pass_accuracy\": 77, \"progressive_passes\": 79, \"line_breaking_passes\": 44, \"xt\": 1.34, \"pressures\": 71, \"tackles_interceptions\": 108, \"high_turnovers\": 21, \"ppda\": 5.9, \"corners\": 3, \"fouls\": 3, \"cards\": 0, \"possession\": 39}, \"score\": {\"home\": 3, \"away\": 1}}, \"verification\": {\"status\": \"verified\", \"checks\": 40, \"issues\": [], \"scope\": \"typed recap claims against current event record and derived model estimates\"}}"
+        },
+        "isError": false
+      }
+    }
+  ],
+  "scope": "Actual public Streamable HTTP MCP calls from a separate client process. No Copilot UI, model orchestration, permissions or production-SLA claim."
+}
