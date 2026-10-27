@@ -90,6 +90,15 @@ def concise(response: str) -> bool:
     return len(re.findall(r"[.!?](\s|$)", response.strip())) <= 3
 
 
+def explicit_record_scope(response: str) -> bool:
+    """An answer must address the unsupported scope, not merely avoid saying 'record'."""
+    synthetic = bool(re.search(r"\bsynthetic\b|\bfictional\b|\bsimulated\b", response, re.I))
+    refusal = bool(re.search(r"\b(?:cannot|can't|does not|doesn't|do not|don't|unable to)\b[^.!?]{0,180}"
+                             r"\b(?:establish|verify|confirm|support|prove|determine)\b[^.!?]{0,180}"
+                             r"\b(?:records?|Premier League|career|all.time)\b", response, re.I))
+    return synthetic and refusal
+
+
 async def bounded(output: Path) -> int:
     """Six production Q&A calls; retain failures and never count fallback as hosted success."""
     if not (os.getenv("FOUNDRY_PROJECT_ENDPOINT") and os.getenv("FOUNDRY_MODEL")):
@@ -149,6 +158,7 @@ async def bounded(output: Path) -> int:
                 checks["cited_event"] = bool(citations)
             else:
                 checks["no_asserted_record"] = not bool(re.search(r"(?:set|broke|holds|achieved)\s+(?:an?\s+)?(?:all.time\s+)?(?:Premier League\s+)?(?:world\s+)?record", text, re.I))
+                checks["explicit_source_scope"] = explicit_record_scope(text)
             rows.append({"id": case_id, "question": question, "answer": answer, "error": error,
                          "duration_ms": round((time.perf_counter()-start)*1000, 2), "checks": checks,
                          "hosted_success": hosted, "passed": hosted and all(checks.values())})
@@ -158,7 +168,7 @@ async def bounded(output: Path) -> int:
         else:
             os.environ["TOUCHLINE_LLM"] = previous
         reset_llm()
-    report = {"schema": "touchline.foundry-bounded/1", "provenance": provenance(), "seed": 87,
+    report = {"schema": "touchline.foundry-bounded/2", "provenance": provenance(), "seed": 87,
               "model": os.getenv("FOUNDRY_MODEL"), "published_version": os.getenv("TOUCHLINE_AGENT_VERSION_ANALYST", "resolved latest"),
               "cases": rows, "summary": {"attempted": len(rows), "hosted": sum(r["hosted_success"] for r in rows),
                                              "passed": sum(r["passed"] for r in rows)},

@@ -223,3 +223,47 @@ def test_rewrite_allows_decimal_formatting_but_not_dropped_source_line(match):
     checker = FactChecker(match[0])
     assert not checker.check_rewrite(["Kofi Varga: 1.0 xG"], ["Kofi Varga: 1 xG"])
     assert checker.check_rewrite(["Kofi Varga: 1.0 xG", "2 goals"], ["Kofi Varga: 1 xG"])
+
+
+def test_record_scope_is_available_to_model_and_explicit_about_language(match, monkeypatch):
+    from touchline.agents.ask import SOURCE_SCOPE
+    from scripts.foundry_eval import explicit_record_scope
+
+    class ScopeModel:
+        available = True
+        backend = "test"
+
+        async def run(self, *args, tools, **kwargs):
+            result = json.loads(next(t for t in tools if t.__name__ == "get_source_scope")())
+            scope = result["verified_answers"][0]
+            assert scope["language"] == "en" and scope["answer_type"] == "source_scope"
+            return json.dumps({"answer_ids": [scope["id"]]})
+
+    local = ContentSafety()
+    local.endpoint = ""
+    monkeypatch.setattr("touchline.safety.safety", local)
+    analyst = AskTheAnalyst(match[0], lambda: [])
+    analyst.llm = ScopeModel()
+    answer = asyncio.run(analyst.ask("Did Kofi Varga set an all-time Premier League world record?", lang="es"))
+    assert answer["source"] == "llm:test" and answer["answer"] == SOURCE_SCOPE
+    assert answer["language"] == "en" and answer["citations"] == []
+    assert explicit_record_scope(answer["answer"])
+
+
+def test_irrelevant_source_bound_fact_cannot_answer_historical_record_question(match, monkeypatch):
+    from touchline.agents.ask import SOURCE_SCOPE
+    from scripts.foundry_eval import explicit_record_scope
+
+    local = ContentSafety()
+    local.endpoint = ""
+    monkeypatch.setattr("touchline.safety.safety", local)
+    analyst = AskTheAnalyst(match[0], lambda: [])
+    analyst.llm = SelectingModel("correct")  # selects a genuine scoreboard, but irrelevant to a world record
+    answer = asyncio.run(analyst.ask("Did Kofi Varga set a world record?"))
+    assert answer["source"] == "router" and answer["fallback_reason"] == "source_scope_missing"
+    assert answer["answer"] == SOURCE_SCOPE
+    assert not explicit_record_scope("44': GOAL! Kofi Varga scores for Kestrel Bay FC.")
+    assert not explicit_record_scope("This fictional player scored 2 goals.")
+    assert explicit_record_scope(answer["answer"])
+    # The within-match records feature remains available; it is a different scope.
+    assert analyst.route("Who ran fastest in this match?")["answer"].startswith("Match records")

@@ -14,6 +14,21 @@ input screening to exercise output grounding; it does not evaluate Prompt Shield
 and unsupported future/record claims; it is deliberately narrower than general semantic quality.
 Every attempt stays in the denominator. A fallback cannot count as a hosted success.
 
+### Corrected record-scope oracle
+
+The first version-3 run is preserved unchanged in
+[foundry-bounded-before-scope.json](evidence/foundry-bounded-before-scope.json). Its old narrow
+checks reported six passes, but manual review found the historical-record question received
+an irrelevant minute-44 goal description. Avoiding a fabricated record was not sufficient to
+answer the question. That run is **not six quality successes**.
+
+Schema `/2` additionally requires an explicit statement that synthetic/fictional match data
+cannot establish real historical records. The analyst now offers a source-scope tool and
+requires that source limitation for recognised historical-record questions; arbitrary match
+facts without it fall back explicitly. This remains a bounded intent/oracle check, not a
+general relevance classifier. A new hosted run is required after publishing the updated agent;
+the preserved first run must not be silently relabelled with the stronger gate.
+
 ## Foundry portal evaluation
 
 `python scripts/foundry_eval.py` uses the installed Agent Framework/Foundry evaluators. It requires

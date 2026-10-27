@@ -20,8 +20,22 @@ match and select the most relevant source-rendered statements. Each tool returns
 records with id, answer, citations and language. Return ONLY JSON {"answer_ids":["id"]}, selecting
 at most three records actually returned in this request. Do not compose, translate or rewrite facts.
 Use list_key_moments for why/context questions and get_scoreboard for the score or winner.
+For real Premier League history, career/season achievements, all-time or world records,
+call get_source_scope and select its source_scope answer. Synthetic match facts cannot
+establish real-world historical records. Do not answer a historical-record question with
+an unrelated goal or player statistic; include the explicit source limitation first.
 If the requested fact is unavailable, return {"answer_ids":[]}. Language availability is explicit
 in each record; never label an English answer as another language."""
+
+SOURCE_SCOPE = ("This is a synthetic match with fictional clubs and players. Its event feed cannot establish "
+                "real Premier League, career, all-time or world records. I can report only facts and "
+                "within-match records from this simulated match.")
+
+
+def needs_source_scope(question: str) -> bool:
+    """A bounded intent guard, not a general natural-language relevance classifier."""
+    return bool(re.search(r"\ball[ -]time\b|\bworld\s+record|\bleague\s+record|\bpremier\s+league\b|"
+                          r"\bcareer\b|\b(?:this|last|previous|entire)\s+season\b", question, re.I))
 
 
 class AskTheAnalyst:
@@ -49,7 +63,8 @@ class AskTheAnalyst:
         def record(data: dict, answers: list[dict]) -> str:
             """Assign IDs within this request only; source text stays bound to its citations."""
             data["verified_answers"] = [{"id": f"A{len(log)}_{i}", "answer": a["answer"],
-                                          "citations": a.get("citations", []), "language": "en"}
+                                          "citations": a.get("citations", []), "language": "en",
+                                          "answer_type": a.get("answer_type", "match_fact")}
                                          for i, a in enumerate(answers)]
             out = json.dumps(data)
             log.append(out)
@@ -116,7 +131,12 @@ class AskTheAnalyst:
                                     f"{report['possession_pct']}% possession; {report['pressures']} pressures "
                                     f"and {report['high_turnovers']} high turnovers (PPDA {report['ppda']})."}])
 
-        return [get_scoreboard, get_player_stats, list_key_moments, explain_event, get_events, get_team_report]
+        def get_source_scope() -> str:
+            """Source limitations: fictional synthetic match; cannot establish real Premier League, career, season or world records."""
+            return record({"synthetic": True, "historical_data_available": False},
+                          [{"answer": SOURCE_SCOPE, "answer_type": "source_scope"}])
+
+        return [get_scoreboard, get_player_stats, list_key_moments, explain_event, get_events, get_team_report, get_source_scope]
 
     def _find_player(self, name: str) -> Optional[str]:
         names = {p.name.lower(): pid for pid, p in self.s.players.items()}
@@ -150,6 +170,9 @@ class AskTheAnalyst:
                     selected = [a for a in approved.values() if a["answer"] == text.strip()][:1]
                 from touchline.safety import safety
                 fallback_reason = "unbound_model_answer"
+                if needs_source_scope(question) and selected and not any(a.get("answer_type") == "source_scope" for a in selected):
+                    selected = []
+                    fallback_reason = "source_scope_missing"
                 answer = " ".join(a["answer"] for a in selected)
                 if selected and (await safety.moderate(answer))["ok"]:
                     return {"answer": answer, "citations": list(dict.fromkeys(c for a in selected for c in a["citations"])),
@@ -169,6 +192,8 @@ class AskTheAnalyst:
     def route(self, q: str) -> dict:
         s = self.s
         ql = q.lower()
+        if needs_source_scope(q):
+            return {"answer": SOURCE_SCOPE, "citations": [], "source": "router", "answer_type": "source_scope"}
         h, a = s.meta.home, s.meta.away
         tn = {"home": h.name, "away": a.name}
         if not re.search(r"\bwhy\b", ql) and re.search(r"\b(score|won|winner|result|leading|lead|draw|beat)\b", ql):
