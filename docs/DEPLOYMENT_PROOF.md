@@ -1,11 +1,68 @@
 # Deployment proof and runbook
 
-## Observed cloud run — 28 October 2026 Singapore time
+## Current deployed build — 28 October 2026 Singapore time
 
-**New implementation awaiting its own cloud proof:** the optional Blob outbox now persists
-pending/acknowledged output IDs. The observed run below predates it. Enable a separate Blob URL
-via `TOUCHLINE_OUTBOX_URL`, then verify pending restoration, successful send/ack and duplicate-safe
-consumer behaviour. See [single-writer limits](READINESS.md#durable-delivery-scope).
+Source `a69d6af8ad7d67cb99463cefcb4b884380e6307f` is deployed as digest
+`sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6`.
+The observation at 02:23 Singapore time (27 October 18:23 UTC) records:
+
+- [Final deployment](evidence/final-deployment.json), [health](evidence/final-health.json) and
+  [readiness](evidence/final-ready.json): healthy/ready service after the application update.
+- [Final hosted answer](evidence/final-hosted-answer.json): version-4 `gpt-4.1-mini` source
+  selection, bound claims and four citations, no fallback, 6,859 ms model execution.
+- [Outbox restoration](evidence/final-outbox-restore-observation.json): all 198 previously
+  acknowledged delivery IDs restored; zero pending, errors or new sends at the observation.
+  This is a normal application-update experiment, not an injected pending-message crash.
+- [Final code CI](https://github.com/likalight/touchline/actions/runs/40558254712): 171 Python
+  tests, 11 JavaScript contracts and all four required jobs passed at `a69d6af`.
+- [Checked player-story fallback](evidence/final-qa-final-story.json): the exact Varga recovery
+  question now returns the verified loss/redemption story with three source citations. The
+  model attempt was still rejected as unbound; `application_fallback` correctly identifies
+  the final answer. This is a useful deterministic fallback, not a hosted model-answer pass.
+- [Private-match output boundary](evidence/final-private-output-observation.json): a complete
+  isolated seed-8642 match finished 2–3 with its local package available. Shared outbound
+  counters stayed at 198 acknowledged IDs and zero new sends/pending. This is one observed
+  run alongside regression tests, not a distributed isolation certification.
+
+The update adds truthful Q&A fallback metadata, a bounded checked-player story route and
+prevents public-created private matches from publishing to the shared downstream pipeline.
+Earlier hosted, streaming and film observations below retain their original source/image;
+they are not represented as reruns on this final image. The existing input journal was
+restored, so these checks do not establish new Event Hubs ingestion or an availability SLA.
+
+## Prior readiness and filmed build — 28 October 2026 Singapore time
+
+The reviewed source `b13985bb2b7267a8d8b8685059b38620540e072c`, merged as `587a150`,
+was deployed as container digest
+`sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd`.
+The observation at 01:54 Singapore time (27 October 17:54 UTC) records:
+
+- [Deployment manifest](evidence/readiness-deployment.json), [health](evidence/readiness-health.json)
+  and [readiness](evidence/readiness-ready.json): healthy/ready application with configured Blob outbox;
+  66 acknowledged outputs, zero pending, zero errors at this observation.
+- [Hosted analyst answer](evidence/readiness-hosted-answer.json): published version 4,
+  `gpt-4.1-mini`, completed without fallback in 4,726 ms model execution. It selects exact
+  source-rendered statements, with bound claims and four goal citations for the 3–1 result.
+- [Downstream observation](evidence/readiness-downstream.json) and [downloaded package](evidence/readiness-stored-package.json):
+  Functions built a fresh `SYN-00091` package at 17:53:54 UTC from replay of the saved input
+  journal. This is a new output observation on that image, **not a freshly ingested match**.
+- [External MCP client exchanges](evidence/external-mcp-current.json): six gates passed,
+  covering protocol negotiation, discovery, score shape, source-event resolution, recap source
+  checks and readiness. This is interoperability evidence for this client and these calls.
+- [Final PR9 CI](https://github.com/likalight/touchline/actions/runs/40553039454): 152 Python
+  tests passed; test, browser, Bicep and Docker jobs all passed on the reviewed source.
+- [Bounded external cloud streaming](CLOUD_SOAK.md): all 12 attempted clients received all
+  1,923 source events in order and the correct 1–1 finish for one isolated seed-221 match at
+  30× playback, over 206.68 seconds. All clients ran on one external observer machine.
+  This separately created match exercised streaming, not downstream delivery or crash recovery.
+
+This proves configured output persistence and observed send/ack completion. It does not test
+a live crash between send and acknowledgement, establish exactly-once effects or prove
+multi-replica ownership. See [single-writer limits](READINESS.md#durable-delivery-scope).
+The health snapshot precedes the separate hosted request; its zero model-call counter is not
+the request's execution evidence. Each published JSON includes source/image context and scope.
+
+## Prior input-recovery experiment — 28 October 2026 Singapore time
 
 These observations belong to source `952d7018043ab04ff7d31fbfc007366dc8c92a22`, merged as
 `103713674de92570c613e9a07460d34d3c101c4a`, and container digest
@@ -61,9 +118,11 @@ python scripts/foundry_eval.py
 
 The smoke check requires a successful hosted answer with actual tool evidence. Its execution
 record belongs to that request, so another viewer's aggregate counters cannot create a false
-pass. The evaluation checks numbers against tool outputs only; question and answer text are
-excluded. Citations must exist in the returned evidence. Save the evaluation report and portal
-link. A nonzero exit or a fallback is a failed cloud proof, even if the app remains usable.
+pass. The default evaluator checks numbers against tool outputs and citation membership. The
+separate `python scripts/foundry_eval.py --bounded` application test checks six fixed adversarial
+cases; its [observed results](FOUNDRY_EVAL.md) are not a completed portal evaluation. Save the
+actual report and any portal link separately. A nonzero exit or fallback fails hosted-execution
+proof, even if the deterministic app remains usable.
 
 Capture one Foundry trace, the deployed agent version, model deployment and the corresponding
 request ID. Demonstrate a language outside EN/ES/FR/PT and ask a fluent speaker to review its
@@ -99,8 +158,11 @@ enough for the uncommitted tail to remain available. A storage or receiver failu
 `/api/health` to `degraded` and `/api/ready` returns 503; inspect logs before restarting.
 
 **Limits:** one writer/replica and one active input match; no distributed ownership, durable
-browser sessions, durable producer audit or transactional outbound outbox. Replay avoids
-re-emission but cannot guarantee delivery of a previous process's unconfirmed outbound queue.
+browser sessions or durable producer audit. With `TOUCHLINE_OUTBOX_URL`, replay reconciles
+outputs against the durable ledger; without it, historical outputs are suppressed and the
+process-memory queue may lose unconfirmed messages. Input and output are separate storage
+commits, so the journal/outbox pair is not an atomic cross-service transaction. The new live
+observation above covers send/ack completion, not a crash during that boundary.
 
 ## 5. Validate enterprise controls and recovery
 

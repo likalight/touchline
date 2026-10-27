@@ -1,0 +1,49 @@
+{
+  "updated_at": "2026-10-27T17:53:27.3873299Z",
+  "narrator_version": "4",
+  "analyst_version": "4",
+  "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+  "previous_image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:9dd97e41963e2fae7ba5da308774fffdd38f13829c96b388da65d3e3ea6b86fc",
+  "live_validation": "passed",
+  "source_commit": "b13985bb2b7267a8d8b8685059b38620540e072c",
+  "observed_at": "2026-10-27T17:54:08.938031+00:00",
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "checks": {
+    "ready": true,
+    "health": true,
+    "hosted_source_selection": true
+  },
+  "outbound": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 66,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 66,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "live_match": {
+    "match_id": "SYN-00091",
+    "score": {
+      "home": 3,
+      "away": 1
+    }
+  },
+  "_evidence_context": {
+    "source_commit": "b13985bb2b7267a8d8b8685059b38620540e072c",
+    "merged_commit": "587a150",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+    "observation_batch_utc": "2026-10-27T17:54:08.938031+00:00",
+    "source_artifact_sha256": "1d58f05e47ef8c682e917af27c973e5ec0658f35c38b5b15e8afd77096ab49dd",
+    "scope": "Current deployed build. SYN-00091 was replayed from the existing input journal, not freshly ingested. Snapshot timestamps differ; health precedes the separately recorded hosted request. No live crash-between-send-and-ack experiment or exactly-once claim.",
+    "publication": "Public application observations and synthetic package only; no credentials, subscription identifiers or billing included.",
+    "analyst_version": "4",
+    "narrator_version": "4"
+  }
+}

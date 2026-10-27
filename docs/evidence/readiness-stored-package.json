@@ -1,0 +1,2085 @@
+{
+  "schema": "touchline.package/1",
+  "match_id": "SYN-00091",
+  "session": "live",
+  "synthetic": true,
+  "home": "Kestrel Bay FC",
+  "away": "Ironmoor Athletic",
+  "score": {
+    "home": 3,
+    "away": 1
+  },
+  "complete": true,
+  "recaps": {
+    "casual": {
+      "en": {
+        "title": "Kestrel Bay FC beat Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "A hat-trick for Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Player of the match: Felix Thorne",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "In the preceding sequence, Malik Calloway lost possession 13 seconds earlier",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC beat Ironmoor Athletic 3-1 · Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46",
+        "lang": "en",
+        "persona": "casual",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "es": {
+        "title": "Kestrel Bay FC vencen a Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "Hat-trick de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Victoria merecida de Kestrel Bay FC por ocasiones: 1.52 xG frente a 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Jugador del partido: Felix Thorne",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "En la secuencia anterior, Malik Calloway perdió la posesión 13 segundos antes",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC vencen a Ironmoor Athletic 3-1 · Victoria merecida de Kestrel Bay FC por ocasiones: 1.52 xG frente a 1.46",
+        "lang": "es",
+        "persona": "casual",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "fr": {
+        "title": "Kestrel Bay FC battent Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "Triplé de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Victoire méritée de Kestrel Bay FC aux occasions : 1.52 xG contre 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Homme du match : Felix Thorne",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Dans la séquence précédente, Malik Calloway a perdu le ballon 13 secondes plus tôt",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC battent Ironmoor Athletic 3-1 · Victoire méritée de Kestrel Bay FC aux occasions : 1.52 xG contre 1.46",
+        "lang": "fr",
+        "persona": "casual",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "pt": {
+        "title": "Kestrel Bay FC vencem Ironmoor Athletic por 3-1",
+        "lines": [
+          {
+            "text": "Hat-trick de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Vitória merecida de Kestrel Bay FC nas oportunidades: 1.52 xG contra 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Jogador do jogo: Felix Thorne",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Na sequência anterior, Malik Calloway perdeu a posse 13 segundos antes",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC vencem Ironmoor Athletic por 3-1 · Vitória merecida de Kestrel Bay FC nas oportunidades: 1.52 xG contra 1",
+        "lang": "pt",
+        "persona": "casual",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      }
+    },
+    "analyst": {
+      "en": {
+        "title": "Kestrel Bay FC beat Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "A hat-trick for Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "In the preceding sequence, Malik Calloway lost possession 13 seconds earlier",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          },
+          {
+            "text": "Biggest swing, minute 19: Felix Thorne moved Kestrel Bay FC's win probability from 43% to 69%",
+            "ev": [
+              "E00361"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Biggest swing, minute 25: Felix Thorne moved Kestrel Bay FC's win probability from 74% to 90%",
+            "ev": [
+              "E00451"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Kestrel Bay FC controlled 61% of the match; 14% was chaos",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.phase"
+          },
+          {
+            "text": "Standout: Felix Thorne, rating 9.5 (0.142 xT, 81% passing)",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Fastest shot 119.3 km/h (Theo Varga); top sprint 30.5 km/h (Sven Adeyemi)",
+            "ev": [
+              "E01791",
+              "E00713"
+            ],
+            "k": "rc.records"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC beat Ironmoor Athletic 3-1 · Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46",
+        "lang": "en",
+        "persona": "analyst",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "es": {
+        "title": "Kestrel Bay FC vencen a Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "Victoria merecida de Kestrel Bay FC por ocasiones: 1.52 xG frente a 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Hat-trick de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "En la secuencia anterior, Malik Calloway perdió la posesión 13 segundos antes",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          },
+          {
+            "text": "Mayor vuelco, minuto 19: Felix Thorne llevó la probabilidad de victoria de Kestrel Bay FC del 43% al 69%",
+            "ev": [
+              "E00361"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Mayor vuelco, minuto 25: Felix Thorne llevó la probabilidad de victoria de Kestrel Bay FC del 74% al 90%",
+            "ev": [
+              "E00451"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Kestrel Bay FC controlaron el 61% del partido; un 14% fue caos",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.phase"
+          },
+          {
+            "text": "Destacado: Felix Thorne, nota 9.5 (0.142 xT, 81% de acierto en el pase)",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Disparo más rápido 119.3 km/h (Theo Varga); sprint máximo 30.5 km/h (Sven Adeyemi)",
+            "ev": [
+              "E01791",
+              "E00713"
+            ],
+            "k": "rc.records"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC vencen a Ironmoor Athletic 3-1 · Victoria merecida de Kestrel Bay FC por ocasiones: 1.52 xG frente a 1.46",
+        "lang": "es",
+        "persona": "analyst",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "fr": {
+        "title": "Kestrel Bay FC battent Ironmoor Athletic 3-1",
+        "lines": [
+          {
+            "text": "Victoire méritée de Kestrel Bay FC aux occasions : 1.52 xG contre 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Triplé de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Dans la séquence précédente, Malik Calloway a perdu le ballon 13 secondes plus tôt",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          },
+          {
+            "text": "Tournant du match, minute 19 : Felix Thorne a fait passer les chances de Kestrel Bay FC de 43% à 69%",
+            "ev": [
+              "E00361"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Tournant du match, minute 25 : Felix Thorne a fait passer les chances de Kestrel Bay FC de 74% à 90%",
+            "ev": [
+              "E00451"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Kestrel Bay FC ont contrôlé 61% du match ; 14% de chaos",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.phase"
+          },
+          {
+            "text": "Homme du match : Felix Thorne, note 9.5 (0.142 xT, 81% de passes réussies)",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Frappe la plus rapide 119.3 km/h (Theo Varga) ; pointe de vitesse 30.5 km/h (Sven Adeyemi)",
+            "ev": [
+              "E01791",
+              "E00713"
+            ],
+            "k": "rc.records"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC battent Ironmoor Athletic 3-1 · Victoire méritée de Kestrel Bay FC aux occasions : 1.52 xG contre 1.46",
+        "lang": "fr",
+        "persona": "analyst",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      },
+      "pt": {
+        "title": "Kestrel Bay FC vencem Ironmoor Athletic por 3-1",
+        "lines": [
+          {
+            "text": "Vitória merecida de Kestrel Bay FC nas oportunidades: 1.52 xG contra 1.46",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.deserved"
+          },
+          {
+            "text": "Hat-trick de Felix Thorne",
+            "ev": [
+              "E00361",
+              "E00451",
+              "E01081"
+            ],
+            "k": "rc.hat_trick"
+          },
+          {
+            "text": "Na sequência anterior, Malik Calloway perdeu a posse 13 segundos antes",
+            "ev": [
+              "E01407",
+              "E01412"
+            ],
+            "k": "s.error"
+          },
+          {
+            "text": "Maior viragem, minuto 19: Felix Thorne levou a probabilidade de vitória do Kestrel Bay FC de 43% para 69%",
+            "ev": [
+              "E00361"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Maior viragem, minuto 25: Felix Thorne levou a probabilidade de vitória do Kestrel Bay FC de 74% para 90%",
+            "ev": [
+              "E00451"
+            ],
+            "k": "rc.turning"
+          },
+          {
+            "text": "Kestrel Bay FC controlaram 61% do jogo; 14% foi caos",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.phase"
+          },
+          {
+            "text": "Destaque: Felix Thorne, nota 9.5 (0.142 xT, 81% de passes certos)",
+            "ev": [
+              "E01870"
+            ],
+            "k": "rc.standout"
+          },
+          {
+            "text": "Remate mais rápido 119.3 km/h (Theo Varga); sprint máximo 30.5 km/h (Sven Adeyemi)",
+            "ev": [
+              "E01791",
+              "E00713"
+            ],
+            "k": "rc.records"
+          }
+        ],
+        "lower_third": "Kestrel Bay FC vencem Ironmoor Athletic por 3-1 · Vitória merecida de Kestrel Bay FC nas oportunidades: 1.52 xG contra 1",
+        "lang": "pt",
+        "persona": "analyst",
+        "source": "phrasebank",
+        "data": {
+          "turning_points": [
+            {
+              "event_id": "E00361",
+              "minute": 19,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.43332982160784034,
+              "after": 0.6948195661411055
+            },
+            {
+              "event_id": "E00451",
+              "minute": 25,
+              "player": "Felix Thorne",
+              "team": "home",
+              "type": "goal",
+              "before": 0.735762879298712,
+              "after": 0.9034652165903843
+            }
+          ],
+          "players": [
+            {
+              "id": "h9",
+              "name": "Felix Thorne",
+              "number": 9,
+              "position": "ST",
+              "team": "home",
+              "touches": 132,
+              "passes": 81,
+              "pass_accuracy": 81,
+              "avg_pass_difficulty": 20,
+              "hard_passes_completed": 1,
+              "progressive_passes": 1,
+              "line_breaking_passes": 0,
+              "key_passes": 4,
+              "xa": 0.2,
+              "shots": 10,
+              "xg": 1.31,
+              "goals": 3,
+              "assists": 0,
+              "xt_added": 0.142,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 6,
+              "saves": 0,
+              "dribbles_won": 6,
+              "top_speed_kmh": 30.1,
+              "sprints": 2,
+              "distance_km": 8.01,
+              "passes_over_expected": 1.5,
+              "rating": 9.5
+            },
+            {
+              "id": "h10",
+              "name": "Sven Pryce",
+              "number": 10,
+              "position": "LCM",
+              "team": "home",
+              "touches": 154,
+              "passes": 107,
+              "pass_accuracy": 85,
+              "avg_pass_difficulty": 17,
+              "hard_passes_completed": 3,
+              "progressive_passes": 29,
+              "line_breaking_passes": 15,
+              "key_passes": 2,
+              "xa": 0.61,
+              "shots": 1,
+              "xg": 0.12,
+              "goals": 0,
+              "assists": 1,
+              "xt_added": 0.529,
+              "tackles": 7,
+              "interceptions": 11,
+              "pressures": 13,
+              "saves": 0,
+              "dribbles_won": 4,
+              "top_speed_kmh": 26.4,
+              "sprints": 0,
+              "distance_km": 8.76,
+              "passes_over_expected": 2.5,
+              "rating": 9.0
+            },
+            {
+              "id": "a9",
+              "name": "Andre Varga",
+              "number": 9,
+              "position": "ST",
+              "team": "away",
+              "touches": 79,
+              "passes": 43,
+              "pass_accuracy": 70,
+              "avg_pass_difficulty": 23,
+              "hard_passes_completed": 0,
+              "progressive_passes": 0,
+              "line_breaking_passes": 0,
+              "key_passes": 0,
+              "xa": 0.0,
+              "shots": 9,
+              "xg": 1.16,
+              "goals": 1,
+              "assists": 0,
+              "xt_added": 0.063,
+              "tackles": 5,
+              "interceptions": 6,
+              "pressures": 7,
+              "saves": 0,
+              "dribbles_won": 3,
+              "top_speed_kmh": 28.4,
+              "sprints": 1,
+              "distance_km": 8.03,
+              "passes_over_expected": -3.3,
+              "rating": 7.9
+            }
+          ],
+          "home": {
+            "goals": 3,
+            "xg": 1.52,
+            "shots": 15,
+            "on_target": 9,
+            "big_chances": 1,
+            "passes": 698,
+            "pass_accuracy": 88,
+            "progressive_passes": 132,
+            "line_breaking_passes": 74,
+            "xt": 2.21,
+            "pressures": 65,
+            "tackles_interceptions": 97,
+            "high_turnovers": 17,
+            "ppda": 4.3,
+            "corners": 4,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 61
+          },
+          "away": {
+            "goals": 1,
+            "xg": 1.46,
+            "shots": 12,
+            "on_target": 4,
+            "big_chances": 1,
+            "passes": 382,
+            "pass_accuracy": 77,
+            "progressive_passes": 79,
+            "line_breaking_passes": 44,
+            "xt": 1.34,
+            "pressures": 71,
+            "tackles_interceptions": 108,
+            "high_turnovers": 21,
+            "ppda": 5.9,
+            "corners": 3,
+            "fouls": 3,
+            "cards": 0,
+            "possession": 39
+          },
+          "score": {
+            "home": 3,
+            "away": 1
+          }
+        },
+        "verification": {
+          "status": "verified",
+          "checks": 40,
+          "issues": [],
+          "scope": "typed recap claims against current event record and derived model estimates"
+        }
+      }
+    }
+  },
+  "highlights": {
+    "schema": "touchline.reel/1",
+    "match_id": "SYN-00091",
+    "club": null,
+    "player": null,
+    "players": [],
+    "lang": "en",
+    "persona": "casual",
+    "duration_s": 72.0,
+    "clips": [
+      {
+        "start": 1119.87,
+        "end": 1131.37,
+        "insight_id": "SYN-00091-I0011",
+        "kind": "goal",
+        "minute": 19,
+        "team": "home",
+        "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!",
+        "line": "In the preceding sequence, Rafael Calloway lost possession 19 seconds earlier",
+        "evidence": [
+          "E00352",
+          "E00354",
+          "E00355",
+          "E00356",
+          "E00358",
+          "E00359",
+          "E00360",
+          "E00361"
+        ],
+        "relevance": 2.0,
+        "focus": null
+      },
+      {
+        "start": 1451.91,
+        "end": 1463.41,
+        "insight_id": "SYN-00091-I0014",
+        "kind": "goal",
+        "minute": 25,
+        "team": "home",
+        "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!",
+        "line": "A chance like that goes in about 12% of the time",
+        "evidence": [
+          "E00445",
+          "E00446",
+          "E00447",
+          "E00448",
+          "E00449",
+          "E00450",
+          "E00451"
+        ],
+        "relevance": 2.0,
+        "focus": null
+      },
+      {
+        "start": 1662.56,
+        "end": 1668.56,
+        "insight_id": "SYN-00091-I0016",
+        "kind": "line_break",
+        "minute": 28,
+        "team": "home",
+        "title": "Sven Pryce breaks the lines",
+        "line": "Only 44% of passes like that find their man",
+        "evidence": [
+          "E00497"
+        ],
+        "relevance": 0.62,
+        "focus": null
+      },
+      {
+        "start": 1690.67,
+        "end": 1698.67,
+        "insight_id": "SYN-00091-I0017",
+        "kind": "chance_missed",
+        "minute": 29,
+        "team": "home",
+        "title": "Felix Thorne misses a big chance",
+        "line": "A chance like that goes in about 24% of the time",
+        "evidence": [
+          "E00507"
+        ],
+        "relevance": 0.69,
+        "focus": null
+      },
+      {
+        "start": 2141.19,
+        "end": 2147.19,
+        "insight_id": "SYN-00091-I0023",
+        "kind": "line_break",
+        "minute": 36,
+        "team": "home",
+        "title": "Malik Calloway breaks the lines",
+        "line": "Only 26% of passes like that find their man",
+        "evidence": [
+          "E00662"
+        ],
+        "relevance": 0.62,
+        "focus": null
+      },
+      {
+        "start": 3334.54,
+        "end": 3346.04,
+        "insight_id": "SYN-00091-I0035",
+        "kind": "goal",
+        "minute": 56,
+        "team": "home",
+        "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!",
+        "line": "In the preceding sequence, Theo Achterberg lost possession 15 seconds earlier",
+        "evidence": [
+          "E01072",
+          "E01078",
+          "E01080",
+          "E01081"
+        ],
+        "relevance": 2.0,
+        "focus": null
+      },
+      {
+        "start": 3676.76,
+        "end": 3682.76,
+        "insight_id": "SYN-00091-I0042",
+        "kind": "line_break",
+        "minute": 62,
+        "team": "away",
+        "title": "Callum Takahashi breaks the lines",
+        "line": "Only 35% of passes like that find their man",
+        "evidence": [
+          "E01171"
+        ],
+        "relevance": 0.62,
+        "focus": null
+      },
+      {
+        "start": 4388.93,
+        "end": 4400.43,
+        "insight_id": "SYN-00091-I0049",
+        "kind": "goal",
+        "minute": 74,
+        "team": "away",
+        "title": "GOAL! Andre Varga scores for Ironmoor Athletic!",
+        "line": "In the preceding sequence, Malik Calloway lost possession 13 seconds earlier",
+        "evidence": [
+          "E01407",
+          "E01410",
+          "E01411",
+          "E01412"
+        ],
+        "relevance": 2.0,
+        "focus": null
+      }
+    ],
+    "recap": {
+      "title": "Kestrel Bay FC beat Ironmoor Athletic 3-1",
+      "lines": [
+        "A hat-trick for Felix Thorne",
+        "Kestrel Bay FC deserved it on chances: 1.52 xG to 1.46",
+        "Player of the match: Felix Thorne",
+        "In the preceding sequence, Malik Calloway lost possession 13 seconds earlier"
+      ]
+    }
+  },
+  "top_players": [
+    {
+      "id": "h9",
+      "name": "Felix Thorne",
+      "number": 9,
+      "position": "ST",
+      "team": "home",
+      "touches": 132,
+      "passes": 81,
+      "pass_accuracy": 81,
+      "avg_pass_difficulty": 20,
+      "hard_passes_completed": 1,
+      "progressive_passes": 1,
+      "line_breaking_passes": 0,
+      "key_passes": 4,
+      "xa": 0.2,
+      "shots": 10,
+      "xg": 1.31,
+      "goals": 3,
+      "assists": 0,
+      "xt_added": 0.142,
+      "tackles": 5,
+      "interceptions": 6,
+      "pressures": 6,
+      "saves": 0,
+      "dribbles_won": 6,
+      "top_speed_kmh": 30.1,
+      "sprints": 2,
+      "distance_km": 8.01,
+      "passes_over_expected": 1.5,
+      "rating": 9.5
+    },
+    {
+      "id": "h10",
+      "name": "Sven Pryce",
+      "number": 10,
+      "position": "LCM",
+      "team": "home",
+      "touches": 154,
+      "passes": 107,
+      "pass_accuracy": 85,
+      "avg_pass_difficulty": 17,
+      "hard_passes_completed": 3,
+      "progressive_passes": 29,
+      "line_breaking_passes": 15,
+      "key_passes": 2,
+      "xa": 0.61,
+      "shots": 1,
+      "xg": 0.12,
+      "goals": 0,
+      "assists": 1,
+      "xt_added": 0.529,
+      "tackles": 7,
+      "interceptions": 11,
+      "pressures": 13,
+      "saves": 0,
+      "dribbles_won": 4,
+      "top_speed_kmh": 26.4,
+      "sprints": 0,
+      "distance_km": 8.76,
+      "passes_over_expected": 2.5,
+      "rating": 9.0
+    },
+    {
+      "id": "a9",
+      "name": "Andre Varga",
+      "number": 9,
+      "position": "ST",
+      "team": "away",
+      "touches": 79,
+      "passes": 43,
+      "pass_accuracy": 70,
+      "avg_pass_difficulty": 23,
+      "hard_passes_completed": 0,
+      "progressive_passes": 0,
+      "line_breaking_passes": 0,
+      "key_passes": 0,
+      "xa": 0.0,
+      "shots": 9,
+      "xg": 1.16,
+      "goals": 1,
+      "assists": 0,
+      "xt_added": 0.063,
+      "tackles": 5,
+      "interceptions": 6,
+      "pressures": 7,
+      "saves": 0,
+      "dribbles_won": 3,
+      "top_speed_kmh": 28.4,
+      "sprints": 1,
+      "distance_km": 8.03,
+      "passes_over_expected": -3.3,
+      "rating": 7.9
+    }
+  ],
+  "verification": {
+    "insights": 64,
+    "verified": 64
+  },
+  "goals": [
+    {
+      "minute": 19,
+      "team": "home",
+      "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!"
+    },
+    {
+      "minute": 25,
+      "team": "home",
+      "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!"
+    },
+    {
+      "minute": 56,
+      "team": "home",
+      "title": "GOAL! Felix Thorne scores for Kestrel Bay FC!"
+    },
+    {
+      "minute": 74,
+      "team": "away",
+      "title": "GOAL! Andre Varga scores for Ironmoor Athletic!"
+    }
+  ],
+  "built_at": "2026-10-27T17:53:54.743348+00:00",
+  "built_by": "touchline-packages (Azure Functions)",
+  "_evidence_context": {
+    "source_commit": "b13985bb2b7267a8d8b8685059b38620540e072c",
+    "merged_commit": "587a150",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+    "observation_batch_utc": "2026-10-27T17:54:08.938031+00:00",
+    "source_artifact_sha256": "c517d34719bcde77694c5f98ff91934ebe7771883bc64c072bd60f855d05f565",
+    "scope": "Current deployed build. SYN-00091 was replayed from the existing input journal, not freshly ingested. Snapshot timestamps differ; health precedes the separately recorded hosted request. No live crash-between-send-and-ack experiment or exactly-once claim.",
+    "publication": "Public application observations and synthetic package only; no credentials, subscription identifiers or billing included.",
+    "analyst_version": "4",
+    "narrator_version": "4"
+  }
+}

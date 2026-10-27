@@ -1,0 +1,60 @@
+{
+  "outbound": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 66,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 66,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "packages": {
+    "latest": {
+      "match_id": "SYN-00091",
+      "score": {
+        "home": 3,
+        "away": 1
+      },
+      "home": "Kestrel Bay FC",
+      "away": "Ironmoor Athletic",
+      "built_at": "2026-10-27T17:53:54.743348+00:00",
+      "blob": "SYN-00091/latest.json"
+    },
+    "packages_built": 4,
+    "recent_packages": [
+      "SYN-00091/package-f439e717ce46f6427c0a.json",
+      "SYN-00091/package-632074f400a1a424b30c.json",
+      "SYN-00087/package-2c4e9147b3b46d624692.json",
+      "SYN-00087/package-11bfa1c5f9a9c3d4c115.json"
+    ],
+    "recent_social_cards": [
+      "SYN-00091/social/074-SYN-00091-I0049.json",
+      "SYN-00091/social/056-SYN-00091-I0036.json",
+      "SYN-00091/social/056-SYN-00091-I0035.json",
+      "SYN-00091/social/025-SYN-00091-I0014.json",
+      "SYN-00091/social/019-SYN-00091-I0011.json",
+      "SYN-00087/social/090-SYN-00087-I0062.json",
+      "SYN-00087/social/090-SYN-00087-I0061.json",
+      "SYN-00087/social/062-SYN-00087-I0046.json",
+      "SYN-00087/social/044-SYN-00087-I0032.json",
+      "SYN-00087/social/028-SYN-00087-I0020.json"
+    ]
+  },
+  "_evidence_context": {
+    "source_commit": "b13985bb2b7267a8d8b8685059b38620540e072c",
+    "merged_commit": "587a150",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+    "observation_batch_utc": "2026-10-27T17:54:08.938031+00:00",
+    "source_artifact_sha256": "4181f6a1136ac7e2a4edc4e039f75f3f615dbec13ab66aad279e26cde1a9bf23",
+    "scope": "Current deployed build. SYN-00091 was replayed from the existing input journal, not freshly ingested. Snapshot timestamps differ; health precedes the separately recorded hosted request. No live crash-between-send-and-ack experiment or exactly-once claim.",
+    "publication": "Public application observations and synthetic package only; no credentials, subscription identifiers or billing included.",
+    "analyst_version": "4",
+    "narrator_version": "4"
+  }
+}

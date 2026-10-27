@@ -3,6 +3,31 @@ const assert = require('node:assert/strict');
 const {chapterFor, memoryLine, orderedEvidence, geometry, pitch, comparison, eventSummary, provenance} = require('../web/story.js');
 const player = require('../web/player-spotlight.js');
 
+test('Q&A execution distinguishes the final router answer from the completed model attempt', () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const app = fs.readFileSync(require.resolve('../web/app.js'), 'utf8');
+  const start = app.indexOf('function answerExecution(r) {');
+  assert.ok(start >= 0);
+  const context = {esc: (value) => String(value)};
+  vm.runInNewContext(app.slice(start, app.indexOf('\nasync function ask(q)', start)), context);
+  const attempt = {path:'foundry_hosted',completed:true,fallback:false,model:'example',request_id:'R1'};
+  const r = {source:'router',fallback_reason:'unbound_model_answer',execution:{path:'application_fallback',fallback:true,model_attempt:attempt}};
+  const html = context.answerExecution(r);
+  assert.match(html, /<p>Application fallback · answered from match data<\/p>/);
+  assert.match(html, /Model attempt: Microsoft Foundry hosted agent · completed; answer not accepted/);
+  assert.match(html, /unbound_model_answer/);
+  assert.match(html, /Request R1/);
+  // Older responses with the filmed inconsistent provenance still must label their actual source.
+  assert.match(context.answerExecution({...r,execution:attempt}), /<p>Application fallback/);
+  const offline = context.answerExecution({...r,execution:{path:'application_fallback',model_attempt:null}});
+  assert.match(offline, /No model attempt/);
+  assert.doesNotMatch(offline, /Local Agent Framework agent/);
+  const selected = context.answerExecution({source:'llm:foundry',execution:attempt});
+  assert.match(selected, /<p>Microsoft Foundry hosted agent<\/p>/);
+  assert.doesNotMatch(selected, /Application fallback|answer not accepted/);
+});
+
 test('a player participates through a cited loss without becoming the scorer', () => {
   const varga = {id:'H9',name:'Kofi Varga'};
   const goal = {player_id:'A9',participants:[{player_id:'H9',role:'involved'},{player_id:'H9',role:'possession loss'}]};

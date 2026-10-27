@@ -1,0 +1,41 @@
+{
+  "answer": "Full time: Kestrel Bay FC 3-1 Ironmoor Athletic. Kestrel Bay FC beat Ironmoor Athletic 3-1.",
+  "citations": [
+    "E00361",
+    "E00451",
+    "E01081",
+    "E01412"
+  ],
+  "source": "llm:foundry",
+  "language": "en",
+  "composition": "source_rendered_selection",
+  "execution": {
+    "request_id": "b3d673211a304a7d8407ad10550207a4",
+    "agent": "AskTheAnalyst",
+    "backend": "foundry",
+    "model": "gpt-4.1-mini",
+    "path": "foundry_hosted",
+    "completed": true,
+    "fallback": false,
+    "duration_ms": 4726.12
+  },
+  "grounding": {
+    "tool_results": 1,
+    "numbers_supported": true,
+    "citations_supported": true,
+    "claims_bound": true,
+    "scope": "Exact source-rendered statements selected by the model; no free paraphrase."
+  },
+  "ms": 5289.8,
+  "_evidence_context": {
+    "source_commit": "b13985bb2b7267a8d8b8685059b38620540e072c",
+    "merged_commit": "587a150",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:bd19893ca31ef290ec8157981e3e2108fdde148bb826d37290e296bd36b563cd",
+    "observation_batch_utc": "2026-10-27T17:54:08.938031+00:00",
+    "source_artifact_sha256": "c984786c9df6fd308c55d0af571451eb8375330f58934cf1db11d3e782bc7ff5",
+    "scope": "Current deployed build. SYN-00091 was replayed from the existing input journal, not freshly ingested. Snapshot timestamps differ; health precedes the separately recorded hosted request. No live crash-between-send-and-ack experiment or exactly-once claim.",
+    "publication": "Public application observations and synthetic package only; no credentials, subscription identifiers or billing included.",
+    "analyst_version": "4",
+    "narrator_version": "4"
+  }
+}

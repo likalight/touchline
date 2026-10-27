@@ -301,6 +301,7 @@ async def create_match(body: NewMatch):
     if len(sessions) >= MAX_SESSIONS:
         raise HTTPException(429, "too many live sessions")
     s = MatchSession(seed=body.seed, speed=body.speed, chaos=body.chaos, mode=body.mode, extra_langs=set(body.langs))
+    s.broadcast_outputs = False  # viewer-created simulations must not consume the shared durable outbox
     sessions[s.id] = s
     s.start()
     return {"session_id": s.id, **{k: v for k, v in s.describe().items() if k != "match"}}

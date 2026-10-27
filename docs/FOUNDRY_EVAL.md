@@ -42,6 +42,28 @@ relabelled with the stronger gate.
 | Last goal | Passed | Source event citation resolves |
 | Historical record | Passed | Explicit synthetic-data limitation; no real-record claim |
 
+## Separate filmed recovery-question failure
+
+The [preserved filmed response](evidence/qa-fallback-before.json) from deployed source
+`b13985bb2b7267a8d8b8685059b38620540e072c` asked how Varga recovered from his possession loss.
+The model returned an unbound answer; the application correctly rejected that wording, but
+the fallback returned generic player statistics and copied the completed Foundry call's
+execution fields as though they described the final answer. This was outside the six fixed
+cases above and exposes a relevance and attribution gap; those six passes do not cover it.
+
+The repository fix gives the final answer `execution.path: application_fallback`, retains
+the separate attempted call under `execution.model_attempt`, and labels the UI accordingly.
+Named-player recovery questions now use existing verified loss/redemption frames and linked
+event citations. When no verified recovery frame exists, the answer explicitly says that
+the requested storyline is unavailable. It does not infer recovery from statistics or accept
+the question's premise. No model tools, published agent version or selection rules changed.
+Offline regressions cover the exact filmed question, blocked/missing/other-player storylines,
+stale execution metadata and the UI label. The [final deployed observation](evidence/final-qa-final-story.json)
+on `a69d6af` returned the verified loss/redemption story and three source citations. The model
+attempt remained unbound and was rejected; the final answer explicitly reports
+`application_fallback`, with that attempt nested separately. This is a successful checked
+fallback observation, not a new hosted model-answer quality pass or universal relevance claim.
+
 ## Foundry portal evaluation
 
 `python scripts/foundry_eval.py` uses the installed Agent Framework/Foundry evaluators. It requires

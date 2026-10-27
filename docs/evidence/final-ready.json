@@ -1,0 +1,16 @@
+{
+  "ready": true,
+  "feed": {
+    "status": "running"
+  },
+  "_evidence_context": {
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "observation_batch_utc": "2026-10-27T18:23:28.997813+00:00",
+    "source_artifact_sha256": "f566da2edc101306a7b93372f33fd7ff2255d9de0d081236883e4245c30e069a",
+    "scope": "Final deployment. Existing SYN-00091 input journal and acknowledged outbox ledger restored after normal application update; not new input ingestion or a pending-message crash injection. Health snapshot precedes hosted request.",
+    "publication": "Public application observations only; no credentials, subscription identifiers or billing included."
+  }
+}

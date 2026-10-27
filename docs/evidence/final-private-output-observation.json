@@ -1,0 +1,55 @@
+{
+  "observed_at": "2026-10-27T18:25:11.672906+00:00",
+  "session": "m-c8ce0f5b",
+  "seed": 8642,
+  "checks": {
+    "private_match_finished": true,
+    "local_package_complete": true,
+    "acknowledgements_unchanged": true,
+    "sent_unchanged": true,
+    "no_pending": true
+  },
+  "passed": true,
+  "before": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 0,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 198,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "after": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 0,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 198,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "local_score": {
+    "home": 2,
+    "away": 3
+  },
+  "scope": "One private synthetic full-match run retained its local package with no change in aggregate outbound counters during the observation. This is not a distributed isolation certification.",
+  "_evidence_context": {
+    "source_commit": "a69d6af8ad7d67cb99463cefcb4b884380e6307f",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+    "source_artifact_sha256": "c5b42c49512a11e1a52f6a8c24c6ec9211a88ca42be41d3fda3bd766394cc1d7",
+    "scope": "One private synthetic full-match run retained its local package with no change in aggregate outbound counters during the observation. This is not a distributed isolation certification.",
+    "publication": "Synthetic application observations; no credentials, subscription identifiers or billing included."
+  }
+}

@@ -15,7 +15,7 @@ and model-backed language generation. Azure Container Apps, Event Hubs, Function
 Storage connect the live experience to downstream packages. Inspect a receipt to see the
 facts, original checks, handoffs and audience versions behind a graphic.
 
-**Readiness:** [public Azure demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) and [hosted Foundry/downstream evidence](evidence/cloud-chain.json) are verified. Real participant results are still unavailable. The [final Brag film](FINAL_VIDEO.md) is rendered from this deployed app; publish its actual output URL before submitting.
+**Readiness:** the [public Azure demo](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge) has [final source/image proof](DEPLOYMENT_PROOF.md): version-4 hosted source selection, restored acknowledged output IDs, a useful checked-story fallback and a private-match output boundary check. Earlier Functions, MCP and external streaming observations retain their actual build. Real participant results are still unavailable. See the [Brag film's actual revision and validation](FINAL_VIDEO.md); publish its actual accepted-host URL before submitting.
 
 ## The argument, in three demonstrations
 
@@ -32,7 +32,7 @@ Four real local pipeline fault drills are recorded in [recovery evidence](eviden
 The application recovered from feed corruption, narrator and storyline failures, and a
 fabricated claim. Accelerated local recovery time is not a production latency promise.
 
-The five-stage brief is covered by ingest validation, interpreted match state, causal/contextual
+The five-stage brief is covered by ingest validation, interpreted match state, contextual
 explanations, timed graphics and audience preferences. See the [full category evidence map](WINNING_CASE.md).
 
 ## Video storyboard: 1 minute 55 seconds

@@ -16,6 +16,16 @@ Match state and visitor sessions are process-local. Input match history and cons
 are journalled together in Blob Storage. Functions persist synthetic packages and social cards.
 Use [deployment proof](DEPLOYMENT_PROOF.md) for the actual observed configuration, not proposed infrastructure.
 
+Current code isolates viewer-created matches (`POST /api/matches`) from outbound Event Hubs
+and the shared durable outbox, just like Judge Mode. Their local insights, SSE stream, recaps
+and packages remain available. Shared demo and external-feed sessions retain outbound delivery.
+This prevents anonymous seed variation from accumulating durable delivery identities; the
+finite ledger still requires an archival policy for legitimate long-running feeds. The earlier
+cloud soak on `b13985b` preceded this boundary and may have emitted synthetic downstream outputs.
+The [final deployed boundary check](evidence/final-private-output-observation.json) completed
+one private match with its local package retained and no change to shared outbound counters.
+This supports the tested boundary for that run, not distributed tenant-isolation certification.
+
 ## Controls and boundaries
 
 | Control | Purpose | Limit |
@@ -59,17 +69,21 @@ The prior cloud proof demonstrates one writer recovering input state during a ma
 It does not prove exactly-once outbound delivery, zero downtime or a service-level agreement.
 An input journal and an output outbox solve different problems. Current code includes an optional
 single-writer Blob outbox (`TOUCHLINE_OUTBOX_URL`) with durable pending/acknowledged records;
-it is at-least-once, has a finite ledger and requires idempotent downstream effects. Its new live
-deployment/recovery observation is pending; the prior cloud proof used the process-memory queue.
+it is at-least-once, has a finite ledger and requires idempotent downstream effects. The current
+deployment restored 198 acknowledged IDs after a normal application update with zero new
+sends, pending messages or errors observed. Earlier send/ack completion is separately recorded;
+neither observation establishes crash-between-send-and-ack recovery.
 Sequential-match metadata waits for processor completion and durable output acceptance before
 replacing the prior input history. Replacement is atomic on storage failure. Acknowledgement-only
 retry avoids repeated sends in the same process after a successful transmission, and aged pending
 messages/sender failure contribute to degraded health. Local regression tests cover these paths;
-live observation is still required for the deployed configuration.
+live failure injection remains necessary for the recovery claim.
 See [delivery scope](READINESS.md#durable-delivery-scope). Current application code adds
 bounded expensive public requests and a global model request/concurrency budget. These are
 process-local admission controls, not a currency spending cap or distributed rate limit.
-Multi-replica ownership, external soak testing and a retention/deletion policy remain explicit gates.
+The [bounded external stream test](CLOUD_SOAK.md) passed for 12 clients and one accelerated match.
+Multi-replica ownership, a sustained real-time match-length soak, reconnect recovery and a
+retention/deletion policy remain explicit gates.
 
 ## Change management
 
