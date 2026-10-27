@@ -406,7 +406,6 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
         external: true
         targetPort: 8000
         transport: 'auto'
-        stickySessions: { affinity: 'sticky' } // live sessions and SSE stay on one replica
       }
       registries: [
         {
