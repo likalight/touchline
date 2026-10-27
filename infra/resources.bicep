@@ -128,6 +128,8 @@ resource project 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   parent: foundry
   name: 'touchline'
   location: location
+  // Model and project creation both update the parent account; Azure rejects concurrent writes.
+  dependsOn: [model]
   identity: { type: 'SystemAssigned' }
   properties: {
     displayName: 'Touchline match intelligence'
