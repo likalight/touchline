@@ -499,6 +499,7 @@ output registryLoginServer string = registry.properties.loginServer
 output webUri string = 'https://${web.properties.configuration.ingress.fqdn}'
 output openAiEndpoint string = 'https://${foundry.properties.customSubDomainName}.openai.azure.com'
 output foundryProjectEndpoint string = 'https://${foundry.properties.customSubDomainName}.services.ai.azure.com/api/projects/${project.name}'
+output foundryRaiPolicyId string = '${foundry.id}/raiPolicies/Microsoft.DefaultV2'
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
 output eventHubNamespace string = hubNamespaceFqdn
 output packagesUri string = enableEventHubs ? 'https://${packagesFn!.properties.defaultHostName}' : ''

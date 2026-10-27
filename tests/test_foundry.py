@@ -39,8 +39,9 @@ def test_prompt_agent_definition_carries_tools_and_safety_policy():
 
     c = FoundryChatClient(project_endpoint="https://example.services.ai.azure.com/api/projects/p", model="gpt-4.1-mini", credential=Fake())
     a = Agent(c, definitions()["touchline-analyst"]["instructions"], name="touchline-analyst", tools=tool_stubs())
-    j = to_prompt_agent(a, rai_config=RaiConfig(rai_policy_name="Microsoft.DefaultV2")).as_dict()
-    assert j["model"] == "gpt-4.1-mini" and len(j["tools"]) == 6 and j["rai_config"]["rai_policy_name"] == "Microsoft.DefaultV2"
+    policy = "/subscriptions/sub/resourceGroups/rg/providers/Microsoft.CognitiveServices/accounts/ai/raiPolicies/Microsoft.DefaultV2"
+    j = to_prompt_agent(a, rai_config=RaiConfig(rai_policy_name=policy)).as_dict()
+    assert j["model"] == "gpt-4.1-mini" and len(j["tools"]) == 6 and j["rai_config"]["rai_policy_name"] == policy
 
 
 def test_touchline_eval_checks():

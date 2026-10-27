@@ -67,7 +67,7 @@ def hosted_agent(runtime_name: str, tools: Optional[list[Callable]] = None):
         return None
 
 
-def publish(endpoint: str, model: str, rai_policy: str = "Microsoft.DefaultV2", git_sha: str = "") -> list[dict]:
+def publish(endpoint: str, model: str, rai_policy: str, git_sha: str = "") -> list[dict]:
     """Publish (a new version of) every Touchline agent to Foundry Agent Service."""
     from agent_framework import Agent
     from agent_framework.foundry import FoundryChatClient, to_prompt_agent
