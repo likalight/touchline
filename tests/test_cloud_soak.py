@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from scripts.cloud_soak import Observation, expected_score, messages, source_dataset, summarize
+from scripts.cloud_soak import Observation, expected_score, finish_isolated, messages, source_dataset, summarize
 
 
 EVENTS = [
@@ -98,3 +98,15 @@ def test_sse_parser_ignores_comments_and_reads_multiline_frames():
     async def run():
         return [item async for item in messages(Response())]
     assert asyncio.run(run()) == [("state", {"score": {"home": 1, "away": 1}}), ("done", {})]
+
+
+def test_cleanup_still_resumes_after_jump_failure_and_does_not_claim_completion():
+    calls = []
+    async def control(action, value=None):
+        calls.append((action, value))
+        if action == "jump":
+            raise OSError("offline")
+    result = asyncio.run(finish_isolated(control))
+    assert calls == [("jump", 200), ("resume", None)]
+    assert '"jump": "OSError"' in result and '"resume": "accepted"' in result
+    assert "completion is not verified" in result

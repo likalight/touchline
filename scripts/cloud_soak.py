@@ -151,6 +151,25 @@ async def receive(client, base, sid, match_id, observation, ready, started):
         ready.set()  # failed clients remain visible; never stall the startup barrier forever
 
 
+async def finish_isolated(control) -> str:
+    """Best effort, bounded cleanup; a failed jump must not prevent resuming."""
+    outcomes = {}
+    try:
+        async with asyncio.timeout(9):
+            for action, value in (("jump", 200), ("resume", None)):
+                try:
+                    # Leave time for the second action even if the first stalls.
+                    async with asyncio.timeout(4):
+                        await control(action, value)
+                    outcomes[action] = "accepted"
+                except Exception as exc:
+                    outcomes[action] = type(exc).__name__
+    except Exception as exc:
+        outcomes["cleanup"] = type(exc).__name__
+    return ("Isolated completion requested; completion is not verified. "
+            "Completed sessions are removed by the existing server TTL. " + json.dumps(outcomes, sort_keys=True))
+
+
 async def experiment(args) -> dict:
     base = args.base_url.rstrip("/")
     started = time.perf_counter()
@@ -192,6 +211,8 @@ async def experiment(args) -> dict:
                 response = await client.get(f"{base}/api/matches/{sid}/window", params={"start": 0, "end": 180})
                 response.raise_for_status()
                 before_pause = {e["id"] for e in response.json()["events"]}
+                if len(before_pause) > 20 or not before_pause <= {e["id"] for e in events}:
+                    raise ValueError("Startup cannot be fully accounted for by the source dataset and 20-event replay")
                 ready = [asyncio.Event() for _ in observations]
                 tasks = [asyncio.create_task(receive(client, base, sid, meta["match_id"], o, signal, started))
                          for o, signal in zip(observations, ready)]
@@ -222,13 +243,7 @@ async def experiment(args) -> dict:
             if sid and not all(o.done for o in observations):
                 # There is no generic-session delete API. Finish only this created match;
                 # do not leave an indefinitely paused slot, or change demo/live controls.
-                try:
-                    async with asyncio.timeout(9):
-                        await control("jump", 200)
-                        await control("resume")
-                    cleanup = "requested isolated match completion; existing server TTL removes it later"
-                except Exception as exc:
-                    cleanup = f"isolated cleanup failed: {type(exc).__name__}"
+                cleanup = await finish_isolated(control)
         report = summarize(events, observations, before_pause)
         report.update({"schema": "touchline.cloud-soak/1", "provenance": provenance(), "target": base,
                        "deployment_reference": args.deployment_ref,
