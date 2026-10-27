@@ -59,7 +59,7 @@ window.TouchlinePlayer = {
       set("#spotlightNumber", player.number);
       // This original illustration represents only the named fictional player.
       // Other roster members retain their own number, never somebody else's face.
-      const illustrated = player.name === "Ravi Varga" && player.number === 9 && player.team === "home";
+      const illustrated = player.name === "Kofi Varga" && player.number === 9 && player.team === "home";
       $("#spotlightPlayerImage").hidden = !illustrated;
       root.classList.toggle("spotlight-featured", illustrated);
       set("#spotlightArtNote", illustrated ? "Original AI illustration · fictional player" : "Fictional player · squad number");

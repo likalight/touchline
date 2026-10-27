@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/judge-editorial.png" width="100%" alt="Touchline: One player. Every turning point. The functioning judge entrance with an original AI illustration of fictional striker Ravi Varga.">
+<img src="docs/judge-editorial.png" width="100%" alt="Touchline: One player. Every turning point. The functioning judge entrance with an original AI illustration of fictional striker Kofi Varga.">
 
 # Touchline
 
@@ -34,18 +34,14 @@ keeps the action ahead of a quieter stadium, and the compact opening brings the 
 into view sooner. Statistics use only snapshots delivered to the browser; inspecting an
 earlier moment does not rewind the pitch or turn current totals into historical facts.
 
-The judge entrance now leads with an original AI illustration of Ravi Varga. That illustration
+The judge entrance now leads with an original AI illustration of Kofi Varga. That illustration
 is shown only for this fictional player; other roster members have their own number treatment.
 The replay brings match memory before supporting statistics, and the receipt labels its
 verification result as **source checks passed**. See the [27 October visual and readiness audit](docs/VISUAL_DIAGNOSIS.md).
 
-**Known data-validity blocker:** the seed-221 simulator can emit events involving a dismissed
-player. The visual audit reproduced 91 subsequent player actions after a second yellow in
-minute 29. Source agreement does not establish football consistency. Correct active-roster
-handling and regenerate the demo/evaluation evidence before treating the current story as
-submission-ready. This redesign does not resolve that simulator defect.
+**Active-roster fix:** dismissed players are removed from actions, tracking, restarts and the pitch display. Formation roles stay stable; an active outfielder replaces a dismissed goalkeeper. Regression tests cover the former seed-221 failure. Judge Mode now uses verified seed 87: mistake at 28′, redemption at 44′, winner at 90′.
 
-A mistake leads to a goal. The same player returns to equalize. Then comes the winner.
+A mistake leads to a goal. The same player returns to score. Then comes the winner.
 Touchline remembers the earlier moment and explains the connection. A fan gets the story;
 an analyst gets the tactical evidence; a producer gets a timed graphics cue.
 

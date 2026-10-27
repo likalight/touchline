@@ -67,3 +67,12 @@ jobs:
           curl -sf localhost:8000/api/ready > /dev/null || { docker logs touchline-smoke; exit 1; }
           curl -sf localhost:8000/.well-known/agent-card.json > /dev/null
           curl -sf localhost:8000/static/tv3d.js > /dev/null
+      - name: Export tested container for Azure deployment
+        if: github.event_name == 'push'
+        run: docker save touchline | gzip > touchline-container.tar.gz
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push'
+        with:
+          name: touchline-container-${{ github.sha }}
+          path: touchline-container.tar.gz
+          retention-days: 3

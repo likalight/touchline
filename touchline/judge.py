@@ -5,18 +5,20 @@ import asyncio
 import secrets
 
 from touchline.runtime import MatchSession
+from touchline.demo import DEMO_SEED, DEMO_CHAPTER_IDS
 
 
 class JudgeSession(MatchSession):
     def __init__(self):
-        super().__init__(seed=221, speed=1)
+        super().__init__(seed=DEMO_SEED, speed=1)
         self.broadcast_outputs = False
         self.control_token = secrets.token_urlsafe(32)
         self.paused = True
         self._quiet = True
         self.chapter = None
         goals = [e for e in self.events if e.type == "goal"]
-        selected = [next(e for e in goals if e.team == "away"), goals[-2], goals[-1]]
+        by_id = {e.id: e for e in goals}
+        selected = [by_id[eid] for eid in DEMO_CHAPTER_IDS]
         titles = ["The mistake", "The redemption", "The winner"]
         self.chapters = [{"title": title, "event_id": event.id, "start": event.t - 5, "end": event.t + 25}
                          for title, event in zip(titles, selected)]

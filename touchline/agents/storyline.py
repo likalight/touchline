@@ -124,7 +124,7 @@ class StorylineKeeper:
                                                                          "events": ids[-6:]}))
         # keepers
         if e.type == "shot" and e.outcome in ("goal", "saved") and en.xg is not None:
-            gk = f"{self.opp(side)[0]}1"
+            gk = e.qualifiers.get("goalkeeper_id", f"{self.opp(side)[0]}1")
             k = self.keeper[gk]
             k["xg_on_target"] += en.xg
             k["events"].append(e.id)
@@ -257,6 +257,7 @@ class StorylineKeeper:
                 save = s.events[ins["event_ids"][-1]]
                 gk, side = save.player_id, save.team
                 shots = [e for e in s.events.values() if e.type == "shot" and e.team != side and e.outcome in ("goal", "saved")
+                         and e.qualifiers.get("goalkeeper_id", f"{side[0]}1") == gk
                          and e.t <= save.t]
                 saves = sum(e.outcome == "saved" for e in shots)
                 if saves >= 3:
@@ -295,6 +296,7 @@ class StorylineKeeper:
             gk = pid.get(p["keeper"])
             side = s.players[gk].team
             shots = [e for e in s.events.values() if e.type == "shot" and e.team != side and e.outcome in ("goal", "saved")
+                     and e.qualifiers.get("goalkeeper_id", f"{side[0]}1") == gk
                      and e.t <= s.events[fr["ev"][-1]].t]
             xg = sum(s.enriched[e.id].xg for e in shots)
             conceded = sum(e.outcome == "goal" for e in shots)

@@ -25,12 +25,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 QUERIES = [
-    "Why did Kestrel Bay score in the 94th minute?",
+    "Why did Kestrel Bay score in the 90th minute?",
     "How has the red card changed the match?",
     "Who is the best player on the pitch and why?",
     "Which team is pressing better, and how do you know?",
     "Explain the xG race.",
-    "What has Ravi Varga done tonight?",
+    "What has Kofi Varga done tonight?",
     "Is this match under control or chaotic right now?",
     "What happened between minutes 30 and 40?",
     "¿Por qué marcó Ironmoor en el minuto 36?",
@@ -99,7 +99,7 @@ async def main() -> int:
     from touchline.llm import get_llm
     from touchline.runtime import MatchSession
 
-    s = MatchSession(seed=221, speed=1000)
+    s = MatchSession(seed=87, speed=1000)
     s.control("jump", 200)
     s.start()
     while not s.done:
@@ -148,3 +148,4 @@ confirm what matters on air: no number the tools did not return, citations for "
 
 if __name__ == "__main__":
     sys.exit(asyncio.run(main()))
+

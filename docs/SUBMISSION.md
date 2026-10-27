@@ -4,7 +4,7 @@
 
 **Touchline: the game, explained.**
 
-A goal is a moment. The story may have started forty minutes earlier. Touchline turns a
+A goal is a moment. The story may have started much earlier. Touchline turns a
 synthetic football feed into explanations that remember the match: the mistake, the
 redemption and the winner. Fans get a clear story; analysts get tactical detail; broadcasters
 get timed graphics with an editorial decision.
@@ -38,6 +38,15 @@ explanations, timed graphics and audience preferences. See the [full category ev
 
 ## Video storyboard: 1 minute 55 seconds
 
+**Selected video workflow:** use [Brag](https://github.com/latent-spaces/brag), as requested
+by the entrant on 27 October. Use the existing storyboard and actual recordings of the
+corrected, functioning app as inputs. Keep the final hackathon video under two minutes;
+do not substitute Brag's default short launch format for the required demonstration.
+Enable narration explicitly (`/brag --voice` in the documented full workflow), retain
+readable captions and synthetic-data disclosures, and verify rights for any music used.
+Read the current `skills/brag/SKILL.md` and check its prerequisites when video production
+starts. This selection records the production plan; Brag has not yet been installed or run.
+
 Record the deployed app after the cloud checks pass. Use only fictional match assets. Use
 original narration; avoid copyrighted music and unrelated marks. Trim transitions and rehearse.
 The 90-second interactive replay is the exploration path; the edited video can cut between its
@@ -47,7 +56,7 @@ chapters while preserving their actual order. Never represent a local run as an 
 |---|---|---|
 | 0:00–0:09 | Start Judge Mode, fictional match visible | “A football graphic tells you what happened. Touchline explains why it mattered—and shows its evidence.” |
 | 0:09–0:24 | The mistake and its source event | “This goal began with Varga losing possession. The match memory keeps that connection.” |
-| 0:24–0:38 | Redemption chapter; earlier-event link on the evidence map | “Forty minutes later, he scores. Follow this connection back to the actual loss of possession. The match has a memory.” |
+| 0:24–0:38 | Redemption chapter; earlier-event link on the evidence map | “Sixteen minutes later, he scores. Follow this connection back to the actual loss of possession. The match has a memory.” |
 | 0:38–0:50 | Winner; run the selected goal's alternate ending | “Then the winner. Remove that goal and compare the model's simulated endings. Estimates are labeled separately from match facts.” |
 | 0:50–1:07 | Receipt: Fan/Analyst comparison, source facts | “One moment, two audiences. Every receipt shows the facts, checks and agent handoffs behind the graphic.” |
 | 1:07–1:22 | A recorded isolated failure drill and recovery | “The specialists have different jobs. When we inject an unsupported number, the checker catches it.” |
@@ -88,3 +97,5 @@ excludes model rewrites, speech and browser delivery. Describe the [ablation](AB
 component-removal experiments, not a complete single-agent comparison. Describe the historical
 [load experiment](LOADTEST.md) as a short co-located run, not a capacity guarantee. Report user
 study results only after conducting and documenting the sessions.
+
+
