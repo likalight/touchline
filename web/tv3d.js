@@ -437,6 +437,7 @@ function init() {
     crowdU.uT.value = now / 1000;
     excite = Math.max(0, excite - dt * 0.18); crowdU.uJump.value = Math.min(1, excite);
     // players
+    for (const [pid, P] of Object.entries(players)) P.root.visible = pid in S.pos;
     for (const [pid, p] of Object.entries(S.pos)) {
       let P = players[pid];
       if (!P) { P = players[pid] = makePlayer(pid); if (!P) continue; P.root.position.set(wx(p[0]), 0, wz(p[1])); }

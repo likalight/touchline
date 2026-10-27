@@ -69,6 +69,8 @@ class MatchSimulator:
         self.seq = 0
         self.score = {"home": 0, "away": 0}
         self.yellows: set[str] = set()
+        self.dismissed: set[str] = set()
+        self.keepers = {"home": "h1", "away": "a1"}
         self.ball = [PITCH_L / 2, GOAL_Y]
         self.possession = "home"
         self.carrier = "h9"
@@ -96,7 +98,20 @@ class MatchSimulator:
         return _clamp(-diff, -1, 2) * (0.3 + 0.7 * late)
 
     def squad(self, side: str) -> list[Player]:
-        return (self.home if side == "home" else self.away).players
+        return [p for p in (self.home if side == "home" else self.away).players
+                if p.id not in self.dismissed]
+
+    def dismiss(self, player_id: str) -> None:
+        """Remove a player from play without rewriting the original match roster."""
+        self.dismissed.add(player_id)
+        self.pos.pop(player_id, None)
+        side = self.team_of(player_id)
+        active = self.squad(side)
+        if active and self.keepers[side] == player_id:
+            # No substitute bench in this simulator: an active outfielder takes goal.
+            self.keepers[side] = max(active, key=lambda p: p.defending).id
+        if active and self.carrier == player_id:
+            self.give_ball(side, *self.ball)
 
     def nearest_opponent(self, pt, side) -> tuple[str, float]:
         best, bd = None, 1e9
@@ -112,7 +127,9 @@ class MatchSimulator:
             in_poss = side == self.possession
             bfx = self.fx(self.ball[0], side)
             push = (bfx - 52.5) * 0.55 + (6 if in_poss else -4) + 5 * self.urgency(side)
-            for i, p in enumerate(self.squad(side)):
+            for p in self.squad(side):
+                # Filtering must not shift every remaining player's formation role.
+                i = 0 if p.id == self.keepers[side] else self.index[p.id]
                 ax, ay = FORMATION_433[i][2]
                 tx = ax + (push * (0.35 if i == 0 else 1.0))
                 tx = _clamp(tx, 3 if i == 0 else 8, 98 if in_poss else 92)
@@ -129,7 +146,7 @@ class MatchSimulator:
         dside = self.opp(self.possession)
         dists = sorted(self.squad(dside), key=lambda p: _dist(self.pos[p.id], self.ball))
         for j, p in enumerate(dists[:2]):
-            if p.position == "GK" and self.fx(self.ball[0], dside) < 85:
+            if p.id == self.keepers[dside] and self.fx(self.ball[0], dside) < 85:
                 continue
             cur = self.pos[p.id]
             k = 0.55 if j == 0 else 0.3
@@ -138,7 +155,8 @@ class MatchSimulator:
         self.pos[self.carrier] = [self.ball[0], self.ball[1]]
 
     def frame(self) -> dict[str, list[float]]:
-        return {pid: [round(v[0], 2), round(v[1], 2)] for pid, v in self.pos.items()}
+        return {pid: [round(v[0], 2), round(v[1], 2)] for pid, v in self.pos.items()
+                if pid not in self.dismissed}
 
     def emit(self, type_: str, dt: float = 0.0, **kw) -> Event:
         self.seq += 1
@@ -158,7 +176,8 @@ class MatchSimulator:
         self.possession = side
         self.ball = [PITCH_L / 2, GOAL_Y]
         for t in (self.home, self.away):
-            for i, p in enumerate(t.players):
+            for p in self.squad(t.side):
+                i = 0 if p.id == self.keepers[t.side] else self.index[p.id]
                 ax, ay = anchor(i, t.side)
                 # pull both teams into own half
                 if t.side == "home":
@@ -166,14 +185,15 @@ class MatchSimulator:
                 else:
                     ax = max(PITCH_L - (PITCH_L - ax) * 0.62, 55)
                 self.pos[p.id] = [ax, ay]
-        self.carrier = f"{side[0]}9"
+        self.carrier = next((p.id for p in self.squad(side) if p.position == "ST"),
+                            self.squad(side)[-1].id)
         self.pos[self.carrier] = [PITCH_L / 2, GOAL_Y]
         yield self.emit("kickoff", 1.0, team=side, player_id=self.carrier, x=self.ball[0], y=self.ball[1])
 
     def give_ball(self, side: str, x: float, y: float, prefer: Optional[str] = None) -> None:
         self.possession = side
         self.ball = [_clamp(x, 0.5, PITCH_L - 0.5), _clamp(y, 0.5, PITCH_W - 0.5)]
-        if prefer:
+        if prefer and prefer not in self.dismissed and self.team_of(prefer) == side:
             self.carrier = prefer
         else:
             self.carrier = min(self.squad(side), key=lambda p: _dist(self.pos[p.id], self.ball)).id
@@ -186,7 +206,7 @@ class MatchSimulator:
         dy = abs(self.ball[1] - GOAL_Y)
         _, d_opp = self.nearest_opponent(self.ball, side)
         p = self.players[self.carrier]
-        if p.position == "GK":
+        if p.id == self.keepers[side]:
             return "pass"
         if bfx > 86 and dy < 18:
             ps = 0.06 + 0.16 * (bfx - 86) / 19 + 0.04 * self.urgency(side) + 0.08 * p.finishing
@@ -217,7 +237,7 @@ class MatchSimulator:
             _, open_ = self.nearest_opponent(tp, side)
             prog = self.fx(tp[0], side) - bfx
             w = math.exp(-d / 22) * (0.5 + min(open_, 8) / 6) * math.exp(prog / (30 - 8 * self.urgency(side)))
-            if p.position == "GK":
+            if p.id == self.keepers[side]:
                 w *= 0.25 if bfx < 40 else 0.02
             cand.append((p, w, open_))
         if not cand:
@@ -293,7 +313,7 @@ class MatchSimulator:
         new = self.opp(last_side)
         # over the byline?
         if self.fx(x, last_side) > 100:
-            self.give_ball(new, PITCH_L - 6 if new == "away" else 6, GOAL_Y, prefer=f"{new[0]}1")
+            self.give_ball(new, PITCH_L - 6 if new == "away" else 6, GOAL_Y, prefer=self.keepers[new])
             yield self.emit("out", self.rng.uniform(12, 22), team=last_side, x=round(x, 2), y=round(y, 2), outcome="goal_kick")
         else:
             yy = 0.5 if y < GOAL_Y else PITCH_W - 0.5
@@ -347,6 +367,7 @@ class MatchSimulator:
             self.yellows.add(offender)
             if card == "red":
                 card = "second_yellow"
+                self.dismiss(offender)
             yield self.emit("card", 25.0, team=side_off, player_id=offender, outcome=card,
                             x=round(self.ball[0], 2), y=round(self.ball[1], 2))
         self.give_ball(self.opp(side_off), self.ball[0], self.ball[1], prefer=victim)
@@ -367,14 +388,15 @@ class MatchSimulator:
         speed = (_clamp(self.rng.gauss(58, 9), 35, 80) if header else _clamp(self.rng.gauss(95, 14), 55, 132))
         blockers = sum(1 for q in self.squad(self.opp(side)) if _dist(self.pos[q.id], (x, y)) < dist and
                        abs((self.pos[q.id][1] - y) - (GOAL_Y - y) * ((self.pos[q.id][0] - x) / ((gx - x) or 1e-6))) < 1.2
-                       and q.position != "GK")
+                       and q.id != self.keepers[self.opp(side)])
         r = self.rng.random()
         target_y = GOAL_Y + self.rng.gauss(0, 2.4)
         q = {"distance_m": round(dist, 1), "body_part": "head" if header else "foot", "shot_speed_kmh": round(speed, 1),
              "under_pressure": pressured, "assisted_by": "through_or_cross" if self.through_flag else "none",
              "blockers_in_lane": blockers, "end_y": round(target_y, 2)}
         self.through_flag = False
-        gk = f"{self.opp(side)[0]}1"
+        gk = self.keepers[self.opp(side)]
+        q["goalkeeper_id"] = gk
         if blockers and self.rng.random() < 0.18 * blockers:
             blk = min(self.squad(self.opp(side)), key=lambda qq: _dist(self.pos[qq.id], (x, y))).id
             yield self.emit("shot", 0.6, team=side, player_id=p.id, x=round(x, 2), y=round(y, 2),
@@ -419,16 +441,27 @@ class MatchSimulator:
         cy = 0.5 if self.rng.random() < 0.5 else PITCH_W - 0.5
         taker = f"{side[0]}{self.rng.choice([7, 11, 10])}"
         self.give_ball(side, cx, cy, prefer=taker)
+        taker = self.carrier
         self.reshape()
         yield self.emit("corner", self.rng.uniform(20, 32), team=side, player_id=taker, x=round(cx, 2), y=round(cy, 2))
         self.through_flag = True
 
     # ------------------------------------------------------------------ main loop
     def run(self) -> Iterator[Event]:
+        if any(len(self.squad(side)) < 7 for side in ("home", "away")):
+            yield self.emit("full_time", qualifiers={"score_home": self.score["home"],
+                            "score_away": self.score["away"], "status": "abandoned",
+                            "reason": "fewer_than_seven_players"})
+            return
         yield from self.kickoff("home")
         added = {1: self.rng.randint(1, 3) * 60, 2: self.rng.randint(3, 6) * 60}
         half_end = {1: 45 * 60 + added[1], 2: 90 * 60 + added[2]}
         while True:
+            if any(len(self.squad(side)) < 7 for side in ("home", "away")):
+                yield self.emit("full_time", 0.0, qualifiers={
+                    "score_home": self.score["home"], "score_away": self.score["away"],
+                    "status": "abandoned", "reason": "fewer_than_seven_players"})
+                return
             if self.t >= half_end[self.period]:
                 if self.period == 1:
                     yield self.emit("half_time", 0.0, qualifiers={"score_home": self.score["home"], "score_away": self.score["away"]})

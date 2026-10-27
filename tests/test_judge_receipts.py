@@ -47,7 +47,7 @@ def test_judge_replays_chronological_history_for_ninety_seconds(replay):
     assert len(session.replay_history()) == 4
     goals = [i for i in session.insights if i["kind"] == "goal"]
     assert len(goals) == 5
-    redemption = goals[-2]
+    redemption = next(i for i in goals if "s.redemption" in i.get("storyline", []))
     texts = [line["text"] for line in redemption["renders"]["analyst"]["en"]["lines"]]
     assert any("redemption" in text.lower() for text in texts)
     for insight in session.insights:
@@ -102,7 +102,7 @@ def test_checker_challenge_endpoint_is_bounded_to_delivered_insights(monkeypatch
 
 def test_story_map_preserves_original_coordinates_and_earlier_memory(replay):
     session, _ = replay
-    redemption = [i for i in session.insights if i["kind"] == "goal"][-2]
+    redemption = next(i for i in session.insights if "s.redemption" in i.get("storyline", []))
     receipt = build_receipt(session, redemption)
     memory = next(c for c in receipt["claims"] if c["key"] == "s.redemption")
     assert len(memory["event_ids"]) == 2

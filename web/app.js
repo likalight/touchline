@@ -242,6 +242,10 @@ function onEvent(ev) {
   const now = performance.now();
   if (window.TV3D && TV3D.ready) TV3D.onEvent(ev);
   if (ev.frame) {
+    // Tracking frames are complete snapshots, including removals after a red card.
+    for (const pid of Object.keys(S.pos)) {
+      if (!(pid in ev.frame)) { delete S.pos[pid]; delete S.from[pid]; delete S.to[pid]; }
+    }
     for (const [pid, p] of Object.entries(ev.frame)) {
       S.from[pid] = S.pos[pid] ? [...S.pos[pid]] : p;
       S.to[pid] = p;

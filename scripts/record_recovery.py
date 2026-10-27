@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
-async def measure(seed=221):
+async def measure(seed=87):
     os.environ['TOUCHLINE_LLM'] = 'off'
     from touchline.llm import reset_llm
     reset_llm()
