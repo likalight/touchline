@@ -11,9 +11,9 @@
   apply(); media.addEventListener("change", apply);
   if (judge) {
   const preload = document.createElement("link"); preload.rel = "preload"; preload.as = "image";
-  preload.href = "/static/assets/matchday-hero.webp";
-  preload.imageSrcset = "/static/assets/matchday-hero-480.webp 480w, /static/assets/matchday-hero-960.webp 960w, /static/assets/matchday-hero.webp 1536w";
-  preload.imageSizes = "(max-width: 767px) calc(100vw - 40px), 50vw";
+  preload.href = "/static/assets/varga-editorial.webp";
+  preload.imageSrcset = "/static/assets/varga-editorial-480.webp 480w, /static/assets/varga-editorial-960.webp 960w, /static/assets/varga-editorial.webp 1600w";
+  preload.imageSizes = "(max-width: 767px) calc(100vw - 32px), min(100vw - 64px, 1376px)";
   document.head.appendChild(preload);
   }
   document.addEventListener("DOMContentLoaded", () => {

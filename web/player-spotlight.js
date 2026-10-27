@@ -57,6 +57,12 @@ window.TouchlinePlayer = {
       set("#spotlightClubCode", team.short);
       set("#spotlightKitName", player.name.split(" ").slice(-1)[0]);
       set("#spotlightNumber", player.number);
+      // This original illustration represents only the named fictional player.
+      // Other roster members retain their own number, never somebody else's face.
+      const illustrated = player.name === "Ravi Varga" && player.number === 9 && player.team === "home";
+      $("#spotlightPlayerImage").hidden = !illustrated;
+      root.classList.toggle("spotlight-featured", illustrated);
+      set("#spotlightArtNote", illustrated ? "Original AI illustration · fictional player" : "Fictional player · squad number");
       set("#spotlightPosition", `${roles[player.position] || player.position} · #${player.number}`);
       set("#spotlightName", player.name); set("#spotlightTeam", team.name);
       set("#spotlightTime", stats ? `Match totals through ${state.snap.minute}′ · synthetic data` : "Waiting for the first match snapshot.");
