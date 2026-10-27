@@ -6,7 +6,7 @@ Example (run only after the target deployment is ready):
 No shared-match mutations, admin identity, LLM calls, retry storm or capacity extrapolation.
 Every client stays in the denominator, including failed connections. The source is the
 server's complete planned dataset, never the union of events observed by clients.
-Normal synthetic-match insights and the final package use the configured outbound pipeline.
+Current code suppresses outbound delivery for viewer-created matches; older deployments may publish them.
 """
 from __future__ import annotations
 
@@ -257,7 +257,7 @@ async def experiment(args) -> dict:
                                    "scope": "All planned source events remain in completeness denominator, including startup replay; no end-of-run exclusion."},
                        "source_dataset_sha256": dataset_sha if events else None,
                        "source_ids": [e["id"] for e in events],
-                       "downstream_scope": "This isolated synthetic match uses the normal outbound pipeline; verified insights and a final synthetic match package may be delivered to configured downstream consumers. This runner does not verify their delivery.",
+                       "downstream_scope": "Current application code suppresses outbound delivery for viewer-created matches; older deployments may publish synthetic insights and packages. This runner does not verify downstream delivery or the deployed isolation policy.",
                        "scope": "One bounded synthetic match; clients run on one external observer machine against one deployment. Not an SLA, maximum capacity, multi-replica, reconnect or real-match test. No server-to-client latency is claimed."})
         report["passed"] = bool(report["passed"] and not error and final_state.get("status") == "full_time"
                                 and final_state.get("score") == report["expected_final_score"])
@@ -291,8 +291,7 @@ Startup replay events are excluded only from this spread statistic, never from c
 Run error: `{report['error']}`. Cleanup: {report['cleanup']}.
 The accompanying JSON retains every client's missing IDs, unexpected IDs, order and arrival timestamps plus source hashes.
 No public model calls or shared `demo`/`live` controls are used. Only the new isolated match is created and controlled.
-The match uses the normal outbound pipeline: synthetic insights and its final synthetic package may be delivered to
-configured downstream consumers. Downstream delivery is not verified by this streaming experiment.
+{report.get('downstream_scope', 'Downstream delivery is outside this streaming experiment.')}
 """
 
 

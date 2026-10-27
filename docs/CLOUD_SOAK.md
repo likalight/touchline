@@ -34,3 +34,7 @@ The accompanying JSON retains every client's missing IDs, unexpected IDs, order 
 No public model calls or shared `demo`/`live` controls are used. Only the new isolated match is created and controlled.
 The match uses the normal outbound pipeline: synthetic insights and its final synthetic package may be delivered to
 configured downstream consumers. Downstream delivery is not verified by this streaming experiment.
+
+That outbound behaviour describes the measured `b13985b` deployment. Later application code
+isolates viewer-created matches from the shared outbound pipeline; this historical measurement
+and its original JSON are retained unchanged.

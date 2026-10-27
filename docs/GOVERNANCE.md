@@ -16,6 +16,13 @@ Match state and visitor sessions are process-local. Input match history and cons
 are journalled together in Blob Storage. Functions persist synthetic packages and social cards.
 Use [deployment proof](DEPLOYMENT_PROOF.md) for the actual observed configuration, not proposed infrastructure.
 
+Current code isolates viewer-created matches (`POST /api/matches`) from outbound Event Hubs
+and the shared durable outbox, just like Judge Mode. Their local insights, SSE stream, recaps
+and packages remain available. Shared demo and external-feed sessions retain outbound delivery.
+This prevents anonymous seed variation from accumulating durable delivery identities; the
+finite ledger still requires an archival policy for legitimate long-running feeds. The earlier
+cloud soak on `b13985b` preceded this boundary and may have emitted synthetic downstream outputs.
+
 ## Controls and boundaries
 
 | Control | Purpose | Limit |
