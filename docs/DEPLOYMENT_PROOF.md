@@ -2,7 +2,54 @@
 
 ## Current deployed build — 28 October 2026 Singapore time
 
-Source `a69d6af8ad7d67cb99463cefcb4b884380e6307f` is deployed as digest
+Source `706f4f32ff8b07ba44866af78b2193d690e7d629` is deployed as digest
+`sha256:3cd21c9f14922440eaece98702be090d592497adfa965f0caf37c1867a5a1a1e`.
+[Final deployment manifest](evidence/audit-deployment.json) records passed validation at
+12:18 Singapore time (04:18 UTC). **All three final application answers passed their bounded
+checks; only one was an accepted hosted model selection.** The other two were explicit,
+correct deterministic fallbacks after rejecting irrelevant model selections.
+
+- [Container artifact checksum](evidence/audit-container-artifact.json) matches GitHub's
+  recorded digest. [Live asset hashes](evidence/audit-asset-hashes.json) match the reviewed files.
+- [Push CI](https://github.com/likalight/touchline/actions/runs/40630150457) and
+  [PR CI](https://github.com/likalight/touchline/actions/runs/40630156387): all four required
+  jobs green. The code checkpoint passed 223 Python tests and 11 JavaScript contracts, plus
+  story, match-centre and resilience browser journeys.
+- [Exact-revision pipeline evaluation](evidence/audit-pipeline-evaluation.json): the CI
+  artifact verifies 730 supported insights and all 28 goals across 12 synthetic matches,
+  with zero citation/template errors. Its clean source fingerprint matches the cloud probe.
+  This is deterministic CI evidence; pipeline timing excludes model calls, network and browser work.
+- [Readiness](evidence/audit-ready.json) and [initial health](evidence/audit-health-before.json)
+  passed. The outbox restored 198 acknowledged IDs with zero pending/errors at this snapshot.
+  [Capabilities](evidence/audit-capabilities.json) remain anonymous and shared-read-only;
+  no human identity provider is claimed.
+- [Hosted score answer](evidence/audit-qa-score.json): actual Foundry execution without
+  fallback, source-selected 3–1 result, bound claims and score-topic relevance, 5,039 ms model time.
+- [False-premise answer](evidence/audit-qa-false-premise.json): an irrelevant model selection
+  was rejected; the deterministic application fallback returned the actual 3–1 winner.
+  This validates safe fallback for one question, not successful model answering of it.
+- [Varga recovery answer](evidence/audit-qa-recovery.json): the model selection was also
+  rejected as irrelevant. The application returned the verified loss/redemption story, with
+  all three cited event routes resolving. This was checked after the complete isolated Judge
+  replay and is explicitly `application_fallback`, not a second hosted-answer success.
+- [Final health](evidence/audit-health-after.json): healthy service, 198 acknowledged IDs,
+  zero new sends, pending messages or errors at the observation.
+- [External reconnect probe](evidence/audit-reconnect-cloud.json): ten checks passed. After
+  a deliberately unreplayed 499-event gap, current state and the final 20 event IDs were
+  restored against independently applied source state. Completed reconnect returned the
+  correct 1–1 final state and terminal signal. One private accelerated match and one external
+  client; no lossless history, capacity or uptime claim.
+- [External MCP exchanges](evidence/audit-external-mcp.json): all six protocol, discovery,
+  score/source/recap and readiness gates passed on this deployment.
+
+The [refreshed 115-second film](FINAL_VIDEO.md) is complete, with nine new UI scenes captured
+from this `706f4f32` deployment. Full decode, caption checks and 18/18 sampled contrast checks
+passed. The separate downstream package retains its original timestamp, and the earlier film
+remains unchanged; no prior footage is silently relabelled.
+
+## Prior final-hardening build — 28 October 2026 Singapore time
+
+Source `a69d6af8ad7d67cb99463cefcb4b884380e6307f` was deployed as digest
 `sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6`.
 The observation at 02:23 Singapore time (27 October 18:23 UTC) records:
 

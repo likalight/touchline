@@ -1,0 +1,50 @@
+{
+  "question": "Why did Ironmoor Athletic win this match?",
+  "answer": {
+    "answer": "Full time: Kestrel Bay FC 3-1 Ironmoor Athletic. Kestrel Bay FC beat Ironmoor Athletic 3-1.",
+    "citations": [
+      "E00361",
+      "E00451",
+      "E01081",
+      "E01412"
+    ],
+    "source": "router",
+    "language": "en",
+    "requested_language": "en",
+    "fallback_reason": "source_selection_irrelevant",
+    "composition": "deterministic_source_route",
+    "grounding": {
+      "tool_results": 3,
+      "tool_results_accepted": 0,
+      "scope": "The application rendered this answer from match data or verified story frames. No model answer was accepted."
+    },
+    "execution": {
+      "path": "application_fallback",
+      "completed": true,
+      "fallback": true,
+      "fallback_reason": "source_selection_irrelevant",
+      "model_attempted": true,
+      "model_attempt": {
+        "request_id": "69d1d4050e9a413ca7f059f6c982d838",
+        "agent": "AskTheAnalyst",
+        "backend": "foundry",
+        "model": "gpt-4.1-mini",
+        "path": "foundry_hosted",
+        "completed": true,
+        "fallback": false,
+        "duration_ms": 4701.9
+      }
+    },
+    "ms": 4935.5
+  },
+  "_evidence_context": {
+    "source_commit": "706f4f32ff8b07ba44866af78b2193d690e7d629",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:3cd21c9f14922440eaece98702be090d592497adfa965f0caf37c1867a5a1a1e",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "deployment_updated_at": "2026-10-28T04:15:23.4050225Z",
+    "source_artifact_sha256": "41f646c094793f5b2a14a3675e085e7c439d9fdec90e421e12cd00967db9b50f",
+    "scope": "Observation on the new 706f4f32 deployment. Individual checks have their own result; this artifact alone does not claim the complete deployment validation passed. Existing package listings do not establish new input ingestion. Snapshot reconnect is not lossless historical replay.",
+    "publication": "Public application observations and synthetic data only; no credentials, subscription identifiers or billing included."
+  }
+}

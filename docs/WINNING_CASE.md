@@ -16,9 +16,9 @@ the centre of the product. A larger agent count is not evidence of a better resu
 | Category | Implemented / observed | Remaining evidence |
 |---|---|---|
 | Grand Prize | A 90-second isolated story, audience switching, sources, receipts, player context and complete synthetic ingest-to-render path | Observed first-time user success; public video and submission confirmation |
-| Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions; final-image hosted smoke and 198-ID ledger restoration; prior generated package; all 12 external clients received an accelerated match's 1,923 events; prior mid-match restart recovered all 1,870 reference events | Real-time match-length soak and capacity ceiling; live crash-between-send-and-ack test; measured business impact |
+| Azure Cloud Native Integration — strongest current case | Managed identity; Container Apps; Event Hubs input/output; Functions; final-image hosted smoke, 198-ID ledger restoration and ten snapshot-reconnect checks; prior generated package; all 12 external clients received an accelerated match's 1,923 events; prior mid-match restart recovered all 1,870 reference events | Real-time match-length soak and capacity ceiling; live crash-between-send-and-ack test; measured business impact |
 | Multi-Agent System | Agent Framework orchestration, deterministic specialists, separate verification and editorial scheduling, local fault drills, component ablations and a disclosed 12-case narration contract comparison | Equivalent-budget end-to-end single-agent baseline; semantic and blinded usefulness ratings |
-| Microsoft Foundry | Published version 4 passed six fixed hosted application checks with raw outputs; model and safety integration; earlier weak oracle retained and corrected transparently | Full portal evaluation; broader relevance and translation review; observed rollback |
+| Microsoft Foundry | Earlier version 4 passed six fixed hosted checks; latest deployed application checks passed with one accepted model selection and two explicit fallbacks; raw failures and corrected oracles retained | Full portal evaluation; broader relevance and translation review; observed rollback |
 | Enterprise Solution | Machine-readable cues, evidence export, isolated demos, managed service identity and configured Blob outbox with observed acknowledgements | Supported authenticated producer deployment, durable editorial audit, live failure-recovery validation, operator pilot and measured cost |
 
 ## Evidence a judge can inspect
@@ -32,7 +32,8 @@ the centre of the product. A larger agent count is not evidence of a better resu
 
 ## Submission and availability
 
-The local Brag film exists; see [delivery notes](FINAL_VIDEO.md). A local file is not a public
+The validated 115-second Brag film is ready with fresh `706f4f32` UI capture; see
+[delivery notes](FINAL_VIDEO.md). A local file is not a public
 submission URL. Public video upload and final submission confirmation remain unverified in
 this repository. Keep the judge demo available through the official judging period.
 

@@ -6,6 +6,20 @@ model `gpt-4.1-mini`, on 28 October 2026 Singapore time.
 All six used hosted execution without fallback. This is a small fixed English test set,
 not a broad accuracy rate, language evaluation or completed Foundry portal evaluation.
 
+## Latest deployed application checks
+
+On source `706f4f32`, [three actual post-deployment English questions](evidence/audit-deployment.json)
+passed bounded final-answer checks. **Only one of the three was an accepted hosted model
+selection**: the final-score answer. The false-premise winner and Varga recovery questions
+both received irrelevant model selections, which the new topic/identity guard rejected.
+The application returned the correct score or verified source story through explicitly
+labelled deterministic fallbacks. All three story citations resolved.
+
+These observations validate the application boundary for those questions. They do not turn
+the two rejected model selections into model successes or establish a general accuracy rate.
+The six-case hosted run below remains tied to its earlier runtime/source and cannot be
+combined with these three cases into an undifferentiated success score.
+
 ## Bounded application evaluation
 
 `python scripts/foundry_eval.py --bounded --output docs/evidence/foundry-bounded.json`

@@ -1,0 +1,16 @@
+{
+  "ready": true,
+  "feed": {
+    "status": "running"
+  },
+  "_evidence_context": {
+    "source_commit": "706f4f32ff8b07ba44866af78b2193d690e7d629",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:3cd21c9f14922440eaece98702be090d592497adfa965f0caf37c1867a5a1a1e",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "deployment_updated_at": "2026-10-28T04:15:23.4050225Z",
+    "source_artifact_sha256": "01b8e34b766fbb2d2c105bf87eae520b13a47fb172800a7d016e692c87885d63",
+    "scope": "Observation on the new 706f4f32 deployment. Individual checks have their own result; this artifact alone does not claim the complete deployment validation passed. Existing package listings do not establish new input ingestion. Snapshot reconnect is not lossless historical replay.",
+    "publication": "Public application observations and synthetic data only; no credentials, subscription identifiers or billing included."
+  }
+}
