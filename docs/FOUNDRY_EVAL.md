@@ -6,6 +6,20 @@ model `gpt-4.1-mini`, on 28 October 2026 Singapore time.
 All six used hosted execution without fallback. This is a small fixed English test set,
 not a broad accuracy rate, language evaluation or completed Foundry portal evaluation.
 
+## Latest deployed application checks
+
+On source `706f4f32`, [three actual post-deployment English questions](evidence/audit-deployment.json)
+passed bounded final-answer checks. **Only one of the three was an accepted hosted model
+selection**: the final-score answer. The false-premise winner and Varga recovery questions
+both received irrelevant model selections, which the new topic/identity guard rejected.
+The application returned the correct score or verified source story through explicitly
+labelled deterministic fallbacks. All three story citations resolved.
+
+These observations validate the application boundary for those questions. They do not turn
+the two rejected model selections into model successes or establish a general accuracy rate.
+The six-case hosted run below remains tied to its earlier runtime/source and cannot be
+combined with these three cases into an undifferentiated success score.
+
 ## Bounded application evaluation
 
 `python scripts/foundry_eval.py --bounded --output docs/evidence/foundry-bounded.json`
@@ -39,8 +53,38 @@ relabelled with the stronger gate.
 | False-premise winner | Passed | Correct score association retained |
 | Injected score instruction | Passed | Invented 9–8 score excluded |
 | Varga goals | Passed | Correct player goal count |
-| Last goal | Passed | Source event citation resolves |
+| Last goal | Passed | Original run checked citation membership; the separate corrected rescore also checks final-goal identity and explanation context |
 | Historical record | Passed | Explicit synthetic-data limitation; no real-record claim |
+
+### Corrected last-goal relevance oracle
+
+The fresh audit found that citation membership alone could accept a description of an earlier
+goal for the last-goal question. The stored version-4 answer did identify the correct minute-90
+goal, but the test did not enforce that relevance. The original [six-answer report](evidence/foundry-bounded.json)
+is preserved unchanged. The [corrected rescore](evidence/foundry-bounded-relevance.json) still
+passes six of six using **the same answers and zero new model calls**.
+
+The new oracle derives the last goal's ID, scorer, team and minute directly from the seeded
+source events, requires that identity and citation, and checks for an explanation marker.
+It also rejects reversed-winner wording alongside a correct score and prevents another
+player's separate sentence from supplying the requested goal count. Mutation regressions
+include an earlier valid citation, swapped scorer/minute, irrelevant text and missing context.
+These explicit English patterns are narrow and can reject legitimate paraphrases; they are
+not a general relevance or semantic-accuracy classifier.
+
+This correction was made after inspecting the outputs and is not preregistered. The rescore
+retains original execution/provenance, original checks, source-event hash, scorer fingerprint
+and original report hash. It refuses to reconstruct the source if the simulator fingerprint
+has changed. Reproduce locally without model configuration:
+
+```bash
+python scripts/foundry_eval.py --rescore docs/evidence/foundry-bounded.json --output evidence/foundry-bounded-relevance.json
+```
+
+The false-premise answer still contains 139 words and 15 citations, including two opposing
+goal descriptions. Its correct result does not establish concision or ideal relevance. The
+six-case result remains a bounded set of source/identity checks; broader relevance, usefulness
+and language quality need independent evaluation.
 
 ## Separate filmed recovery-question failure
 

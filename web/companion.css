@@ -21,6 +21,7 @@
 .phone-page nav button { background:var(--surface-hover); border-radius:5px; }
 .phone-page nav button.hold { background:var(--ink); color:var(--surface); }
 .phone-page select, .phone-page input { border-color:var(--rule) !important; }
+.phone-page #askForm button { margin-top:10px; min-height:44px; padding:10px 16px; border:1px solid var(--rule); border-radius:5px; background:var(--accent-fill); color:var(--accent-text); font:600 15px var(--ui); cursor:pointer; }
 .reel-page main { padding:28px 24px 48px; }
 .reel-page h1 { font-size:clamp(38px,5vw,64px); letter-spacing:-.03em; margin:18px 0 12px; }
 .reel-page .sub { max-width:65ch; margin-bottom:28px; }

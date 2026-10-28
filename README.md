@@ -24,18 +24,20 @@ personalized graphics and broadcaster-oriented cue contracts. Built for the Micr
 | Status | What a judge can verify | Boundary |
 |---|---|---|
 | Implemented | Isolated three-chapter replay, player context, source inspection, audience comparison and JSON receipts | Synthetic data and model estimates; not real broadcast footage |
-| Observed on the current deployed build | Version-4 hosted source selection, ready/healthy service and restoration of 198 acknowledged output IDs after a normal update | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); earlier Functions, MCP, streaming and film observations retain their original build |
+| Observed on the current deployed build | Source-selected hosted answer, explicit false-premise fallback, healthy/ready service, 198 restored acknowledged IDs, ten external snapshot-reconnect checks and six MCP checks | [Dated source/image proof](docs/DEPLOYMENT_PROOF.md); three bounded application answers passed (one hosted selection, two fallbacks); earlier package, streaming and film evidence retains its build |
 | Reproducible locally / CI | Python, JS contracts, real browser journeys, deterministic pipeline gate, source/model fingerprints | Tests cover specific cases; they do not establish universal truth |
-| Measured bounded model runs | Published analyst version 4: six of six fixed hosted cases; 12-output narration contract comparison with disclosed scorer correction | [Raw cases and scope](docs/FOUNDRY_EVAL.md); no broad accuracy, language or superiority claim |
+| Measured bounded model runs | Earlier version-4 six-case run and disclosed zero-call oracle correction; latest three application checks passed with one accepted hosted selection and two fallbacks; 12-output narration contract comparison | [Raw cases and scope](docs/FOUNDRY_EVAL.md); no broad accuracy, language or superiority claim |
 | Needs further evidence | Portal-quality evaluation, equivalent-budget end-to-end agent comparison, real operator/user benefit and accessibility evaluation | See [Foundry status](docs/FOUNDRY_EVAL.md), [comparison](docs/AGENT_COMPARISON.md) and [impact](docs/IMPACT.md) |
-| Submission gate | Local 115-second Brag film exists | Public video URL and submission receipt are not yet confirmed here |
+| Submission gate | Verified 115-second Brag film is ready, with nine fresh UI scenes from `706f4f32` | Public accepted-host URL and submission receipt remain unconfirmed |
 
 **Our strongest current category evidence is Azure Cloud Native Integration.** Agent Framework
 orchestrates specialised components; many are deterministic by design. GitHub Actions tests
 and builds the project and is distinct from GitHub Copilot Agent Mode. [Category evidence](docs/WINNING_CASE.md).
 
-[Read the disposition of all 31 audit findings](docs/READINESS.md): implemented changes,
-measured checks and the remaining human, submission and production evidence.
+[Read the disposition of all 37 audit findings](docs/READINESS.md): implemented changes,
+measured checks and the remaining human, submission and production evidence. The
+[28 October fresh audit](docs/FRESH_AUDIT.md) separates evidence readiness for each judging
+criterion and category from unsupported winning predictions.
 
 ## Start with one story
 
@@ -120,13 +122,13 @@ Open its receipt to inspect the checks and download the proof. The full app at
 [localhost:8000](http://localhost:8000) adds player focus, four built-in languages, commentary,
 recaps, counterfactuals, a phone view and personalized highlights.
 
-**Live on Azure:** [open Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge). The final code build `a69d6af` is deployed with Foundry version 4. Its hosted answer selected exact source statements without fallback; the outbox restored 198 acknowledged IDs after a normal application update, with zero pending, errors or new sends observed. [Current source/image evidence](docs/DEPLOYMENT_PROOF.md) keeps the earlier Functions package, external streaming test, film capture and mid-match recovery experiments tied to their actual builds. These observations do not establish an SLA or human usefulness.
+**Live on Azure:** [open Judge Mode](https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io/judge). Build `706f4f32` is deployed with Foundry version 4. A hosted score answer selected exact source statements without fallback; an irrelevant false-premise selection was safely rejected. The external snapshot-reconnect probe passed ten checks, and MCP passed six. The outbox restored 198 acknowledged IDs. All three bounded post-deployment application answers passed: one accepted hosted selection and two explicit deterministic fallbacks, including the checked Varga recovery story. [Current source/image evidence](docs/DEPLOYMENT_PROOF.md) keeps the earlier Functions package, external streaming test, film capture and mid-match recovery experiments tied to their actual builds. These observations do not establish an SLA or human usefulness.
 
 ## What we have measured
 
 | Evidence | What it establishes | What it does not establish |
 |---|---|---|
-| [12-match evaluation](docs/EVAL.md) and [machine-readable results](docs/evidence.json) | Verification, goal coverage, citations, rendering and server pipeline timing on held-out synthetic matches | Real-match accuracy, browser latency, model quality or human usefulness |
+| [12-match protocol](docs/EVAL.md) and [deployed-revision CI results](docs/evidence/audit-pipeline-evaluation.json) | Verification, goal coverage, citations, rendering and server pipeline timing on held-out synthetic matches | Real-match accuracy, browser latency, model quality or human usefulness |
 | [Specialist ablation](docs/ABLATION.md) | Effects of removing the ingest guard, scout, storyline, checker and editorial scheduler | A head-to-head comparison against a capable single-agent system |
 | [Frozen-model check](docs/FROZEN_MODEL_EVAL.md) | Unchanged logistic models evaluated on fresh corrected synthetic matches, with calibration bins and fingerprints | Real-match generalisation, xT validation or a new training run |
 | [Single-agent narration comparison](docs/AGENT_COMPARISON.md) | 12 actual model outputs, raw failures and a disclosed scorer correction applied to both alternatives | Semantic accuracy, statistical superiority or an end-to-end agent-count comparison |
@@ -135,13 +137,13 @@ recaps, counterfactuals, a phone view and personalized highlights.
 | [Dated cloud execution](docs/DEPLOYMENT_PROOF.md) and [prior-build package](docs/evidence/readiness-stored-package.json) | Final-image hosted source selection and ledger restoration; earlier Functions package from stored input replay | Exactly-once external effects, restart-failure recovery of this outbox, production SLA or human validation |
 | [Version-4 bounded Foundry run](docs/FOUNDRY_EVAL.md) | Six fixed hosted cases passed stronger score/player/citation/record-scope checks; all raw outputs retained | General answer quality, multilingual parity or a completed portal evaluation |
 | [Final live fallback and isolation checks](docs/DEPLOYMENT_PROOF.md) | Varga recovery returns a checked story with three citations after rejecting unbound model prose; one private match retains its package without shared output | A hosted-answer success for that fallback, universal relevance or distributed tenant isolation |
-| [Final film validation](docs/FINAL_VIDEO.md) | 115-second Brag film recorded from the deployed app, with narration and captions | Public video hosting or completed hackathon submission |
+| [Final film validation](docs/FINAL_VIDEO.md) | 115-second Brag film with nine fresh deployed `706f4f32` UI scenes; 18/18 sampled contrast checks, full decode and captions passed | Public video hosting, completed hackathon submission or full accessibility certification |
 | [CI](https://github.com/likalight/touchline/actions/workflows/ci.yml) | Automated tests, evaluation gate, Bicep build and container smoke checks | Successful provisioning in a particular Azure subscription |
 | [Match memory browser journey](tests/story-browser.cjs) | Full replay, navigation, original-event map, audience switching, stale-request isolation, downloads and responsive layouts | A human usability study or cross-browser accessibility certification |
 
 CI uploads the measured evaluation JSON and report as an artifact tied to its commit.
-[Final code CI](https://github.com/likalight/touchline/actions/runs/40558254712) passed
-171 Python tests, 11 JavaScript contracts and all four jobs, including both real browser journeys, at `a69d6af`.
+[Current code CI](https://github.com/likalight/touchline/actions/runs/40630150457) passed
+223 Python tests, 11 JavaScript contracts and all four jobs, including story, match-centre and resilience browser journeys, at `706f4f32`.
 Four required checks (`test`, `browser`, `bicep`, `docker`) gate merges, including administrators.
 Auto-merge is enabled and waits for those checks; consult the run for the submitted revision.
 Receipts preserve the checks performed at the original moment; opening one does not rerun

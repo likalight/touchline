@@ -56,6 +56,20 @@ const POSITIVE = new Set(["goal", "chance_saved", "chance_missed", "chance_block
   "momentum", "phase", "press", "brace", "hat_trick", "record_shot", "standout", "saves", "wp_swing"]);
 
 /* ------------------------------------------------------------------ boot */
+async function startupJson(url) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const response = await fetch(url, {signal: controller.signal});
+    if (!response.ok) throw new Error(`Unavailable: ${url}`);
+    return await response.json();
+  } finally { clearTimeout(timer); }
+}
+
+function streamStatus(message = "") {
+  const status = $("#connectionStatus");
+  status.textContent = message; status.hidden = !message;
+}
+
 async function boot() {
   S.playerSpotlight = TouchlinePlayer.create({getState: () => S, getRender: rendersFor, openReceipt,
     onFollow: pid => {
@@ -71,14 +85,16 @@ async function boot() {
     panel.hidden = false; panel.setAttribute("role", "main"); panel.tabIndex = -1;
     $(".skip-link").href = "#judgePanel";
     $("#judgeStart").disabled = true;
+    streamStatus();
     hero.sizes = "(max-width: 767px) calc(100vw - 32px), min(100vw - 64px, 1376px)";
     hero.srcset = "/static/assets/varga-editorial-480.webp 480w, /static/assets/varga-editorial-960.webp 960w, /static/assets/varga-editorial.webp 1600w";
     hero.src = hero.dataset.src;
   }
-  try {
-    const [i18n, health] = await Promise.all([fetch("/api/i18n").then((r) => r.json()), fetch("/api/health").then((r) => r.json())]);
-    S.i18n = i18n; S.llm = health.llm; S.speechNeural = !!(health.speech && health.speech.available);
-  } catch { S.i18n = { languages: { en: "English" }, banks: { en: {} } }; }
+  const [i18n, health] = await Promise.allSettled([startupJson("/api/i18n"), startupJson("/api/health")]);
+  S.i18n = i18n.status === "fulfilled" ? i18n.value : { languages: { en: "English" }, banks: { en: {} } };
+  if (health.status === "fulfilled") {
+    S.llm = health.value.llm; S.speechNeural = !!health.value.speech?.available;
+  }
   buildLangSelect();
   bindControls();
   bindTour();
@@ -104,6 +120,7 @@ function buildLangSelect() {
     sel.add(o);
   }
   sel.value = S.prefs.lang in S.i18n.languages || llmOn ? S.prefs.lang : "en";
+  S.prefs.lang = sel.value;
 }
 
 let pitchLoad = null;
@@ -121,13 +138,25 @@ function connect() {
   if (S.es) S.es.close();
   clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
   S.insights = []; S.pos = {}; S.draws = []; S.snap = null;
+  $("#mainStage").setAttribute("aria-busy", "true");
+  streamStatus("Connecting to the match…");
   S.playerSpotlight?.reset();
   $("#cards").innerHTML = `<p class="empty">Moments appear here as they happen, each one checked against the match data before it's shown.</p>`;
   $("#trace").innerHTML = "";
   const es = new EventSource(`/api/matches/${S.sid}/stream`);
   S.es = es;
   es.addEventListener("open", () => $("#liveDot").classList.add("live"));
-  es.addEventListener("error", () => $("#liveDot").classList.remove("live"));
+  es.addEventListener("error", () => {
+    $("#liveDot").classList.remove("live");
+    streamStatus(S.snap ? "Reconnecting… Showing the last received match state." : "Connection interrupted. Retrying automatically…");
+  });
+  es.addEventListener("session_expired", () => {
+    es.close(); $("#liveDot").classList.remove("live");
+    $("#pauseBtn").disabled = true; $("#mainStage").setAttribute("aria-busy", "false");
+    const message = "This private replay has expired. Start a new replay.";
+    streamStatus(message);
+    if (S.judge) { $("#judgeStatus").textContent = message; try { sessionStorage.removeItem("tl.judge"); } catch { /* storage is optional */ } }
+  });
   es.addEventListener("hello", (e) => onHello(JSON.parse(e.data)));
   es.addEventListener("state", (e) => onState(JSON.parse(e.data)));
   es.addEventListener("event", (e) => onEvent(JSON.parse(e.data)));
@@ -153,11 +182,12 @@ function connect() {
     const hint = "The next chapter unlocks when its goal arrives. Explore any chapter you have seen.";
     $("#judgeStatus").textContent = `${chapter.title}. ${hint}`;
   });
-  es.addEventListener("done", () => {
+  es.addEventListener("done", (event) => {
+    const replayed = JSON.parse(event.data || "{}").replayed;
     if (S.judge) {
       $("#judgeStatus").textContent = "The story is complete. Revisit a chapter, compare perspectives, and follow the thread back to its source.";
       $("#pauseBtn").disabled = true;
-    } else toast("Full-time. A fresh live match starts shortly.");
+    } else if (!replayed) toast(["demo", "live"].includes(S.sid) ? "Full-time. A fresh live match starts shortly." : "Full-time. Explore this match's stories and evidence.");
   });
   $("#auditLink").href = `/api/matches/${S.sid}/audit`;
   $("#datasetLink").href = `/api/matches/${S.sid}/dataset.jsonl`;
@@ -168,6 +198,12 @@ function onHello(h) {
   clearTimeout(S.historyTimer); S.historyTimer = null; S.pendingHistory = [];
   S.insights = []; rerenderCards();
   S.snap = null;
+  S.pos = {}; S.from = {}; S.to = {}; S.lastT = 0; S.lastPass = null; S.ballEv = null; S.draws = [];
+  for (const layer of Object.values(S.layers)) { clearTimeout(layer._t); layer.remove(); }
+  S.layers = {}; S.speechQ = [];
+  S.drills = {}; S.fb = {}; S.tags.forEach(tag => tag.el?.remove()); S.tags = [];
+  window.TV3D?.reset?.();
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
   S.playerSpotlight?.reset();
   S.centre?.reset();
   if (S.story) {
@@ -216,6 +252,7 @@ function tvBug(s) {
 
 function onState(s) {
   S.snap = s;
+  $("#mainStage").setAttribute("aria-busy", "false"); streamStatus();
   S.playerSpotlight?.refresh();
   if (s.drills && s.drills.length) { for (const d of s.drills) S.drills[d.id] = d; if (!$("#tab-ops").hidden) renderDrills(); }
   tvBug(s);
@@ -241,7 +278,7 @@ function onState(s) {
 /* ------------------------------------------------------------------ events -> pitch */
 function onEvent(ev) {
   const now = performance.now();
-  if (window.TV3D && TV3D.ready) TV3D.onEvent(ev);
+  if (!ev.replayed && window.TV3D && TV3D.ready) TV3D.onEvent(ev);
   if (ev.frame) {
     // Tracking frames are complete snapshots, including removals after a red card.
     for (const pid of Object.keys(S.pos)) {
@@ -266,6 +303,13 @@ function onEvent(ev) {
   }
   if (ev.etype === "pass") S.lastPass = ev;
   if (ev.etype === "kickoff") S.ball = [52.5, 34];
+  if (ev.replayed) {
+    // Bootstrap restores positions; historical events must not play as new actions.
+    for (const [pid, p] of Object.entries(S.to)) S.pos[pid] = S.from[pid] = [...p];
+    S.ball = [...S.ballTo]; S.ballFrom = [...S.ball]; S.ballMid = [...S.ball];
+    S.ballEv = null; S.t0 = now - 1; S.dur = 1;
+    return;
+  }
   if (S.prefs.focus && (ev.player_id === S.prefs.focus || ev.target_id === S.prefs.focus)) focusTicker(ev);
 }
 
@@ -1016,21 +1060,30 @@ async function loadRecap() {
   } catch { /* keep previous */ }
 }
 
-let playerSort = "rating";
+let playerSort = "rating", playerSortDirection = "descending";
 function renderPlayers() {
   const s = S.snap; if (!s || !S.meta) return;
-  const rows = Object.entries(s.players).map(([pid, v]) => ({ pid, ...S.players[pid], ...v }));
-  rows.sort((a, b) => (b[playerSort] ?? 0) - (a[playerSort] ?? 0));
+  const table = $("#playersTable"), active = table.contains(document.activeElement) ? document.activeElement : null;
+  const focusKey = active && ["sort", "fav", "follow"].find(key => active.dataset[key]);
+  const focusValue = focusKey ? active.dataset[focusKey] : null;
+  const rows = Object.entries(s.players).map(([pid, v]) => ({ pid, ...S.players[pid], ...v, acc: v.passes ? Math.round(v.completed / v.passes * 100) : null }));
+  rows.sort((a, b) => {
+    const av = a[playerSort], bv = b[playerSort];
+    if (av == null || bv == null) return av == null ? (bv == null ? 0 : 1) : -1;
+    const diff = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+    return (playerSortDirection === "ascending" ? diff : -diff) || a.name.localeCompare(b.name);
+  });
   const cols = [["number", "#"], ["name", "Player"], ["position", "Pos"], ["rating", "Rating"], ["passes", "Passes"], ["acc", "Pass %"], ["xt", "Threat (xT)"], ["xg", "xG"], ["top_speed_kmh", "Top km/h"], ["distance_km", "Km"]];
-  $("#playersTable thead").innerHTML = `<tr>${cols.map(([k, l]) => `<th data-sort="${k}" class="${["name", "position"].includes(k) ? "" : "num"}">${l}</th>`).join("")}<th></th></tr>`;
+  $("#playersTable thead").innerHTML = `<tr>${cols.map(([k, l]) => `<th scope="col" ${playerSort === k ? `aria-sort="${playerSortDirection}"` : ""} class="${["name", "position"].includes(k) ? "" : "num"}"><button type="button" data-sort="${k}" aria-label="Sort by ${esc(l === "#" ? "shirt number" : l)}">${l}<span aria-hidden="true">${playerSort === k ? (playerSortDirection === "ascending" ? " ↑" : " ↓") : " ↕"}</span></button></th>`).join("")}<th scope="col">Actions</th></tr>`;
   $("#playersTable tbody").innerHTML = rows.map((p) => {
     const acc = p.passes ? Math.round((p.completed / p.passes) * 100) : "–";
     return `<tr><td>${p.number}</td><td><span class="dot" style="background:${p.color}"></span>${esc(p.name)}</td><td>${p.position}</td>
       <td class="num">${p.rating}</td><td class="num">${p.passes}</td><td class="num">${acc}</td><td class="num">${p.xt}</td><td class="num">${p.xg}</td>
       <td class="num">${p.top_speed_kmh}</td><td class="num">${p.distance_km}</td>
-      <td class="acts"><button class="btn small" data-fav="${p.pid}" aria-pressed="${(S.prefs.favs || []).includes(p.pid)}">${(S.prefs.favs || []).includes(p.pid) ? "Favourite" : "Add favourite"}</button>
-      <button class="btn small" data-follow="${p.pid}">${S.prefs.focus === p.pid ? "Following" : "Follow"}</button></td></tr>`;
+      <td class="acts"><button class="btn small" data-fav="${p.pid}" aria-label="Favourite ${esc(p.name)}" aria-pressed="${(S.prefs.favs || []).includes(p.pid)}">${(S.prefs.favs || []).includes(p.pid) ? "Favourite" : "Add favourite"}</button>
+      <button class="btn small" data-follow="${p.pid}" aria-label="Follow ${esc(p.name)}" aria-pressed="${S.prefs.focus === p.pid}">${S.prefs.focus === p.pid ? "Following" : "Follow"}</button></td></tr>`;
   }).join("");
+  if (focusKey) table.querySelector(`[data-${focusKey}="${CSS.escape(focusValue)}"]`)?.focus({preventScroll:true});
 }
 
 function renderProducer() {
@@ -1133,29 +1186,31 @@ async function runWhatIf(id) {
 
 /* ------------------------------------------------------------------ guided tour */
 const TOUR = [
-  { sel: "#pitchBox", title: "The match, in a 3D stadium", text: "Every graphic on screen was checked against the raw match data by a fact-checking agent before it aired.",
+  { sel: "#pitchBox", title: "The match, in a 3D stadium", text: "Watch the synthetic replay. Source checks test supported facts before a graphic airs; model-written wording is labelled as a preview.",
     go: () => { S.prefs.view = "tv"; applyView(); } },
-  { sel: "#cards", title: "Why it matters", text: "Each moment is explained, not just reported. Tap an event ID on a card to see the evidence and what drove the model." },
-  { sel: "#personaSeg", title: "Four voices for every moment", text: "The same moment, written for an analyst. Fan, Studio and Audio description get their own versions, in any language.",
+  { sel: "#cards", title: "Why it matters", text: "Each moment is explained, not just reported. Open its Evidence receipt to trace the claims to recorded match events." },
+  { sel: "#personaSeg", title: "Four voices for every moment", text: "Compare Fan, Analyst, Studio and Audio description versions. Choose from the languages available in this deployment.",
     go: () => $('[data-persona="analyst"]').click() },
-  { sel: "label:has(#booth)", title: "Two-voice commentary", text: "Tick Commentary: a lead commentator calls the moment and an analyst explains it, with captions. Every number spoken has been checked." },
+  { sel: "label:has(#booth)", title: "Two-voice commentary", text: "Tick Commentary to hear the call and explanation, with captions. Check the receipt for source facts and the limits of each verification.",
+    go: () => { if (!$(".prefs").classList.contains("open")) $("#moreBtn").click(); } },
   { sel: '[data-tab="whatif"]', title: "What if?", text: "Change one thing, like a red card that never happened, and replay the rest of the match 1,000 times.",
     go: async () => { $('[data-tab="whatif"]').click(); await loadWhatIf(); const b = $('[data-wi^="nored"]') || $("[data-wi]"); if (b) runWhatIf(b.dataset.wi); } },
   { sel: '[data-tab="producer"]', title: "Editorial decisions", text: "A producer agent airs, cuts in, queues or drops each graphic, and says why. Review mode supports human approval; goals, red cards and full-time remain automatic.",
     go: () => $('[data-tab="producer"]').click() },
-  { sel: '[data-tab="ops"]', title: "Break it on purpose", text: "We just slipped a made-up number into the copy. Watch the fact-checker block it, while the match keeps playing.",
-    go: () => { $('[data-tab="ops"]').click(); runDrill("hallucination"); } },
+  { sel: '[data-tab="ops"]', title: "Inspect the agents", text: "See the agent trace and service status. Where producer controls are enabled, a failure drill tests the system's recovery.",
+    go: () => $('[data-tab="ops"]').click() },
   { sel: '[data-tab="mine"]', title: "Your match, your reel", text: "After the whistle, every fan gets their own highlights, replayed in the 3D stadium and saved from the browser.",
     go: () => $('[data-tab="mine"]').click() },
   { sel: ".phone-link", title: "And on your phone", text: "Open Touchline as a second screen: your player's numbers, ask by voice, and a buzz when their club scores." },
 ];
-let tourAt = -1, tourPersona = null;
+let tourAt = -1, tourSaved = null, tourTrigger = null;
 async function tourShow(i) {
   $$(".tour-focus").forEach((x) => x.classList.remove("tour-focus"));
   if (i < 0 || i >= TOUR.length) return tourEnd();
   tourAt = i;
   const st = TOUR[i];
   if (st.go) await st.go();
+  if (tourAt !== i) return;
   const el = $(st.sel);
   if (el) { el.classList.add("tour-focus"); el.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" }); }
   $("#tourStep").textContent = `${i + 1} of ${TOUR.length}`;
@@ -1166,10 +1221,20 @@ async function tourShow(i) {
 function tourEnd() {
   $$(".tour-focus").forEach((x) => x.classList.remove("tour-focus"));
   $("#tour").hidden = true; tourAt = -1;
-  if (tourPersona && tourPersona !== S.prefs.persona) $(`[data-persona="${tourPersona}"]`)?.click();
+  if (tourSaved) {
+    S.prefs.persona = tourSaved.persona; S.prefs.view = tourSaved.view;
+    savePrefs(); applyPrefs(); applyView();
+    if ($(".prefs").classList.contains("open") !== tourSaved.preferencesOpen) $("#moreBtn").click();
+    tourSaved = null;
+  }
+  if (tourTrigger?.isConnected) tourTrigger.focus({preventScroll:true});
 }
 function bindTour() {
-  $("#tourBtn").addEventListener("click", () => { tourPersona = S.prefs.persona; tourShow(0); });
+  $("#tourBtn").addEventListener("click", () => {
+    tourTrigger = document.activeElement;
+    tourSaved = {persona:S.prefs.persona, view:S.prefs.view, preferencesOpen:$(".prefs").classList.contains("open")};
+    tourShow(0);
+  });
   $("#tourNext").addEventListener("click", () => tourShow(tourAt + 1));
   $("#tourBack").addEventListener("click", () => tourShow(tourAt - 1));
   $("#tourClose").addEventListener("click", tourEnd);
@@ -1337,19 +1402,21 @@ function applyCapabilities() {
   const shared = ["demo", "live"].includes(S.sid), allowed = shared ? S.me?.can_control_shared === true : S.me?.can_produce === true;
   const privateJudge = S.judge && !!S.judgeToken;
   $$("#modeSeg button, [data-drill], [data-approve], [data-reject]").forEach(button => { button.disabled = !allowed; button.title = allowed ? "" : "Read-only match: producer access is unavailable here."; });
-  if (shared && !privateJudge) $$("#pauseBtn, #speed, #jump").forEach(control => { control.disabled = !allowed; control.title = allowed ? "" : "Shared live match. Start the 90-second demo for your own playback controls."; });
-  else $$("#pauseBtn, #speed, #jump").forEach(control => { control.title = privateJudge ? "Controls your own replay" : ""; });
+  $$("#pauseBtn, #speed, #jump").forEach(control => {
+    control.disabled = !S.snap || S.snap.status === "full_time" || !(privateJudge || allowed);
+    control.title = privateJudge ? "Controls your own replay" : shared && !allowed ? "Shared live match. Start the 90-second demo for your own playback controls." : "";
+  });
 }
 async function loadMe() {
   try {
-    const me = await fetch("/api/me").then((r) => r.json());
+    const me = await startupJson("/api/me");
     S.me = me;
     $("#who").innerHTML = me.signed_in
       ? `Signed in as <b>${esc(me.name || "you")}</b>${me.roles.length ? ` (${me.roles.map((r) => esc(r.replace("Touchline.", ""))).join(", ")})` : ""}.${me.logout ? ` <a href="${esc(me.logout)}">Sign out</a>` : ""}`
       : me.identity_provider_configured && me.login ? `<a class="btn small" href="${esc(me.login)}?post_login_redirect_uri=/">Sign in with Microsoft</a> for producer access.`
       : me.can_control_shared ? "Local demo controls are enabled. Producer identity is not configured." : "You are viewing the shared broadcast. Editorial decisions are visible; controls are read-only. Start the 90-second demo for your own replay.";
     applyCapabilities();
-  } catch (e) { /* offline */ }
+  } catch (e) { $("#who").textContent = "Producer access could not be checked. This view remains read-only."; applyCapabilities(); }
 }
 
 function bindJudgeMode() {
@@ -1477,7 +1544,10 @@ function bindControls() {
     const fol = e.target.closest("[data-follow]"); if (fol) { S.prefs.focus = S.prefs.focus === fol.dataset.follow ? "" : fol.dataset.follow; savePrefs(); applyPrefs(); renderPlayers(); return; }
     const ap = e.target.closest("[data-approve]"); if (ap) return decide(ap.dataset.approve, true);
     const rj = e.target.closest("[data-reject]"); if (rj) return decide(rj.dataset.reject, false);
-    const th = e.target.closest("th[data-sort]"); if (th) { playerSort = th.dataset.sort; renderPlayers(); }
+    const sort = e.target.closest("button[data-sort]"); if (sort) {
+      playerSortDirection = playerSort === sort.dataset.sort ? (playerSortDirection === "ascending" ? "descending" : "ascending") : ["name", "position", "number"].includes(sort.dataset.sort) ? "ascending" : "descending";
+      playerSort = sort.dataset.sort; renderPlayers();
+    }
   });
   $("#askForm").addEventListener("submit", (e) => { e.preventDefault(); const v = $("#askInput").value.trim(); if (v) { ask(v); $("#askInput").value = ""; } });
   $("#recapBtn").addEventListener("click", loadRecap);

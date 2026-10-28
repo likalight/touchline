@@ -100,20 +100,33 @@ class MatchSession:
             try:
                 q.put_nowait(msg)
             except asyncio.QueueFull:
-                pass  # slow consumer: drop rather than stall the live pipeline
+                # A slow viewer must not silently continue from a broken state.
+                # Replace its backlog with the same bounded snapshot used on
+                # reconnect; this is state recovery, not lossless event replay.
+                while not q.empty():
+                    q.get_nowait()
+                self._bootstrap(q, reason="slow_consumer")
 
     def subscribe(self) -> asyncio.Queue:
         q: asyncio.Queue = asyncio.Queue(maxsize=5000)
         self.subscribers.add(q)
-        q.put_nowait({"type": "hello", **self.describe()})
+        self._bootstrap(q, reason="connect")
+        return q
+
+    def _bootstrap(self, q: asyncio.Queue, *, reason: str) -> None:
+        q.put_nowait({"type": "hello", **self.describe(), "recovery": {
+            "mode": "snapshot", "reason": reason, "lossless_event_replay": False,
+            "recent_event_limit": 20, "insight_history": "session_bounded",
+        }})
         q.put_nowait({"type": "state", **self.snapshot()})
         for e in list(self.recent_events)[-20:]:
-            q.put_nowait(e)
+            q.put_nowait({**e, "replayed": True})
         for span in list(self.trace.spans)[-30:]:
             q.put_nowait({"type": "trace", **span})
         for ins in self.replay_history():
             q.put_nowait({"type": "insight", "insight": ins, "replayed": True})  # history: feed only, no graphics
-        return q
+        if self.done:
+            q.put_nowait({"type": "done", "replayed": True})
 
     def replay_history(self):
         return self.insights[-30:]
@@ -148,6 +161,7 @@ class MatchSession:
         lat = list(self.latencies)
         ev_lat = list(self.event_latency)
         return {
+            "applied_events": len(self.state.events),
             "insights": len(self.insights), "pipeline_ms_p50": percentile(lat, 0.5), "pipeline_ms_p95": percentile(lat, 0.95),
             "event_ms_p50": percentile(ev_lat, 0.5), "event_ms_p95": percentile(ev_lat, 0.95),
             "ingest": self.guard.stats, "fault_injection": self.injector.injected, "verifier": self.checker.stats(),

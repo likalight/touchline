@@ -1,0 +1,80 @@
+{
+  "previous_image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:b1c448d98716f3a4cf961cf70450bfeb47bdb56153845c97258bfc202c9b2de6",
+  "updated_at": "2026-10-28T04:15:23.4050225Z",
+  "narrator_version": "4",
+  "analyst_version": "4",
+  "live_validation": "passed",
+  "source_commit": "706f4f32ff8b07ba44866af78b2193d690e7d629",
+  "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:3cd21c9f14922440eaece98702be090d592497adfa965f0caf37c1867a5a1a1e",
+  "observed_at": "2026-10-28T04:18:44.734314+00:00",
+  "url": "https://ca-touchline-3a2uvrfhbicqc.livelytree-3fdb8286.southeastasia.azurecontainerapps.io",
+  "checks": {
+    "ready": true,
+    "health": true,
+    "assets_match": true
+  },
+  "qa_cases": [
+    {
+      "case": "score",
+      "checks": {
+        "ordered_source_score": true,
+        "actual_winner": true,
+        "typed_selection_or_honest_fallback": true
+      },
+      "passed": true,
+      "path": "foundry_hosted",
+      "hosted_selection": true
+    },
+    {
+      "case": "false-premise",
+      "checks": {
+        "ordered_source_score": true,
+        "actual_winner": true,
+        "typed_selection_or_honest_fallback": true
+      },
+      "passed": true,
+      "path": "application_fallback",
+      "hosted_selection": false
+    },
+    {
+      "case": "recovery",
+      "checks": {
+        "names_player": true,
+        "story_not_generic_stats": true,
+        "typed_selection_or_honest_fallback": true,
+        "source_E00562": true,
+        "source_E00554": true,
+        "source_E00921": true
+      },
+      "passed": true,
+      "path": "application_fallback",
+      "hosted_selection": false
+    }
+  ],
+  "outbound_after": {
+    "enabled": true,
+    "hub": "touchline-insights",
+    "sent": 0,
+    "dropped": 0,
+    "errors": 0,
+    "degraded": false,
+    "oldest_pending_seconds": 0,
+    "retries": 0,
+    "pending": 0,
+    "acknowledged": 198,
+    "outbox_ready": true,
+    "sender_running": true,
+    "durability": "single-writer Blob outbox; at-least-once delivery with stable delivery_id"
+  },
+  "scope": "Three actual post-deployment English questions. Correct scoped answers/fallbacks, not general model accuracy or a human study.",
+  "_evidence_context": {
+    "source_commit": "706f4f32ff8b07ba44866af78b2193d690e7d629",
+    "image": "crtouchline3a2uvrfhbicqc.azurecr.io/touchline@sha256:3cd21c9f14922440eaece98702be090d592497adfa965f0caf37c1867a5a1a1e",
+    "analyst_version": "4",
+    "narrator_version": "4",
+    "deployment_updated_at": "2026-10-28T04:15:23.4050225Z",
+    "source_artifact_sha256": "5c8f849e5de9b48998f84bc78b0e284a2ba064be6b7d1908165cae8d2fca9604",
+    "scope": "Final post-deployment observation: three bounded application answers passed; one accepted hosted model selection and two explicit deterministic application fallbacks. Not a model accuracy rate.",
+    "publication": "Public application observations and synthetic data only; no credentials, subscription identifiers or billing included."
+  }
+}

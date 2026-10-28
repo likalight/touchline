@@ -47,6 +47,33 @@ class AskTheAnalyst:
         self.insights = insights
         self.llm = get_llm()
 
+    def _request_binding(self, question: str) -> tuple[str | None, list[str]]:
+        """Bounded intent coverage; never infer semantic relevance from answer token overlap."""
+        q = question.lower()
+        if needs_source_scope(q):
+            return "source_scope", []
+        players = [p.id for p in getattr(self.s, "players", {}).values()
+                   if p.name.lower() in q or re.search(rf"\b{re.escape(p.name.split()[-1].lower())}\b", q)]
+        if players:
+            if re.search(r"\brecover(?:ed|y)?\b|\bredemption\b|\bredeem(?:ed)?\b|\bbounc(?:e|ed) back\b", q):
+                return "player_recovery", players
+            if re.search(r"\bstory(?:line)?\b|\bremember\b|\blinked (?:match )?events\b|\bpossession loss\b", q):
+                return "player_story", players
+            return "player_stats", players
+        if re.search(r"\b(?:win probability|probability|odds|chance of winning)\b", q):
+            return "win_probability", []
+        if re.search(r"\bwhy\b|\bexplain\b|\bhow\b", q) and re.search(r"\b(?:score|scored|goal)\b", q):
+            return "moment:goal", []
+        if re.search(r"\b(?:score|won|winner|result|leading|lead|draw|beat|win)\b", q):
+            return "score", []
+        if re.search(r"\bxg\b|\bexpected goals\b", q):
+            return "xg", []
+        if "possession" in q:
+            return "possession", []
+        if "press" in q:
+            return "pressing", []
+        return None, []
+
     @staticmethod
     def _source_copy(ins: dict) -> dict:
         """Render checked frames directly; never promote a generated preview to source truth."""
@@ -64,7 +91,8 @@ class AskTheAnalyst:
             """Assign IDs within this request only; source text stays bound to its citations."""
             data["verified_answers"] = [{"id": f"A{len(log)}_{i}", "answer": a["answer"],
                                           "citations": a.get("citations", []), "language": "en",
-                                          "answer_type": a.get("answer_type", "match_fact")}
+                                          "answer_type": a.get("answer_type", "match_fact"),
+                                          "topics": a.get("topics", []), "player_ids": a.get("player_ids", [])}
                                          for i, a in enumerate(answers)]
             out = json.dumps(data)
             log.append(out)
@@ -74,14 +102,21 @@ class AskTheAnalyst:
             """Current score, minute, possession, xG, shots, win probability, momentum and control-vs-chaos phase."""
             snap = s.snapshot()
             return record({k: snap[k] for k in ("minute", "score", "home", "away", "win_prob", "momentum", "phase")},
-                          [{"answer": f"Minute {snap['minute']}."}] +
-                          [self.route(q) for q in ("score", "xg", "possession", "win probability", "pressing")])
+                          [{"answer": f"Minute {snap['minute']}.", "topics": ["minute"]}] +
+                          [{**self.route(q), "topics": [topic]} for q, topic in
+                           (("score", "score"), ("xg", "xg"), ("possession", "possession"),
+                            ("win probability", "win_probability"), ("pressing", "pressing"))])
 
         def get_player_stats(name: str) -> str:
             """Stats for one player by (partial) name: passes, pass difficulty, xG, xT, speed, distance, rating."""
             pid = self._find_player(name)
-            return record({**s.player_summary(pid), "rating": s.player_rating(pid)},
-                          [self.route(s.players[pid].name)]) if pid else record({"error": "unknown player"}, [])
+            if not pid:
+                return record({"error": "unknown player"}, [])
+            answers = [{**self.route(s.players[pid].name), "topics": ["player_stats"], "player_ids": [pid]}]
+            # Existing tool, same input: make verified match-memory records selectable too.
+            for recovery, topic in ((True, "player_recovery"), (False, "player_story")):
+                answers.append({**self._player_memory(s.players[pid], recovery), "topics": [topic], "player_ids": [pid]})
+            return record({**s.player_summary(pid), "rating": s.player_rating(pid)}, answers)
 
         def list_key_moments(kind: str = "") -> str:
             """Most recent verified insights (optionally filtered by kind, e.g. goal, momentum, phase, press)."""
@@ -92,7 +127,7 @@ class AskTheAnalyst:
                                "why": [l["text"] for l in self._source_copy(i)["lines"]]}
                        for i in ins]
             return record({"moments": moments}, [{"answer": f"{i['minute']}': {i['summary']} " + "; ".join(i["why"]),
-                                                  "citations": i["event_ids"]} for i in moments])
+                                                  "citations": i["event_ids"], "topics": [f"moment:{i['kind']}"]} for i in moments])
 
         def explain_event(event_id: str) -> str:
             """All derived facts for one event ID (xG, pass difficulty, threat added, win-probability change)."""
@@ -134,7 +169,7 @@ class AskTheAnalyst:
         def get_source_scope() -> str:
             """Source limitations: fictional synthetic match; cannot establish real Premier League, career, season or world records."""
             return record({"synthetic": True, "historical_data_available": False},
-                          [{"answer": SOURCE_SCOPE, "answer_type": "source_scope"}])
+                          [{"answer": SOURCE_SCOPE, "answer_type": "source_scope", "topics": ["source_scope"]}])
 
         return [get_scoreboard, get_player_stats, list_key_moments, explain_event, get_events, get_team_report, get_source_scope]
 
@@ -175,6 +210,18 @@ class AskTheAnalyst:
                 if needs_source_scope(question) and selected and not any(a.get("answer_type") == "source_scope" for a in selected):
                     selected = []
                     fallback_reason = "source_scope_missing"
+                topic, players = self._request_binding(question)
+                if selected and topic and (not all(topic in a.get("topics", []) for a in selected)
+                                           or not set(players) <= {p for a in selected for p in a.get("player_ids", [])}
+                                           or (players and any(not a.get("player_ids") or not set(a["player_ids"]) <= set(players)
+                                                               for a in selected))):
+                    selected = []
+                    fallback_reason = "source_selection_irrelevant"
+                if selected and topic == "moment:goal" and re.search(r"\b(?:latest|last|most recent)\b", question, re.I):
+                    last_goal = next((e for e in reversed(list(self.s.events.values())) if e.type == "goal"), None)
+                    if last_goal is None or any(last_goal.id not in a["citations"] for a in selected):
+                        selected = []
+                        fallback_reason = "source_selection_irrelevant"
                 answer = " ".join(a["answer"] for a in selected)
                 if selected and (await safety.moderate(answer))["ok"]:
                     return {"answer": answer, "citations": list(dict.fromkeys(c for a in selected for c in a["citations"])),
@@ -182,7 +229,8 @@ class AskTheAnalyst:
                             "execution": self.llm.execution() if hasattr(self.llm, "execution") else {},
                             "grounding": {"tool_results": len(tool_log), "numbers_supported": True,
                                           "citations_supported": True, "claims_bound": True,
-                                          "scope": "Exact source-rendered statements selected by the model; no free paraphrase."}}
+                                          "relevance_binding": topic or "not_covered",
+                                          "scope": "Exact source-rendered statements selected by the model; recognized intents require matching source topics and players. This is not general semantic relevance verification."}}
                 if selected:
                     fallback_reason = "safety_blocked_or_unavailable"
             else:
@@ -238,7 +286,11 @@ class AskTheAnalyst:
             return {"answer": SOURCE_SCOPE, "citations": [], "source": "router", "answer_type": "source_scope"}
         h, a = s.meta.home, s.meta.away
         tn = {"home": h.name, "away": a.name}
-        if not re.search(r"\bwhy\b", ql) and re.search(r"\b(score|won|winner|result|leading|lead|draw|beat)\b", ql):
+        topic, players = self._request_binding(q)
+        if len(players) > 1:
+            return {"answer": "Please ask about one player at a time; I can't substantiate that comparison with this answer route.",
+                    "citations": [], "source": "router", "answer_type": "comparison_unavailable"}
+        if topic == "score":
             sh, sa = s.score["home"], s.score["away"]
             final = s.status == "full_time"
             if sh == sa:
@@ -251,8 +303,8 @@ class AskTheAnalyst:
         # player mentioned?
         for p in s.players.values():
             if p.name.lower() in ql or re.search(rf"\b{re.escape(p.name.split()[-1].lower())}\b", ql):
-                recovery = bool(re.search(r"\brecover(?:ed|y)?\b|\bredemption\b|\bredeem(?:ed)?\b|\bbounc(?:e|ed) back\b", ql))
-                memory = bool(re.search(r"\bstory(?:line)?\b|\bremember\b|\blinked (?:match )?events\b|\bpossession loss\b", ql))
+                recovery = topic == "player_recovery"
+                memory = topic == "player_story"
                 if recovery or memory:
                     return self._player_memory(p, recovery)
                 ps = s.player_summary(p.id)
@@ -260,7 +312,7 @@ class AskTheAnalyst:
                                    f"{ps['passes']} passes at {ps['pass_accuracy']}% (avg difficulty {ps['avg_pass_difficulty']}/100), "
                                    f"{ps['xg']} xG, goals: {ps['goals']}, {ps['xt_added']} xT added, top speed {ps['top_speed_kmh']} km/h, "
                                    f"{ps['distance_km']} km covered."), "citations": [], "source": "router"}
-        if re.search(r"\bwhy\b", ql):
+        if re.search(r"\bwhy\b", ql) or topic == "moment:goal":
             kinds = ["goal", "momentum", "phase", "press", "chance_saved", "chance_missed", "line_break", "wp_swing"]
             syn = {"score": "goal", "scored": "goal", "goal": "goal", "momentum": "momentum", "control": "phase",
                    "chaos": "phase", "press": "press", "save": "chance_saved", "miss": "chance_missed"}
@@ -272,6 +324,9 @@ class AskTheAnalyst:
                 r = self._source_copy(i)
                 return {"answer": f"{r['title']} ({i['minute']}'): " + "; ".join(l["text"] for l in r["lines"]),
                         "citations": i["event_ids"], "source": "router"}
+            if topic == "moment:goal":
+                return {"answer": "There is no verified goal explanation in the available match insights yet.",
+                        "citations": [], "source": "router", "answer_type": "story_unavailable"}
         if any(w in ql for w in ("best", "standout", "player of", "motm", "man of the match")):
             top = s.top_players(3)
             return {"answer": "Top performers so far: " + "; ".join(

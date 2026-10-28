@@ -198,8 +198,9 @@ def get(sid: str) -> MatchSession:
 
 async def prune_sessions():
     for sid, s in list(sessions.items()):
-        if (sid not in (DEMO, "live") and time.time() - s.created > SESSION_TTL
-                and (s.done or getattr(s, "control_token", None))):
+        # The lifetime also bounds paused/slow private simulations. Otherwise a
+        # viewer can permanently occupy every replay slot without finishing.
+        if sid not in (DEMO, "live") and time.time() - s.created > SESSION_TTL:
             await s.stop()
             sessions.pop(sid, None)
 
@@ -350,11 +351,22 @@ async def stream(sid: str, request: Request):
     q = s.subscribe()
 
     async def gen():
+        nonlocal s, q
         try:
             yield "retry: 2000\n\n"
             while True:
                 if await request.is_disconnected():
                     break
+                current = sessions.get(sid)
+                if current is None:
+                    yield 'event: session_expired\ndata: {"type":"session_expired","detail":"This private replay has expired. Start a new replay."}\n\n'
+                    break
+                if current is not s:
+                    # Shared demo/live IDs survive match replacement. Follow the
+                    # new session instead of keeping the viewer on a dead queue.
+                    s.unsubscribe(q)
+                    s = current
+                    q = s.subscribe()
                 try:
                     msg = await asyncio.wait_for(q.get(), timeout=15)
                 except asyncio.TimeoutError:

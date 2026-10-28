@@ -63,6 +63,7 @@ jobs:
       TOUCHLINE_URL: http://127.0.0.1:8765
       STORY_SCREENSHOTS: evidence/browser/story
       CENTRE_SCREENSHOTS: evidence/browser/centre
+      UI_SCREENSHOTS: evidence/browser/ui-resilience
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -85,6 +86,7 @@ jobs:
         run: |
           node tests/story-browser.cjs
           node tests/centre-browser.cjs
+          node tests/ui-resilience-browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

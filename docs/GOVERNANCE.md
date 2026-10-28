@@ -32,7 +32,7 @@ This supports the tested boundary for that run, not distributed tenant-isolation
 |---|---|---|
 | Deterministic analytics | Calculate source statistics from synthetic events | A model estimate is not a real-world fact or proof of causality |
 | FactChecker | Validate supported claim frames and event references | Passing implemented checks is not universal semantic or translation accuracy |
-| Q&A grounding | The model selects source-rendered answer IDs; unsupported free-form answers fall back | This bounds accepted wording, not usefulness. Relevance and coverage still need evaluation; English fallback is labelled |
+| Q&A grounding | The model selects source-rendered answer IDs; recognized English requests also require matching source topics/player identities; unsupported or irrelevant selections fall back | This bounds accepted wording and specified intents, not universal relevance. Latest three application checks used one accepted model selection and two explicit fallbacks; English fallback is labelled |
 | Content Safety / Prompt Shields | Screen configured model output and incoming questions | Current code rejects malformed/unavailable Azure moderation without caching it as safe; offline/basic screening is not equivalent Azure moderation |
 | Foundry Responsible-AI policy | Policy attached to published agent versions | Configuration does not establish zero harmful output |
 | Optional Purview middleware | Potential tenant data-policy integration | No deployed Purview enforcement observation is claimed |
@@ -82,7 +82,9 @@ See [delivery scope](READINESS.md#durable-delivery-scope). Current application c
 bounded expensive public requests and a global model request/concurrency budget. These are
 process-local admission controls, not a currency spending cap or distributed rate limit.
 The [bounded external stream test](CLOUD_SOAK.md) passed for 12 clients and one accelerated match.
-Multi-replica ownership, a sustained real-time match-length soak, reconnect recovery and a
+The [new external reconnect probe](evidence/audit-reconnect-cloud.json) restores a snapshot
+and the final 20 events across a 499-event unreplayed gap; it does not recover all history.
+Multi-replica ownership, a sustained real-time match-length soak, broader network/failure recovery and a
 retention/deletion policy remain explicit gates.
 
 ## Change management
