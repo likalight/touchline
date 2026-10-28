@@ -51,26 +51,28 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--sodium); o
 @keyframes flash { 0% { background: var(--sodium); } 100% { background: var(--card); } }
 @media (prefers-reduced-motion: reduce) { .goal-flash { animation: none; } .wp span { transition: none; } }
 </style>
-<link rel="stylesheet" href="/static/experience.css">
-<link rel="stylesheet" href="/static/companion.css">
+<link rel="stylesheet" href="/static/experience.css?v=20261028-finalaudit">
+<link rel="stylesheet" href="/static/companion.css?v=20261028-finalaudit">
 </head>
 <body class="phone-page">
 <header>
   <div class="companion-nav"><a href="/">Touchline / Match centre</a><label>Appearance <select id="storyTheme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label></div>
   <div class="bug" aria-live="polite">
     <div class="t"><i id="hc"></i><span id="hs">HOM</span></div>
-    <div class="sc" id="score">0-0</div>
+    <div class="sc" id="score">–</div>
     <div class="t a"><span id="as">AWY</span><i id="ac"></i></div>
-    <div class="min" id="min">0'</div>
+    <div class="min" id="min">–</div>
   </div>
   <div class="wp" role="img" id="wpbar" aria-label="Win probability"><span id="wph"></span><span id="wpd" style="background:#5b6b62"></span><span id="wpa"></span></div>
   <div class="wpl"><span id="wphl">–</span><span id="wpdl">draw –</span><span id="wpal">–</span></div>
 </header>
 <main>
+  <p class="muted" id="connectionStatus" role="status">Connecting to the match…</p>
   <section class="card" id="latest" aria-live="polite">
     <div class="k"><span id="lmin">–</span><span id="lkind">Waiting for the first moment</span><span class="ok" id="lok"></span></div>
     <h2 id="ltitle">The game, explained</h2>
     <div id="llines"></div>
+    <p class="muted" id="previewScope" hidden></p>
   </section>
   <section class="card">
     <div class="k">Your player</div>
@@ -80,8 +82,8 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--sodium); o
   <section class="card">
     <div class="k">Ask</div>
     <form id="askForm" style="margin-top:8px"><input id="askInput" enterkeyhint="send" autocomplete="off" maxlength="300" aria-label="Ask about this match"
-      placeholder="Why did they score?" style="width:100%;font:400 17px Barlow,sans-serif;background:var(--deep);color:var(--ink);border:1px solid #2f5a44;border-radius:8px;padding:10px"></form>
-    <div class="answer" id="answer">Hold <b>Ask</b> and speak, or type your question.</div>
+      placeholder="Why did they score?" style="width:100%;font:400 17px Barlow,sans-serif;background:var(--deep);color:var(--ink);border:1px solid #2f5a44;border-radius:8px;padding:10px"><button class="btn" type="submit">Ask analyst</button></form>
+    <div class="answer" id="answer" role="status">Hold <b>Ask</b> and speak, or type your question.</div>
   </section>
   <section class="card">
     <div class="k">Earlier</div>
@@ -94,6 +96,6 @@ button:focus-visible, select:focus-visible { outline: 2px solid var(--sodium); o
   <button id="ask" class="hold">Ask</button>
   <button id="persona" aria-pressed="false">Analyst view</button>
 </nav>
-<script src="/static/phone.js"></script>
+<script src="/static/phone.js?v=20261028-finalaudit"></script>
 </body>
 </html>

@@ -34,8 +34,10 @@ personalized graphics and broadcaster-oriented cue contracts. Built for the Micr
 orchestrates specialised components; many are deterministic by design. GitHub Actions tests
 and builds the project and is distinct from GitHub Copilot Agent Mode. [Category evidence](docs/WINNING_CASE.md).
 
-[Read the disposition of all 31 audit findings](docs/READINESS.md): implemented changes,
-measured checks and the remaining human, submission and production evidence.
+[Read the disposition of all 37 audit findings](docs/READINESS.md): implemented changes,
+measured checks and the remaining human, submission and production evidence. The
+[28 October fresh audit](docs/FRESH_AUDIT.md) separates evidence readiness for each judging
+criterion and category from unsupported winning predictions.
 
 ## Start with one story
 

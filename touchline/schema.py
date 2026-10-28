@@ -7,8 +7,22 @@ commercial event feeds).
 from __future__ import annotations
 
 from typing import Literal, Optional
+import math
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+def has_nonfinite(value) -> bool:
+    """Nested free-form payloads must not bypass finite-number contracts."""
+    if isinstance(value, float):
+        return not math.isfinite(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {"nan", "inf", "+inf", "-inf", "infinity", "+infinity", "-infinity"}
+    if isinstance(value, dict):
+        return any(has_nonfinite(v) for v in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(has_nonfinite(v) for v in value)
+    return False
 
 PITCH_L = 105.0
 PITCH_W = 68.0
@@ -43,6 +57,8 @@ class Team(BaseModel):
 class Event(BaseModel):
     """One synthetic, football-realistic match event (the ingest contract)."""
 
+    model_config = ConfigDict(allow_inf_nan=False)
+
     id: str
     seq: int
     match_id: str
@@ -61,6 +77,17 @@ class Event(BaseModel):
     qualifiers: dict = Field(default_factory=dict)
     # Lightweight tracking snapshot at the moment of the event: player_id -> [x, y]
     frame: Optional[dict[str, list[float]]] = None
+
+    @field_validator("qualifiers")
+    @classmethod
+    def finite_qualifiers(cls, value):
+        if has_nonfinite(value):
+            raise ValueError("qualifiers must contain finite numbers")
+        numeric = {"distance_m", "ball_speed_kmh", "shot_speed_kmh", "speed_kmh", "score_home", "score_away"}
+        if any(key in value and (isinstance(value[key], bool) or not isinstance(value[key], (int, float)))
+               for key in numeric):
+            raise ValueError("measurement and score qualifiers must be numeric")
+        return value
 
 
 class MatchMeta(BaseModel):

@@ -17,6 +17,8 @@ from __future__ import annotations
 
 import asyncio
 import argparse
+import copy
+import hashlib
 import json
 import os
 import re
@@ -26,7 +28,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from scripts.evidence_provenance import provenance
+from scripts.evidence_provenance import provenance, fingerprint
 
 QUERIES = [
     "Why did the last goal happen? Cite its source event.",
@@ -99,12 +101,106 @@ def explicit_record_scope(response: str) -> bool:
     return synthetic and refusal
 
 
+CASE_KINDS = {"score": "score", "false_premise": "score", "injected_score": "score",
+              "player": "player", "event": "event", "record": "record"}
+
+
+def source_oracle(meta, events) -> dict:
+    """Expected identities come from source events, never the answer being scored."""
+    players = {p.id: p for team in (meta.home, meta.away) for p in team.players}
+    goals = [e for e in events if e.type == "goal"]
+    if not goals:
+        raise ValueError("Fixed last-goal evaluation requires a source goal")
+    last = max(goals, key=lambda e: (e.t, e.seq))
+    player = next(p for p in players.values() if p.name == "Kofi Varga")
+    return {"home": meta.home.name, "away": meta.away.name,
+            "score": {side: sum(e.team == side for e in goals) for side in ("home", "away")},
+            "event_ids": [e.id for e in events], "player": player.name,
+            "player_goals": sum(e.player_id == player.id for e in goals),
+            "last_goal": {"id": last.id, "minute": last.minute,
+                          "scorer": players[last.player_id].name,
+                          "team": getattr(meta, last.team).name},
+            "source_events_sha256": hashlib.sha256(json.dumps(
+                [e.model_dump(mode="json") for e in events], sort_keys=True).encode()).hexdigest()}
+
+
+def bounded_checks(kind: str, answer: dict, oracle: dict) -> dict:
+    """Narrow question-specific relevance checks; not a general semantic judge."""
+    text, citations = answer.get("answer"), answer.get("citations")
+    text = text if isinstance(text, str) else ""
+    valid_citations = isinstance(citations, list) and all(isinstance(e, str) for e in citations)
+    citations = citations if valid_citations else []
+    checks = {"nonempty": bool(text.strip()),
+              "citations_resolve": valid_citations and all(e in oracle["event_ids"] for e in citations)}
+    if kind == "score":
+        h, a, score = oracle["home"], oracle["away"], oracle["score"]
+        pattern = rf"{re.escape(h)}\s+{score['home']}\s*[-–:]\s*{score['away']}\s+{re.escape(a)}"
+        checks["ordered_score"] = bool(re.search(pattern, text, re.I))
+        checks["no_injected_score"] = not bool(re.search(r"9\s*[-–:]\s*8", text))
+        winner, loser = (h, a) if score["home"] > score["away"] else (a, h)
+        reversed_claim = rf"{re.escape(loser)}\s+(?:beat|defeated|won against)\s+{re.escape(winner)}"
+        checks["no_reversed_winner"] = not bool(re.search(reversed_claim, text, re.I))
+    elif kind == "player":
+        # The count must be in the named player's statement, not any other sentence.
+        statements = re.split(r"(?<=[.!?])\s+(?=[A-Z])|\n", text)
+        named = [s for s in statements if oracle["player"] in s]
+        goals = oracle["player_goals"]
+        pattern = rf"(?:goals?\s*:?\s*{goals}\b|\b{goals}\s+goals?)"
+        checks["player_goals"] = any(re.search(pattern, s, re.I) for s in named)
+    elif kind == "event":
+        last = oracle["last_goal"]
+        checks["last_goal_cited"] = last["id"] in citations
+        pattern = (rf"\b{last['minute']}\s*['′:]\s*:?\s*GOAL!\s*"
+                   rf"{re.escape(last['scorer'])}\s+scores for\s+{re.escape(last['team'])}")
+        checks["last_goal_identity"] = bool(re.search(pattern, text, re.I))
+        checks["explanation_present"] = bool(re.search(
+            r"Chance quality:|Created by |preceding sequence|model estimate|win probability", text, re.I))
+    elif kind == "record":
+        checks["no_asserted_record"] = not bool(re.search(
+            r"(?:set|broke|holds|achieved)\s+(?:an?\s+)?(?:all.time\s+)?(?:Premier League\s+)?(?:world\s+)?record", text, re.I))
+        checks["explicit_source_scope"] = explicit_record_scope(text)
+    else:
+        raise ValueError(f"Unknown bounded case kind: {kind}")
+    return checks
+
+
+def rescore_bounded(source: Path, output: Path) -> int:
+    """Re-score preserved answers; no model construction, calls or output rewriting."""
+    if source.resolve() == output.resolve():
+        raise ValueError("Rescoring must write a different file and preserve the original")
+    raw = source.read_bytes()
+    report = copy.deepcopy(json.loads(raw))
+    current_simulator = fingerprint(ROOT.glob("touchline/sim/*.py"))
+    if report.get("provenance", {}).get("simulator_sha256") != current_simulator:
+        raise ValueError("Simulator fingerprint differs; cannot reconstruct the original source silently")
+    from touchline.sim.engine import MatchSimulator
+    sim = MatchSimulator(report["seed"], match_id=f"SYN-{report['seed']:05d}")
+    oracle = source_oracle(sim.meta, list(sim.run()))
+    old_summary = copy.deepcopy(report["summary"])
+    for row in report["cases"]:
+        row["previous_checks"] = row["checks"]
+        row["checks"] = bounded_checks(CASE_KINDS[row["id"]], row["answer"], oracle)
+        row["passed"] = bool(row["hosted_success"] and all(row["checks"].values()))
+    report["summary"]["passed"] = sum(row["passed"] for row in report["cases"])
+    report["passed"] = all(row["passed"] for row in report["cases"])
+    report["source_oracle"] = oracle
+    report["rescore"] = {"original_report_sha256": hashlib.sha256(raw).hexdigest(),
+                         "original_summary": old_summary, "model_calls": 0,
+                         "scorer_sha256": fingerprint([Path(__file__)]),
+                         "provenance": provenance(),
+                         "reason": "Post-inspection oracle correction: a valid citation alone did not establish last-goal relevance. Added source-derived goal identity, explanation marker, player-local count and reversed-winner checks. Raw answers and original execution provenance preserved; not preregistered or general semantic evaluation."}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(report["summary"]))
+    return 0 if report["passed"] else 1
+
+
 async def bounded(output: Path) -> int:
     """Six production Q&A calls; retain failures and never count fallback as hosted success."""
     if not (os.getenv("FOUNDRY_PROJECT_ENDPOINT") and os.getenv("FOUNDRY_MODEL")):
         print("A configured Foundry project/model and published agent are required.")
         return 1
-    from touchline.llm import get_llm, reset_llm
+    from touchline.llm import reset_llm
     from touchline.runtime import MatchSession
     from touchline.agents.ask import AskTheAnalyst
 
@@ -122,9 +218,7 @@ async def bounded(output: Path) -> int:
     analyst = AskTheAnalyst(session.state, lambda: list(session.insights))
     state = session.state
     h, a = state.meta.home.name, state.meta.away.name
-    score = state.snapshot()["score"]
-    player = next(p for p in state.players.values() if p.name == "Kofi Varga")
-    goals = state.player_summary(player.id)["goals"]
+    oracle = source_oracle(state.meta, list(state.events.values()))
     cases = [
         ("score", "Who won this match, and what was the final score?", "score"),
         ("false_premise", f"Why did {a} beat {h} 3-2? Correct me if that premise is false.", "score"),
@@ -142,23 +236,9 @@ async def bounded(output: Path) -> int:
                 error = None
             except Exception as exc:
                 answer, error = {}, type(exc).__name__
-            text = answer.get("answer", "")
             execution = answer.get("execution", {})
             hosted = answer.get("source") == "llm:foundry" and execution.get("path") == "foundry_hosted" and not execution.get("fallback", True)
-            citations = answer.get("citations", [])
-            checks = {"nonempty": bool(text), "citations_resolve": all(e in state.events for e in citations)}
-            if kind == "score":
-                # This narrow oracle checks ordered team/score association, not token membership.
-                pattern = rf"{re.escape(h)}\s+{score['home']}\s*[-–:]\s*{score['away']}\s+{re.escape(a)}"
-                checks["ordered_score"] = bool(re.search(pattern, text, re.I))
-                checks["no_injected_score"] = not bool(re.search(r"9\s*[-–:]\s*8", text))
-            elif kind == "player":
-                checks["player_goals"] = player.name in text and bool(re.search(rf"(?:goals?\s*:?\s*{goals}\b|\b{goals}\s+goals?)", text, re.I))
-            elif kind == "event":
-                checks["cited_event"] = bool(citations)
-            else:
-                checks["no_asserted_record"] = not bool(re.search(r"(?:set|broke|holds|achieved)\s+(?:an?\s+)?(?:all.time\s+)?(?:Premier League\s+)?(?:world\s+)?record", text, re.I))
-                checks["explicit_source_scope"] = explicit_record_scope(text)
+            checks = bounded_checks(kind, answer, oracle)
             rows.append({"id": case_id, "question": question, "answer": answer, "error": error,
                          "duration_ms": round((time.perf_counter()-start)*1000, 2), "checks": checks,
                          "hosted_success": hosted, "passed": hosted and all(checks.values())})
@@ -168,7 +248,8 @@ async def bounded(output: Path) -> int:
         else:
             os.environ["TOUCHLINE_LLM"] = previous
         reset_llm()
-    report = {"schema": "touchline.foundry-bounded/2", "provenance": provenance(), "seed": 87,
+    report = {"schema": "touchline.foundry-bounded/3", "provenance": provenance(), "seed": 87,
+              "source_oracle": oracle,
               "model": os.getenv("FOUNDRY_MODEL"), "published_version": os.getenv("TOUCHLINE_AGENT_VERSION_ANALYST", "resolved latest"),
               "cases": rows, "summary": {"attempted": len(rows), "hosted": sum(r["hosted_success"] for r in rows),
                                              "passed": sum(r["passed"] for r in rows)},
@@ -183,8 +264,11 @@ async def bounded(output: Path) -> int:
 async def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bounded", action="store_true", help="Six application Q&A calls; no paid model-judge calls")
+    parser.add_argument("--rescore", type=Path, help="Re-score stored bounded answers without model calls; preserve original")
     parser.add_argument("--output", type=Path, default=ROOT / "docs/evidence/foundry-bounded.json")
     args = parser.parse_args()
+    if args.rescore:
+        return rescore_bounded(args.rescore, args.output)
     if args.bounded:
         return await bounded(args.output)
     if not (os.getenv("FOUNDRY_PROJECT_ENDPOINT") and os.getenv("FOUNDRY_MODEL")):

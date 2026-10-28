@@ -10,7 +10,7 @@
 <script src="/static/theme.js?v=20261027-editorial"></script>
 <link rel="stylesheet" href="/static/styles.css">
 <link rel="stylesheet" href="/static/story.css">
-<link rel="stylesheet" href="/static/experience.css?v=20261027-editorial">
+<link rel="stylesheet" href="/static/experience.css?v=20261028-finalaudit">
 <link rel="stylesheet" href="/static/player-spotlight.css?v=20261027-editorial">
 <link rel="stylesheet" href="/static/judge-workspace.css?v=20261028">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f2b20'/%3E%3Cpath d='M4 26h24M16 6v20' stroke='%23eef0e8' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='5' fill='none' stroke='%23f2c14e' stroke-width='2.5'/%3E%3C/svg%3E">
@@ -30,18 +30,18 @@
   <div class="meters">
     <div class="scorebug" aria-live="polite">
       <div class="club" id="homeBug"><i id="homeSwatch"></i><span id="homeShort">HOM</span><span class="club-name" id="homeName">Home</span></div>
-      <div class="score" id="score">0–0</div>
+      <div class="score" id="score">–</div>
       <div class="club" id="awayBug"><span id="awayShort">AWY</span><i id="awaySwatch"></i><span class="club-name" id="awayName">Away</span></div>
-      <div class="clock" id="clock">0'</div>
+      <div class="clock" id="clock">–</div>
     </div>
     <div class="meter">
       <label>Win probability</label>
-      <div class="wpbar"><span id="wpH" style="background:var(--home);width:40%"></span><span id="wpD" style="background:var(--chalk-faint);width:25%"></span><span id="wpA" style="background:var(--away);width:35%"></span></div>
-      <div class="wplabels"><span id="wpHl">40%</span><span id="wpDl">25%</span><span id="wpAl">35%</span></div>
+      <div class="wpbar"><span id="wpH" style="background:var(--home);width:0"></span><span id="wpD" style="background:var(--chalk-faint);width:0"></span><span id="wpA" style="background:var(--away);width:0"></span></div>
+      <div class="wplabels"><span id="wpHl">–</span><span id="wpDl">Awaiting match data</span><span id="wpAl">–</span></div>
     </div>
     <div class="meter" style="min-width:150px">
       <label>Right now</label>
-      <div class="phase" id="phase">Balanced<small id="phaseSub">Waiting for kick-off</small></div>
+      <div class="phase" id="phase">Awaiting data<small id="phaseSub">Connecting to the replay</small></div>
     </div>
     <div class="meter" id="metricBox" hidden style="min-width:150px">
       <label id="metricLabel">Metric</label>
@@ -69,13 +69,14 @@
     <label class="field" title="Two voices: a lead commentator calls it, an analyst explains it"><input type="checkbox" id="booth"> Commentary</label>
     <span class="spacer"></span>
     <div class="ctl">
-      <span class="status-dot" id="liveDot" title="Stream status"></span>
-      <button class="btn small" id="pauseBtn">Pause</button>
+      <span class="status-dot" id="liveDot" title="Stream status" aria-hidden="true"></span>
+      <button class="btn small" id="pauseBtn" disabled>Pause</button>
       <label class="field">Speed <select id="speed"><option>4</option><option selected>10</option><option>20</option><option>40</option></select>×</label>
       <label class="field">Jump to <select id="jump"><option value="">–</option><option>30</option><option>45</option><option>60</option><option>75</option><option>89</option></select>'</label>
     </div>
   </div>
 </header>
+<p class="connection-status" id="connectionStatus" role="status">Connecting to the match…</p>
 
 <section class="judge-panel" id="judgePanel" aria-label="Judge Mode" hidden>
   <div class="judge-intro"><span class="eyebrow">Synthetic football. Real connections.</span>
@@ -88,7 +89,7 @@
     <nav id="storyRail" class="story-rail" aria-label="Match story chapters"></nav></div>
 </section>
 
-<main class="stage" id="mainStage" tabindex="-1">
+<main class="stage" id="mainStage" tabindex="-1" aria-busy="true">
   <section class="pitch-wrap" aria-label="Live pitch">
     <div class="broadcast-heading studio-only"><div><h2>On the pitch</h2><span>Synthetic event replay</span></div><a href="/judge">Try the 90-second story ↗</a></div>
     <div class="view-bar"><span class="judge-broadcast-label" hidden>On the pitch <span>Match replay · fictional clubs</span></span><div class="seg" id="viewSeg" role="group" aria-label="Camera">
@@ -224,7 +225,7 @@
 
   <div class="tabpanel" id="tab-players" role="tabpanel" hidden>
     <p><a class="btn" href="#playerSpotlight">Explore a player's story</a></p>
-    <div class="table-scroll" role="region" aria-label="Player statistics, scroll horizontally for more columns" tabindex="0"><table class="data" id="playersTable"><thead></thead><tbody></tbody></table></div>
+    <div class="table-scroll" role="region" aria-label="Player statistics, scroll horizontally for more columns" tabindex="0"><table class="data" id="playersTable"><caption>Synthetic match totals. Rating, xG and threat (xT) are model estimates. Select a column to sort; select again to reverse.</caption><thead></thead><tbody></tbody></table></div>
   </div>
 
   <div class="tabpanel" id="tab-producer" role="tabpanel" hidden>
@@ -306,7 +307,7 @@
 </aside>
 
 <script type="importmap">{ "imports": { "three": "/static/vendor/three/three.module.min.js", "three/addons/": "/static/vendor/three/addons/" } }</script>
-<div class="tour" id="tour" role="dialog" aria-live="polite" aria-label="Guided tour" hidden>
+<div class="tour" id="tour" role="dialog" aria-labelledby="tourTitle" aria-describedby="tourText" hidden>
   <div class="tour-step" id="tourStep"></div>
   <h3 id="tourTitle"></h3>
   <p id="tourText"></p>
@@ -315,6 +316,6 @@
 <script defer src="/static/story.js"></script>
 <script defer src="/static/centre.js"></script>
 <script defer src="/static/player-spotlight.js?v=20261027-editorial"></script>
-<script defer src="/static/app.js?v=20261027-editorial"></script>
+<script defer src="/static/app.js?v=20261028-finalaudit"></script>
 </body>
 </html>

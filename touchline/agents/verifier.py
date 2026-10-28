@@ -14,6 +14,7 @@ from string import Formatter
 from typing import Iterable
 
 from touchline.analytics.state import MatchState
+from touchline.schema import has_nonfinite
 
 # a number, including ordinals ("99th", "2º") and run-on units ("29.7km/h", "16m", "3x")
 # claims a match feed cannot support unless a verified frame says so ("best ever", "a club record")
@@ -155,6 +156,10 @@ class FactChecker:
         s = self.s
         issues: list[str] = []
         checks = 0
+        if has_nonfinite(ins):
+            self.blocked += 1
+            return {"status": "blocked", "checks": 1, "issues": ["claim contains a non-finite numeric value"],
+                    "scope": "Finite-value precondition; source comparison was not attempted."}
         for fr in [ins["headline"]] + ins["reasons"]:
             binding_checks, binding_issues = self._bindings(fr, ins)
             checks += binding_checks

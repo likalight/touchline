@@ -18,9 +18,12 @@
   }
   function showLatest(ins, flash) {
     const r = render(ins); if (!r) return;
+    const preview = r.preview === true || String(r.source || "").startsWith("llm:");
     $("lmin").textContent = ins.minute + "'";
     $("lkind").textContent = (ins.kind || "").replace(/_/g, " ").replace(/^story /, "storyline: ");
-    $("lok").textContent = (ins.verification || {}).status === "verified" ? "Checked" : "";
+    $("lok").textContent = preview ? "Model-generated preview" : (ins.verification || {}).status === "verified" ? "Source checked" : "";
+    $("previewScope").hidden = !preview;
+    $("previewScope").textContent = preview ? (r.verification_scope || "Underlying source checks passed; generated wording is not independently semantically verified.") : "";
     $("ltitle").textContent = r.title;
     const story = r.lines.filter((l) => (l.k || "").startsWith("s."));
     const lines = story.length ? [story[story.length - 1], ...r.lines.filter((l) => !story.includes(l))] : r.lines;
@@ -33,6 +36,12 @@
     }).join("") || `<p class="muted">Moments appear here as the match goes on.</p>`;
   }
   function onHello(h) {
+    S.insights = []; S.q = []; S.speaking = false;
+    if ("speechSynthesis" in window) speechSynthesis.cancel();
+    $("lmin").textContent = "–"; $("lkind").textContent = "Awaiting a match moment";
+    $("lok").textContent = ""; $("ltitle").textContent = "The game, explained";
+    $("llines").textContent = ""; $("previewScope").hidden = true;
+    $("me").textContent = ""; feed();
     S.meta = h.match;
     const { home, away } = h.match;
     $("hs").textContent = home.short; $("as").textContent = away.short;
@@ -48,6 +57,7 @@
     $("player").innerHTML = opts.join(""); $("player").value = S.player;
   }
   function onState(s) {
+    $("connectionStatus").hidden = true;
     $("score").textContent = `${s.score.home}-${s.score.away}`;
     $("min").textContent = s.status === "full_time" ? "FT" : `${s.minute}'`;
     const w = s.win_prob;
@@ -91,7 +101,9 @@
     if (!q) return;
     $("answer").innerHTML = `<span class="muted">${esc(q)}</span><br>Thinking…`;
     try {
-      const r = await fetch(`/api/matches/${sid}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q, lang: S.lang }) }).then((x) => x.json());
+      const response = await fetch(`/api/matches/${sid}/ask`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q, lang: S.lang }) });
+      if (!response.ok) throw new Error("Analyst unavailable");
+      const r = await response.json();
       $("answer").innerHTML = `<span class="muted">${esc(q)}</span><br>${esc(r.answer)}`;
       if (S.booth && "speechSynthesis" in window) S.q.unshift({ who: "analyst", text: r.answer });
     } catch { $("answer").textContent = "Couldn't reach the analyst. Try again."; }
@@ -112,6 +124,7 @@
     if (rec && held) { rec.stop(); return; }
     $("askInput").focus();
   });
+  $("ask").addEventListener("click", e => { if (e.detail === 0) $("askInput").focus(); });
   $("askForm").addEventListener("submit", (e) => { e.preventDefault(); const q = $("askInput").value.trim(); $("askInput").value = ""; ask(q); });
   $("booth").addEventListener("click", () => {
     S.booth = !S.booth; $("booth").setAttribute("aria-pressed", String(S.booth));
@@ -130,7 +143,14 @@
     es.addEventListener("hello", (e) => onHello(JSON.parse(e.data)));
     es.addEventListener("state", (e) => onState(JSON.parse(e.data)));
     es.addEventListener("insight", (e) => { const m = JSON.parse(e.data); onInsight(m.insight, m.replayed); });
-    es.onerror = () => { es.close(); setTimeout(connect, 2000); };
+    es.addEventListener("session_expired", () => {
+      es.close(); $("connectionStatus").hidden = false;
+      $("connectionStatus").textContent = "This private replay has expired. Open the match centre to start a new replay.";
+    });
+    es.onerror = () => {
+      $("connectionStatus").hidden = false;
+      $("connectionStatus").textContent = "Reconnecting… Showing the last received match state.";
+    };
   }
   connect();
 })();

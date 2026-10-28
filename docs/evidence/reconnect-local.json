@@ -1,0 +1,97 @@
+{
+  "schema": "touchline.reconnect-probe/1",
+  "base_url": "http://127.0.0.1:8767",
+  "provenance": {
+    "generated_at": "2026-10-28T03:59:39.263905+00:00",
+    "git_head": "3c9191af7277fe9770a61281d3fa3c4aa8fdbfcc",
+    "working_tree_dirty": true,
+    "python_source_sha256": "8d89416d4aecafad8124bff651f0fea3277438c346ebf38a7e90b8ef64655b19",
+    "simulator_sha256": "b7570cd0c19b2b462d85e23a113bcbb31b96d976da8e76ae4d16448967d27695",
+    "model_artifact_sha256": "e2f64797a51e6362240ea1846a907b97eb16bc0a2d9e82b0bf31077af5eed142",
+    "scope": "Hashes bind the files actually read, including uncommitted changes. A Git HEAD alone does not identify a dirty working tree."
+  },
+  "session": "m-2266c0bd",
+  "seed": 221,
+  "speed": 240,
+  "passed": true,
+  "checks": {
+    "explicit_snapshot_contract": true,
+    "gap_exceeds_history": true,
+    "recent_source_order": true,
+    "history_reaches_applied_state": true,
+    "history_flagged_replayed": true,
+    "score_matches_source": true,
+    "snapshot_matches_paused_http": true,
+    "completed_hello": true,
+    "completed_state": true,
+    "completed_signal": true
+  },
+  "initial_applied_events": 3,
+  "reconnected_last_seq": 486,
+  "unreplayed_gap_events": 463,
+  "recovered_event_ids": [
+    "E00467",
+    "E00468",
+    "E00469",
+    "E00470",
+    "E00471",
+    "E00472",
+    "E00473",
+    "E00474",
+    "E00475",
+    "E00476",
+    "E00477",
+    "E00478",
+    "E00479",
+    "E00480",
+    "E00481",
+    "E00482",
+    "E00483",
+    "E00484",
+    "E00485",
+    "E00486"
+  ],
+  "expected_recent_ids": [
+    "E00467",
+    "E00468",
+    "E00469",
+    "E00470",
+    "E00471",
+    "E00472",
+    "E00473",
+    "E00474",
+    "E00475",
+    "E00476",
+    "E00477",
+    "E00478",
+    "E00479",
+    "E00480",
+    "E00481",
+    "E00482",
+    "E00483",
+    "E00484",
+    "E00485",
+    "E00486"
+  ],
+  "reconnected_score": {
+    "home": 0,
+    "away": 0
+  },
+  "expected_reconnected_score": {
+    "home": 0,
+    "away": 0
+  },
+  "final_score": {
+    "home": 1,
+    "away": 1
+  },
+  "expected_final_score": {
+    "home": 1,
+    "away": 1
+  },
+  "scope": "One deliberately disconnected client, one private accelerated synthetic match. Snapshot and bounded history recovery, not lossless event replay, capacity or availability proof. The private session expires after 15 minutes.",
+  "_evidence_context": {
+    "source_artifact_sha256": "a021e6c018396295410ed6c4e840a74588cdcdfdeedd1818442492e7e78b1c49",
+    "scope": "LOCAL HTTP observation only. No Azure deployment, external-network recovery, lossless replay or uptime claim. Source provenance describes the tested dirty working tree."
+  }
+}

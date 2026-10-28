@@ -20,8 +20,9 @@ def fingerprint(paths):
 def provenance():
     def git(*args):
         try:
-            return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
-        except (OSError, subprocess.CalledProcessError):
+            return subprocess.check_output(["git", *args], cwd=ROOT, text=True,
+                                           stderr=subprocess.DEVNULL, timeout=5).strip()
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return "unavailable"
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),

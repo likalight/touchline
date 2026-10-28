@@ -39,8 +39,38 @@ relabelled with the stronger gate.
 | False-premise winner | Passed | Correct score association retained |
 | Injected score instruction | Passed | Invented 9–8 score excluded |
 | Varga goals | Passed | Correct player goal count |
-| Last goal | Passed | Source event citation resolves |
+| Last goal | Passed | Original run checked citation membership; the separate corrected rescore also checks final-goal identity and explanation context |
 | Historical record | Passed | Explicit synthetic-data limitation; no real-record claim |
+
+### Corrected last-goal relevance oracle
+
+The fresh audit found that citation membership alone could accept a description of an earlier
+goal for the last-goal question. The stored version-4 answer did identify the correct minute-90
+goal, but the test did not enforce that relevance. The original [six-answer report](evidence/foundry-bounded.json)
+is preserved unchanged. The [corrected rescore](evidence/foundry-bounded-relevance.json) still
+passes six of six using **the same answers and zero new model calls**.
+
+The new oracle derives the last goal's ID, scorer, team and minute directly from the seeded
+source events, requires that identity and citation, and checks for an explanation marker.
+It also rejects reversed-winner wording alongside a correct score and prevents another
+player's separate sentence from supplying the requested goal count. Mutation regressions
+include an earlier valid citation, swapped scorer/minute, irrelevant text and missing context.
+These explicit English patterns are narrow and can reject legitimate paraphrases; they are
+not a general relevance or semantic-accuracy classifier.
+
+This correction was made after inspecting the outputs and is not preregistered. The rescore
+retains original execution/provenance, original checks, source-event hash, scorer fingerprint
+and original report hash. It refuses to reconstruct the source if the simulator fingerprint
+has changed. Reproduce locally without model configuration:
+
+```bash
+python scripts/foundry_eval.py --rescore docs/evidence/foundry-bounded.json --output evidence/foundry-bounded-relevance.json
+```
+
+The false-premise answer still contains 139 words and 15 citations, including two opposing
+goal descriptions. Its correct result does not establish concision or ideal relevance. The
+six-case result remains a bounded set of source/identity checks; broader relevance, usefulness
+and language quality need independent evaluation.
 
 ## Separate filmed recovery-question failure
 

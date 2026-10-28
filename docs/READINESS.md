@@ -27,6 +27,16 @@ the observed source/image separately. A 10/10 score or a winning probability is 
 - [Ablation](ABLATION.md) preserves actual failures and strict rewrite-binding results.
 - [Published analyst version 4](FOUNDRY_EVAL.md) passed all six fixed hosted application cases
   under the strengthened record-scope oracle. Raw results remain available; no portal-quality pass is claimed.
+- Fresh local checkpoint: **223 Python tests passed**, with one existing experimental SDK warning.
+  Four lifecycle/recovery tests passed again after the applied-event counter change. Separately,
+  11 JavaScript contracts, five UI resilience groups, four match-centre groups and the
+  complete 90-second story journey passed. These overlapping
+  results are not added together, and are not the current deployed image's CI result.
+- [Local HTTP reconnect probe](evidence/reconnect-local.json): ten of ten checks passed,
+  with independent applied-event/source anchoring, bounded bootstrap and whole-run deadlines.
+  It recovered the current snapshot and final 20 events after a deliberately unreplayed
+  463-event gap; completed reconnect returned the correct 1–1 state and terminal signal.
+  This is local evidence only; the external deployed probe remains pending.
 
 ## Audit disposition
 
@@ -74,6 +84,24 @@ was still rejected; this is deterministic fallback validation, not a new hosted-
 | 29 | Browser journey absent from CI | **Implemented, passed and enforced:** both real journeys with retained screenshots/logs; all four jobs green at `a69d6af`, including browser; required checks gate merges/admins. |
 | 30 | Strongest cloud proof outside repo | **Published:** final source/image, health/readiness, version-4 hosted source selection and acknowledged ledger restoration. Earlier Functions, MCP, streaming, film and input-recovery evidence remains source-bound. |
 | 31 | Total operating cost unknown | **Remaining:** billing query returned incomplete service coverage, so no total or per-match estimate is published. Deployment-wide ledger and judging-period budget remain. |
+
+## Fresh audit findings — local changes are not deployed proof
+
+The following findings were discovered after the 31-item pass. Source-bound evidence from the
+`a69d6af` deployment above remains historical for fixes made after that image.
+
+| ID | Newly demonstrated gap | Disposition and acceptance boundary |
+|---|---|---|
+| 32 | Source-bound model output can still answer the wrong question | **Locally fixed and regression-tested:** recognized English score, named-player, recovery, xG and latest-goal requests now require server-assigned topics/identities; mixed irrelevant selections reject. The earlier six-case run did not cover these failures. New deployed observations remain required; this is not general semantic relevance. |
+| 33 | Non-finite numeric values bypass checks or enter match state | **Locally fixed and regression-tested:** event floats/nested qualifiers and claim preconditions reject NaN/Infinity; known numeric qualifiers reject invalid strings/booleans/null. These tests are distinct from calibration or real-feed accuracy; final deployment remains pending. |
+| 34 | Private-session expiry and shared-session replacement | **Locally fixed; four lifecycle/recovery tests passed:** stale private sessions expire even if paused/unfinished; shared demo/live sessions are preserved; an open stream follows a replacement session object or reports private expiry. Idle stream detection uses a 15-second wait boundary, not a measured network SLA. Final cloud observation remains pending. |
+| 35 | Reconnection loses raw history beyond the last 20 events | **Explicit snapshot contract locally tested:** replay flags, current state, terminal done and slow-consumer reset have regressions. The stronger local HTTP probe passed ten checks across a 463-event unreplayed gap, anchoring the final 20 IDs to independently applied source state. External deployment validation remains pending; this is not lossless replay. |
+| 36 | UI tour, player sorting/focus and startup failures | **Locally fixed with partial browser validation:** hidden tour target, missing focus/camera restoration, inaccessible/incorrect sorting, focus replaced by refresh, apparent pre-load probabilities and unbounded bootstrap wait. Eleven JS contracts, five resilience groups and four centre groups passed; final story rerun and deployed observation remain pending. |
+| 37 | Last-goal evaluator accepts any valid event citation | **Oracle strengthened, 30 focused tests passed:** final-goal ID/scorer/team/minute and context checks now reject irrelevant earlier goals. Stored six answers still pass a disclosed zero-call rescore; originals remain unchanged. See [oracle scope](FOUNDRY_EVAL.md#corrected-last-goal-relevance-oracle). |
+
+The counts of focused suites overlap and must not be added into a fabricated combined total.
+The [fresh judging-readiness audit](FRESH_AUDIT.md) separates submission blockers, evidence
+improvements and production work, and explains the subjective category assessment.
 
 ## Durable delivery scope
 

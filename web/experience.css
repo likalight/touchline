@@ -353,6 +353,14 @@ body, .judge-page body {
 .drawer details { margin-top:14px; }
 .drawer summary { padding:10px 0; }
 .drawer #downloadReceipt { min-height:44px; }
+.connection-status { max-width:1376px; margin:12px auto; padding:12px 20px; border-left:3px solid var(--accent-ink); background:var(--surface-raised); color:var(--ink); font:400 14px/1.5 var(--ui); }
+.connection-status[hidden] { display:none; }
+.judge-page:not(:has(.story-playing)) .connection-status { margin:12px 32px; }
+#playersTable th button { border:0; border-radius:3px; padding:8px 2px; min-height:44px; background:transparent; color:inherit; font:inherit; white-space:nowrap; cursor:pointer; }
+#playersTable th[aria-sort] { color:var(--accent-ink); }
+#playersTable .acts button[aria-pressed="true"] { background:var(--accent-fill); color:var(--accent-text); }
+#playersTable th button span { display:inline-block; min-width:1em; margin-left:4px; }
+#playersTable caption { text-align:left; padding:0 0 12px; color:var(--muted); font:400 13px/1.5 var(--ui); }
 .story-evidence, .checker-proof { padding-left:32px; padding-right:32px; }
 @media(min-width:1440px) { .judge-mode .judge-panel { margin-left:auto; margin-right:auto; } }
 @media(max-width:1023px) {
